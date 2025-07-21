@@ -1,0 +1,33 @@
+{
+  "name": "kaizen-webapp",
+  "version": "1.0.0",
+  "description": "Full-stack web application with React frontend and Node.js Express backend",
+  "scripts": {
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "start": "concurrently \"npm run backend:start\" \"npm run frontend:start\"",
+    "backend:dev": "cd backend && npm run dev",
+    "backend:start": "cd backend && npm start",
+    "frontend:dev": "cd frontend && npm start",
+    "frontend:start": "cd frontend && npm run build && serve -s build",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "build": "cd frontend && npm run build",
+    "test": "concurrently \"cd backend && npm test\" \"cd frontend && npm test\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.1",
+    "serve": "^14.2.1"
+  },
+  "keywords": [
+    "react",
+    "nodejs",
+    "express",
+    "tailwindcss",
+    "fullstack"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "react-router-dom": "^7.7.0",
+    "sweetalert2": "^11.22.2"
+  }
+}

@@ -1,0 +1,48 @@
+/* CustomSwal.css */
+
+.custom-swal-container {
+  border-radius: 1rem; /* 16px */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  font-family: inherit;
+}
+
+.custom-swal-title {
+  color: #1e40af; /* blue-800 */
+  font-weight: 600;
+  font-size: 1.5rem; /* 24px */
+}
+
+.custom-swal-html-container {
+  color: #374151; /* gray-700 */
+  font-size: 1rem; /* 16px */
+  line-height: 1.75;
+}
+
+.custom-swal-confirm-button {
+  background-color: #2563eb !important; /* blue-600 */
+  border-radius: 0.5rem !important; /* 8px */
+  padding: 0.75rem 1.5rem !important;
+  font-weight: 600 !important;
+  transition: background-color 0.2s;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.custom-swal-confirm-button:hover {
+  background-color: #1d4ed8 !important; /* blue-700 */
+}
+
+.custom-swal-icon.swal2-success .swal2-success-line-tip,
+.custom-swal-icon.swal2-success .swal2-success-line-long {
+    background-color: #2563eb !important; /* blue-600 */
+}
+
+.custom-swal-icon.swal2-success .swal2-success-ring {
+    border-color: rgba(37, 99, 235, 0.3) !important;
+}
+
+.custom-swal-icon.swal2-warning {
+    border-color: #f59e0b !important; /* amber-500 */
+    color: #f59e0b !important;
+} 
