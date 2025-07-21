@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import '../CustomSwal.css';
 import { employeeData } from '../data/employeeData';
 
-const GenbaForm = () => {
+const SuggestionForm = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     รหัสพนักงาน: '',
@@ -20,7 +22,6 @@ const GenbaForm = () => {
     การรับรองมาตรฐาน: '',
     ผลลัพธ์ที่ได้: '',
     รูปก่อนจัดทำโครงการ: null,
-    รูปหลังจัดทำโครงการ: null,
     ประเภท5ส: '',
     หัวข้อที่ปรับปรุง: '',
     SGS_Smart: '',
@@ -141,7 +142,6 @@ const GenbaForm = () => {
         แนวทางแก้ไข: 'แนวทางแก้ไข',
         ผลลัพธ์ที่ได้: 'ผลลัพธ์ที่ได้',
         รูปก่อนจัดทำโครงการ: 'รูปก่อนจัดทำโครงการ',
-        รูปหลังจัดทำโครงการ: 'รูปหลังจัดทำโครงการ',
         ประเภท5ส: 'ส. ที่ใช้ในการปรับปรุง',
         หัวข้อที่ปรับปรุง: 'หัวข้อที่ปรับปรุง',
         SGS_Smart: 'S : Smart',
@@ -205,7 +205,7 @@ const GenbaForm = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Left Side - Steps */}
           <div className="space-y-8">
-            <h1 className="text-3xl font-bold text-blue-600 mb-8">GENBA FORM</h1>
+            <h1 className="text-3xl font-bold text-blue-600 mb-8">SUGGESTION FORM</h1>
             <div className="flex items-center justify-between lg:block lg:space-y-6 lg:items-start">
               {/* Step 1 */}
               <div className="relative flex flex-col items-center lg:flex-row lg:items-start lg:space-x-4">
@@ -450,25 +450,6 @@ const GenbaForm = () => {
                         {formData.รูปก่อนจัดทำโครงการ && <span className="mt-2 text-xs text-green-600">{formData.รูปก่อนจัดทำโครงการ.name}</span>}
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">รูปหลังจัดทำโครงการ</label>
-                      <div className="border-2 border-dashed border-gray-400 rounded-md p-4 flex flex-col items-center justify-center">
-                        <input
-                          type="file"
-                          name="รูปหลังจัดทำโครงการ"
-                          accept="image/jpeg,image/png"
-                          onChange={handleInputChange}
-                          className="hidden"
-                          id="afterImg"
-                        />
-                        <label htmlFor="afterImg" className="cursor-pointer flex flex-col items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4a1 1 0 011-1h8a1 1 0 011 1v12m-4 4h-4a1 1 0 01-1-1v-4h6v4a1 1 0 01-1 1z" /></svg>
-                          <span className="text-gray-500 text-sm">Choose a file or drag & drop it here<br/>JPEG, PNG formats, up to 5 MB</span>
-                          <span className="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-md">Browse files</span>
-                        </label>
-                        {formData.รูปหลังจัดทำโครงการ && <span className="mt-2 text-xs text-green-600">{formData.รูปหลังจัดทำโครงการ.name}</span>}
-                      </div>
-                    </div>
                   </div>
                 </div>
               </>
@@ -601,4 +582,4 @@ const GenbaForm = () => {
   );
 };
 
-export default GenbaForm;
+export default SuggestionForm;
