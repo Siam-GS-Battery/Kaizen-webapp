@@ -58,7 +58,12 @@ const Login = () => {
             loginTime: new Date().toISOString()
           }));
           
-          navigate('/');
+          // สำหรับ Supervisor, Manager หรือ Admin ให้เข้าสู่หน้า Tasklist
+          if (employee.สิทธิ์ === 'Supervisor' || employee.สิทธิ์ === 'Manager' || employee.สิทธิ์ === 'Admin') {
+            navigate('/tasklist');
+          } else {
+            navigate('/');
+          }
         } else {
           await Swal.fire({
             icon: 'error',
