@@ -89,9 +89,12 @@ const Home = () => {
                 GENBA FORM
               </Link>
               <span className="text-lg font-medium hidden sm:inline">OR</span>
-              <button className="w-48 sm:w-auto bg-white text-blue-600 px-4 sm:px-8 py-2 sm:py-3 rounded hover:bg-gray-100 transition-colors font-medium text-sm sm:text-base">
+              <Link
+                to="/suggestion-form"
+                className="w-48 sm:w-auto bg-white text-blue-600 px-4 sm:px-8 py-2 sm:py-3 rounded hover:bg-gray-100 transition-colors font-medium text-sm sm:text-base"
+              >
                 SUGGESTION FORM
-              </button>
+              </Link>
             </div>
           </div>
         </div>
