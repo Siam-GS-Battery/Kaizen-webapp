@@ -54,7 +54,7 @@ const Header = () => {
 
   // เมนูสำหรับ Operations ตามสิทธิ์
   const getOperationsMenuItems = () => {
-    if (userRole === 'Supervisor') {
+    if (userRole === 'Supervisor' || userRole === 'Manager') {
       return [
         { name: 'Tasklist', href: '/tasklist' }
       ];
@@ -71,9 +71,9 @@ const Header = () => {
 
   // เมนูสำหรับ Create Form ตามสิทธิ์
   const getCreateFormMenuItems = () => {
-    if (userRole === 'Supervisor' || userRole === 'Admin') {
+    if (userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin') {
       return [
-        { name: 'Genba Form', href: '/gen-form' },
+        { name: 'Genba Form', href: '/genba-form' },
         { name: 'Suggestion Form', href: '/suggestion-form' }
       ];
     }
@@ -87,8 +87,8 @@ const Header = () => {
     setCurrentUser(null);
     setIsLoggedIn(false);
     setIsUserMenuOpen(false);
-    // รีเฟรชหน้าเพื่อรีเซ็ตสถานะทั้งหมด
-    window.location.reload();
+    // กลับเข้าสู่หน้าหลัก home
+    window.location.href = '/';
   };
 
   return (
@@ -115,8 +115,8 @@ const Header = () => {
               SEARCH HISTORY
             </a>
             
-            {/* Create Form Dropdown - แสดงเฉพาะ Supervisor และ Admin */}
-            {(userRole === 'Supervisor' || userRole === 'Admin') && (
+            {/* Create Form Dropdown - แสดงเฉพาะ Supervisor, Manager และ Admin */}
+            {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin') && (
               <div className="relative">
                 <button
                   onClick={(e) => {
@@ -154,8 +154,8 @@ const Header = () => {
               </div>
             )}
 
-            {/* Operations Dropdown - แสดงเฉพาะ Supervisor และ Admin */}
-            {(userRole === 'Supervisor' || userRole === 'Admin') && (
+            {/* Operations Dropdown - แสดงเฉพาะ Supervisor, Manager และ Admin */}
+            {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin') && (
               <div className="relative">
                 <button
                   onClick={(e) => {
@@ -313,8 +313,8 @@ const Header = () => {
                       </div>
                     </div>
                     
-                    {/* Menu Items for Tablet */}
-                    {(userRole === 'Supervisor' || userRole === 'Admin') && (
+                                         {/* Menu Items for Tablet */}
+                     {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin') && (
                       <>
                         <div className="px-4 py-2 border-b border-gray-100">
                           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">CREATE FORM</div>
@@ -399,8 +399,8 @@ const Header = () => {
                 SEARCH HISTORY
               </a>
               
-              {/* Create Form Section for Mobile - แสดงเฉพาะ Supervisor และ Admin */}
-              {(userRole === 'Supervisor' || userRole === 'Admin') && (
+              {/* Create Form Section for Mobile - แสดงเฉพาะ Supervisor, Manager และ Admin */}
+              {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin') && (
                 <div className="space-y-2">
                   <button
                     onClick={() => setIsMobileCreateFormOpen(!isMobileCreateFormOpen)}
@@ -431,8 +431,8 @@ const Header = () => {
                 </div>
               )}
 
-              {/* Operations Section for Mobile - แสดงเฉพาะ Supervisor และ Admin */}
-              {(userRole === 'Supervisor' || userRole === 'Admin') && (
+              {/* Operations Section for Mobile - แสดงเฉพาะ Supervisor, Manager และ Admin */}
+              {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin') && (
                 <div className="space-y-2">
                   <button
                     onClick={() => setIsMobileOperationsOpen(!isMobileOperationsOpen)}

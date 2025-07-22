@@ -128,14 +128,15 @@
 ### 16. Employee Data Management และ Role-Based Navigation System
 - [x] ปรับปรุงโครงสร้างข้อมูลใน EmployeeData.js ให้มีฟิลด์ใหม่
 - [x] เพิ่มฟิลด์: รหัสพนักงาน, ชื่อ, นามสกุล, แผนก, พื้นที่5ส, พื้นที่จัดทำโครงการ, สิทธิ์
-- [x] สร้างข้อมูลพนักงานทดสอบ 3 สิทธิ์: User (241303), Supervisor (251307), Admin (1003)
-- [x] เพิ่มแท็บ Operations ใน Header/Navbar สำหรับ Supervisor และ Admin
+- [x] สร้างข้อมูลพนักงานทดสอบ 4 สิทธิ์: User (241303), Supervisor (251307), Manager (261401), Admin (admin)
+- [x] เพิ่มแท็บ Operations ใน Header/Navbar สำหรับ Supervisor, Manager และ Admin
 - [x] สร้าง dropdown menu ใน Operations tab สำหรับเมนูตัวเลือกต่างๆ
 - [x] กำหนดสิทธิ์ Supervisor: เห็นแค่ "Tasklist"
+- [x] กำหนดสิทธิ์ Manager: เห็นแค่ "Tasklist" (เหมือน Supervisor)
 - [x] กำหนดสิทธิ์ Admin: เห็น "Tasklist", "Employees Management", "Admin Team Setting", "Report Page"
 - [x] ปรับปรุงระบบ Search History ให้ตรวจจับผู้ใช้ที่ล็อกอินแล้วอัตโนมัติ
-- [x] ซ่อนช่องค้นหารหัสพนักงานสำหรับ Supervisor และ Admin ที่ล็อกอินแล้ว
-- [x] แสดงข้อมูลประวัติของผู้ใช้โดยอัตโนมัติสำหรับ Supervisor และ Admin
+- [x] ซ่อนช่องค้นหารหัสพนักงานสำหรับ Supervisor, Manager และ Admin ที่ล็อกอินแล้ว
+- [x] แสดงข้อมูลประวัติของผู้ใช้โดยอัตโนมัติสำหรับ Supervisor, Manager และ Admin
 - [x] ปรับปรุงระบบล็อกอินให้ตรวจสอบข้อมูลจากฐานข้อมูลพนักงาน
 - [x] แสดงชื่อ-นามสกุลและสิทธิ์เมื่อล็อกอินสำเร็จ
 - [x] รองรับ responsive design ทั้ง desktop และ mobile navigation
@@ -165,7 +166,7 @@
 - [x] ปรับปรุง UX ให้เป็นไปตามมาตรฐานที่ผู้ใช้คุ้นเคย
 
 ### 19. CREATE FORM Navigation และ Menu Reorganization
-- [x] เพิ่มแท็บ "CREATE FORM" เป็น Dropdown สำหรับ Supervisor และ Admin
+- [x] เพิ่มแท็บ "CREATE FORM" เป็น Dropdown สำหรับ Supervisor, Manager และ Admin
 - [x] สร้างฟังก์ชัน `getCreateFormMenuItems()` สำหรับเมนู Create Form
 - [x] เพิ่มตัวเลือก "Genba Form" และ "Suggestion Form" ใน Create Form dropdown
 - [x] ย้ายแท็บ "CREATE FORM" ให้อยู่ก่อน "OPERATIONS" ตามลำดับความสำคัญ
@@ -188,6 +189,16 @@
 - [x] ปรับปรุง dropdown width และ positioning ให้ responsive
 - [x] เพิ่ม rounded corners และ padding ที่เหมาะสมสำหรับ mobile
 - [x] ปรับปรุง User Menu ให้แสดงข้อมูลผู้ใช้ได้ดีขึ้นในทุกขนาดหน้าจอ
+
+### 21. Manager Role Integration
+- [x] เพิ่มสิทธิ์ Manager ในระบบที่มีโครงสร้างแบบเดียวกับ Supervisor
+- [x] เพิ่มข้อมูลพนักงาน Manager: รหัส 261401, ชื่อ มนตรี ธนวัฒน์, แผนก PD
+- [x] เพิ่มข้อมูลพนักงาน User ที่มีอยู่เดิม: รหัส 241303, ชื่อ สมชาย ใจดี, แผนก HR & AD
+- [x] อัปเดต Operations Menu ให้ Manager เห็นแค่ "Tasklist" เหมือน Supervisor
+- [x] อัปเดต Create Form Menu ให้ Manager เห็น "Genba Form" และ "Suggestion Form" เหมือน Supervisor
+- [x] อัปเดตเงื่อนไขการแสดงผลในทุกส่วน: Desktop, Tablet, Mobile Navigation
+- [x] อัปเดต Comments และ descriptions ให้รวม Manager ในทุกส่วน
+- [x] รองรับ Manager ในระบบ Search History และ auto-search functionality
 
 ## 📋 Pending Tasks
 
@@ -230,4 +241,4 @@
 
 ---
 *Last Updated: 2025-01-22*  
-*Status: KAIZEN web application now features complete user authentication system with login/logout functionality, user dropdown menus, role-based access control, CREATE FORM navigation, and enhanced responsive design. The application seamlessly replaces the LOGIN button with user information when authenticated, provides intuitive logout functionality, maintains comprehensive role-based permissions (User, Supervisor, Admin), and offers optimized navigation experience across all device sizes with modern UI/UX design.*
+*Status: KAIZEN web application now features complete user authentication system with login/logout functionality, user dropdown menus, role-based access control, CREATE FORM navigation, and enhanced responsive design. The application seamlessly replaces the LOGIN button with user information when authenticated, provides intuitive logout functionality, maintains comprehensive role-based permissions (User, Supervisor, Manager, Admin), and offers optimized navigation experience across all device sizes with modern UI/UX design.*
