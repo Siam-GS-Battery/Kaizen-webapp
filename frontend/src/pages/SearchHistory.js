@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import '../CustomSwal.css';
+import { employeeData } from '../data/employeeData';
 
 const SearchHistory = () => {
   const [employeeId, setEmployeeId] = useState('');
@@ -8,6 +9,8 @@ const SearchHistory = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [showFormModal, setShowFormModal] = useState(false);
   const [selectedFormData, setSelectedFormData] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Mock data for demonstration
   const allMockData = [
@@ -146,6 +149,30 @@ const SearchHistory = () => {
       }
     }
   ];
+
+  // ตรวจสอบสิทธิ์ผู้ใช้และทำการค้นหาอัตโนมัติสำหรับ Supervisor และ Admin
+  useEffect(() => {
+    const userSession = localStorage.getItem('userSession');
+    if (userSession) {
+      const session = JSON.parse(userSession);
+      const employee = employeeData.find(emp => emp.รหัสพนักงาน === session.รหัสพนักงาน);
+      if (employee) {
+        setUserRole(employee.สิทธิ์);
+        setIsLoggedIn(true);
+        
+        // สำหรับ Supervisor และ Admin ให้ค้นหาข้อมูลอัตโนมัติ
+        if (employee.สิทธิ์ === 'Supervisor' || employee.สิทธิ์ === 'Admin') {
+          setEmployeeId(session.รหัสพนักงาน);
+          // ทำการค้นหาข้อมูลอัตโนมัติ
+          const filteredResults = allMockData.filter(item => 
+            item.formData.รหัสพนักงาน === session.รหัสพนักงาน
+          );
+          setSearchResults(filteredResults);
+          setHasSearched(true);
+        }
+      }
+    }
+  }, [allMockData]);
 
   const handleSearch = () => {
     if (employeeId.trim()) {
@@ -565,27 +592,47 @@ const SearchHistory = () => {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-blue-600 mb-8">SEARCH HISTORY</h1>
 
-      {/* Search Section */}
-      <div className="mb-8">
-        <div className="flex gap-2 max-w-md">
-          <input
-            type="text"
-            value={employeeId}
-            onChange={(e) => setEmployeeId(e.target.value)}
-            placeholder="รหัสพนักงาน"
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-          />
-          <button
-            onClick={handleSearch}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </button>
+      {/* Search Section - ซ่อนสำหรับ Supervisor และ Admin ที่ล็อกอินแล้ว */}
+      {!(isLoggedIn && (userRole === 'Supervisor' || userRole === 'Admin')) && (
+        <div className="mb-8">
+          <div className="flex gap-2 max-w-md">
+            <input
+              type="text"
+              value={employeeId}
+              onChange={(e) => setEmployeeId(e.target.value)}
+              placeholder="รหัสพนักงาน"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+            <button
+              onClick={handleSearch}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* User Info Section สำหรับ Supervisor และ Admin */}
+      {isLoggedIn && (userRole === 'Supervisor' || userRole === 'Admin') && (
+        <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-semibold text-blue-800">ผู้ใช้งาน: {employeeId}</h3>
+              <p className="text-blue-600 text-sm">สิทธิ์: {userRole}</p>
+              <p className="text-blue-500 text-xs">แสดงผลการค้นหาประวัติของคุณโดยอัตโนมัติ</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Results Section */}
       {hasSearched && (
