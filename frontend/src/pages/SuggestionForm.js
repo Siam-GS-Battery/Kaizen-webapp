@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import '../CustomSwal.css';
+import '../MobileDateFix.css';
 import { employeeData } from '../data/employeeData';
 
 const SuggestionForm = () => {
@@ -372,7 +373,12 @@ const SuggestionForm = () => {
                         name="วันที่เริ่มทำโครงการ"
                         value={formData.วันที่เริ่มทำโครงการ}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                        style={{
+                          minHeight: '44px',
+                          WebkitAppearance: 'none',
+                          MozAppearance: 'textfield'
+                        }}
                       />
                     </div>
                     <div>
@@ -382,7 +388,12 @@ const SuggestionForm = () => {
                         name="วันที่จบโครงการ"
                         value={formData.วันที่จบโครงการ}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                        style={{
+                          minHeight: '44px',
+                          WebkitAppearance: 'none',
+                          MozAppearance: 'textfield'
+                        }}
                       />
                     </div>
                   </div>

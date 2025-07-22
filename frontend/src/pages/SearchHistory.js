@@ -197,6 +197,20 @@ const SearchHistory = () => {
     setShowFormModal(true);
   };
 
+  const formatDisplayDate = (dateString) => {
+    if (!dateString) return 'ไม่ระบุ';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      return dateString; // fallback to original string
+    }
+  };
+
   const renderFormModal = () => {
     if (!selectedFormData) return null;
 
@@ -251,11 +265,11 @@ const SearchHistory = () => {
         }}
       >
         <div
-          className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-hidden flex flex-col"
+          className="bg-white rounded-xl shadow-2xl max-w-sm sm:max-w-4xl w-full max-h-[85vh] sm:max-h-[95vh] overflow-hidden flex flex-col"
           onClick={e => e.stopPropagation()}
         >
           {/* Modal Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 sm:p-6">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-3 sm:p-6">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
@@ -285,7 +299,7 @@ const SearchHistory = () => {
 
           {/* Modal Content */}
           <div className="flex-1 overflow-y-auto">
-            <div className="p-4 sm:p-6">
+            <div className="p-3 sm:p-6">
 
               {/* Step Progress Indicator */}
               <div className="mb-6">
@@ -353,7 +367,7 @@ const SearchHistory = () => {
                       <h3 className="text-base sm:text-lg font-bold">ข้อมูลทั่วไป</h3>
                     </div>
                   </div>
-                  <div className="p-4 sm:p-6">
+                  <div className="p-3 sm:p-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                         <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">รหัสพนักงาน</label>
@@ -389,7 +403,7 @@ const SearchHistory = () => {
                       <h3 className="text-base sm:text-lg font-bold">รายละเอียดโครงการ</h3>
                     </div>
                   </div>
-                  <div className="p-4 sm:p-6">
+                  <div className="p-3 sm:p-6">
                     <div className="space-y-4">
                       <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                         <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">ชื่อโครงการ</label>
@@ -398,11 +412,15 @@ const SearchHistory = () => {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                           <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">วันที่เริ่มทำโครงการ</label>
-                          <p className="text-gray-900 font-medium text-sm">{formData.วันที่เริ่มทำโครงการ}</p>
+                          <div className="bg-gray-50 rounded-md p-2 border">
+                            <p className="text-gray-900 font-medium text-sm">{formatDisplayDate(formData.วันที่เริ่มทำโครงการ)}</p>
+                          </div>
                         </div>
                         <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                           <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">วันที่จบโครงการ</label>
-                          <p className="text-gray-900 font-medium text-sm">{formData.วันที่จบโครงการ}</p>
+                          <div className="bg-gray-50 rounded-md p-2 border">
+                            <p className="text-gray-900 font-medium text-sm">{formatDisplayDate(formData.วันที่จบโครงการ)}</p>
+                          </div>
                         </div>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -461,7 +479,7 @@ const SearchHistory = () => {
                       <h3 className="text-base sm:text-lg font-bold">ประเภทของกิจกรรม 5ส</h3>
                     </div>
                   </div>
-                  <div className="p-4 sm:p-6">
+                  <div className="p-3 sm:p-6">
                     <div className="space-y-4">
                       <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                         <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">ส. ที่ใช้ในการปรับปรุง</label>
@@ -505,7 +523,7 @@ const SearchHistory = () => {
             </div>
 
             {/* Close Button */}
-            <div className="bg-gray-50 border-t border-gray-200 p-4 sm:p-6">
+            <div className="bg-gray-50 border-t border-gray-200 p-3 sm:p-6">
               <div className="flex justify-center">
                 <button
                   onClick={() => setShowFormModal(false)}

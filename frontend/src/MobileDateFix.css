@@ -1,0 +1,62 @@
+/* Mobile Date Input Fixes */
+
+/* Ensure date inputs display properly on mobile devices */
+input[type="date"] {
+  position: relative;
+  /* Remove default browser styling */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  
+  /* Ensure minimum touch target size */
+  min-height: 44px;
+  
+  /* Better font size for mobile */
+  font-size: 16px; /* Prevents zoom on iOS */
+  
+  /* Better padding for mobile */
+  padding: 12px 16px;
+  
+  /* Make calendar icon visible */
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3e%3cpath fill-rule='evenodd' d='M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z' clip-rule='evenodd'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 20px;
+  padding-right: 40px;
+}
+
+/* For WebKit browsers (Safari, Chrome on iOS) */
+input[type="date"]::-webkit-datetime-edit {
+  padding: 0;
+  font-size: 16px;
+  color: #374151;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+/* For Firefox */
+input[type="date"]::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
+/* Focus states */
+input[type="date"]:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 640px) {
+  input[type="date"] {
+    font-size: 16px; /* Important: prevents zoom on iOS */
+    padding: 14px 16px;
+    min-height: 48px; /* Better touch target */
+  }
+}

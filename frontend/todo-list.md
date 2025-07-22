@@ -112,6 +112,19 @@
 - [x] Improved modal responsiveness with optimized mobile layout
 - [x] Added consistent shadow effects and border styling throughout form sections
 
+### 15. Mobile Date Input และ Popup Size Optimization
+- [x] แก้ไขการแสดงผลวันที่ใน Genba Form สำหรับมือถือ
+- [x] แก้ไขการแสดงผลวันที่ใน Suggestion Form สำหรับมือถือ
+- [x] เพิ่ม padding และ touch target size สำหรับ date input (44px minimum)
+- [x] ปรับ font size เป็น 16px เพื่อป้องกันการ zoom บน iOS
+- [x] เพิ่ม custom calendar icon สำหรับ date input
+- [x] สร้าง MobileDateFix.css สำหรับ cross-browser compatibility
+- [x] ลดขนาด Search History popup บนมือถือ (max-w-sm แทน max-w-4xl)
+- [x] ปรับ modal height จาก 95vh เป็น 85vh บนมือถือ
+- [x] ลด padding ทั่วทั้ง modal สำหรับการแสดงผลบนมือถือ
+- [x] เพิ่มฟังก์ชัน formatDisplayDate สำหรับแสดงวันที่ในรูปแบบไทย
+- [x] ปรับปรุง responsive design ให้เหมาะสมกับหน้าจอมือถือ
+
 ## 📋 Pending Tasks
 
 ### Future Enhancements
@@ -127,10 +140,12 @@
 
 ### Key Components Modified:
 - `src/pages/Home.js` - Main dashboard with all enhancements
-- `src/pages/GenbaForm.js` - New form component
-- `src/pages/SearchHistory.js` - New search history page with table and modals
+- `src/pages/GenbaForm.js` - Form component with enhanced mobile date inputs
+- `src/pages/SuggestionForm.js` - Form component with enhanced mobile date inputs
+- `src/pages/SearchHistory.js` - Search history page with optimized mobile popup
 - `src/components/Header.js` - Updated styling with search history navigation
 - `src/App.js` - Added routing for GenbaForm and SearchHistory
+- `src/MobileDateFix.css` - New CSS file for mobile date input optimization
 
 ### Libraries/Dependencies Used:
 - React Router for navigation
@@ -147,4 +162,4 @@
 
 ---
 *Last Updated: 2025-07-22*  
-*Status: Search History page fully completed with comprehensive features including employee ID filtering, complete form viewer modals, mobile-responsive design, horizontal table scrolling, and enhanced form popup modal styling with gradient themes and card-based layouts*
+*Status: KAIZEN web application fully optimized for mobile devices with enhanced date input functionality, properly sized popups, and comprehensive responsive design. All forms and search features work seamlessly across desktop and mobile platforms.*
