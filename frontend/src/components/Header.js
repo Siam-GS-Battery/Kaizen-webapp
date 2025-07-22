@@ -121,6 +121,9 @@ const Header = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    // ปิด dropdown อื่นๆ ก่อนเปิดใหม่
+                    setIsOperationsOpen(false);
+                    setIsUserMenuOpen(false);
                     setIsCreateFormOpen(!isCreateFormOpen);
                   }}
                   className={`font-medium transition-colors pb-1 flex items-center gap-1 text-sm xl:text-base ${
@@ -160,6 +163,9 @@ const Header = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    // ปิด dropdown อื่นๆ ก่อนเปิดใหม่
+                    setIsCreateFormOpen(false);
+                    setIsUserMenuOpen(false);
                     setIsOperationsOpen(!isOperationsOpen);
                   }}
                   className={`font-medium transition-colors pb-1 flex items-center gap-1 text-sm xl:text-base ${
@@ -201,6 +207,9 @@ const Header = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    // ปิด dropdown อื่นๆ ก่อนเปิดใหม่
+                    setIsCreateFormOpen(false);
+                    setIsOperationsOpen(false);
                     setIsUserMenuOpen(!isUserMenuOpen);
                   }}
                   className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 xl:px-4 py-2 rounded-lg border border-blue-200 transition-colors"
@@ -279,6 +288,9 @@ const Header = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    // ปิด dropdown อื่นๆ ก่อนเปิดใหม่ (สำหรับ tablet)
+                    setIsCreateFormOpen(false);
+                    setIsOperationsOpen(false);
                     setIsUserMenuOpen(!isUserMenuOpen);
                   }}
                   className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-2 rounded-lg border border-blue-200 transition-colors"
