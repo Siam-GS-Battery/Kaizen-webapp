@@ -16,7 +16,7 @@ const SearchHistory = () => {
   const allMockData = [
     {
       id: 1,
-      projectName: 'ปรับปรุงระบบการจัดการข้อมูลดิจิทัล',
+      projectName: 'ปรับปรุงระบบการจัดการข้อมูลดิจิทัล test',
       startDate: '01/12/2658',
       department: 'IT & DM',
       partner: '5ส ณ บางปูใหม่',
