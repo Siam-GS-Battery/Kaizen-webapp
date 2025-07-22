@@ -57,8 +57,8 @@ const Home = () => {
   const departmentData = [
     { name: 'HR & AD', employees: 20, submitted: 20, completion: 100 },
     { name: 'AF', employees: 21, submitted: 21, completion: 100 },
-    { name: 'PC', employees: 19, submitted: 19, completion: 100 },
-    { name: 'PD', employees: 22, submitted: 23, completion: 100 },
+    { name: 'PC', employees: 19, submitted: 4, completion: 20 },
+    { name: 'PD', employees: 22, submitted: 15, completion: 70 },
     { name: 'QA', employees: 10, submitted: 10, completion: 100 },
     { name: 'SD', employees: 16, submitted: 10, completion: 62 },
     { name: 'TD', employees: 15, submitted: 14, completion: 93 },
@@ -166,33 +166,49 @@ const Home = () => {
                 <table className="w-full min-w-[600px]">
                   <thead className="bg-blue-600 text-white">
                     <tr>
-                      <th className="px-2 sm:px-4 py-3 text-left text-sm sm:text-base">Department</th>
-                      <th className="px-2 sm:px-4 py-3 text-center text-sm sm:text-base">Employee count</th>
-                      <th className="px-2 sm:px-4 py-3 text-center text-sm sm:text-base">Submitted Count</th>
-                      <th className="px-2 sm:px-4 py-3 text-center text-sm sm:text-base">Completion Rate</th>
+                      <th className="px-3 sm:px-4 py-3 text-left text-sm sm:text-base font-medium">Department</th>
+                      <th className="px-3 sm:px-4 py-3 text-center text-sm sm:text-base font-medium">Employee count</th>
+                      <th className="px-3 sm:px-4 py-3 text-center text-sm sm:text-base font-medium">Submitted Count</th>
+                      <th className="px-3 sm:px-4 py-3 text-center text-sm sm:text-base font-medium">Completion Rate</th>
                     </tr>
                   </thead>
-                <tbody>
-                  {departmentData.map((dept, index) => (
-                    <tr key={index} className="border-b">
-                      <td className="px-2 sm:px-4 py-3 font-medium text-sm sm:text-base">{dept.name}</td>
-                      <td className="px-2 sm:px-4 py-3 text-center text-sm sm:text-base">{dept.employees}</td>
-                      <td className="px-2 sm:px-4 py-3 text-center text-sm sm:text-base">{dept.submitted}</td>
-                      <td className="px-2 sm:px-4 py-3">
-                        <div className="flex items-center">
-                          <div className="w-12 sm:w-16 bg-gray-200 rounded-full h-2 mr-2">
-                            <div 
-                              className="bg-blue-500 h-2 rounded-full" 
-                              style={{width: `${dept.completion}%`}}
-                            ></div>
+                  <tbody>
+                    {departmentData.map((dept, index) => (
+                      <tr key={index} className="border-b hover:bg-gray-50 transition-colors">
+                        <td className="px-3 sm:px-4 py-3 font-medium text-sm sm:text-base text-gray-800">{dept.name}</td>
+                        <td className="px-3 sm:px-4 py-3 text-center text-sm sm:text-base text-gray-700">{dept.employees}</td>
+                        <td className="px-3 sm:px-4 py-3 text-center text-sm sm:text-base text-gray-700">{dept.submitted}</td>
+                        <td className="px-3 sm:px-4 py-3">
+                          <div className="flex items-center justify-center">
+                            <div className="w-16 sm:w-20 bg-gray-200 rounded-full h-2 mr-2">
+                              <div 
+                                className={`h-2 rounded-full transition-all duration-300 ${
+                                  dept.completion >= 90 ? 'bg-green-500' : 
+                                  dept.completion >= 70 ? 'bg-blue-500' : 
+                                  dept.completion >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                                }`}
+                                style={{width: `${dept.completion}%`}}
+                              ></div>
+                            </div>
+                            <span className={`text-xs sm:text-sm font-medium ${
+                              dept.completion >= 90 ? 'text-green-600' : 
+                              dept.completion >= 70 ? 'text-blue-600' : 
+                              dept.completion >= 50 ? 'text-yellow-600' : 'text-red-600'
+                            }`}>
+                              {dept.completion}%
+                            </span>
                           </div>
-                          <span className="text-xs sm:text-sm">{dept.completion}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
                 </table>
+              </div>
+              
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-xs text-blue-800 text-center">
+                  📊 ตารางแสดงสถิติการส่ง KAIZEN ประจำเดือน{currentDate.thaiMonths[selectedMonth]}ของแต่ละหน่วยงาน
+                </p>
               </div>
             </div>
 
@@ -205,7 +221,7 @@ const Home = () => {
               
               <div className="relative">
                 {/* Chart container */}
-                <div className="h-80 relative bg-gray-50 rounded-lg">
+                <div className="h-full min-h-[320px] relative bg-gray-50 rounded-lg">
                   {/* Y-axis labels */}
                   <div className="absolute left-2 top-4 bottom-16 flex flex-col justify-between text-xs text-gray-500">
                     <span className="leading-none">100%</span>
