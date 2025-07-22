@@ -20,13 +20,13 @@ const Header = () => {
           <nav className="hidden md:flex items-center space-x-8">
             <a 
               href="/" 
-              className={`text-blue-600 font-medium transition-colors pb-1 ${isActive('/') ? 'border-b-2 border-blue-600' : 'hover:text-blue-800'}`}
+              className={`font-medium transition-colors pb-1 ${isActive('/') ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-blue-800'}`}
             >
               HOME
             </a>
             <a 
               href="/search-history" 
-              className={`transition-colors pb-1 ${isActive('/search-history') ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
+              className={`font-medium transition-colors pb-1 ${isActive('/search-history') ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
             >
               SEARCH HISTORY
             </a>
@@ -52,14 +52,14 @@ const Header = () => {
             <div className="flex flex-col space-y-4">
               <a 
                 href="/" 
-                className={`font-medium transition-colors ${isActive('/') ? 'border-b-2 border-blue-600 text-blue-600' : 'text-blue-600 hover:text-blue-800'}`}
+                className={`font-medium transition-colors ${isActive('/') ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-blue-800'}`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 HOME
               </a>
               <a 
                 href="/search-history" 
-                className={`transition-colors ${isActive('/search-history') ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
+                className={`font-medium transition-colors ${isActive('/search-history') ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 SEARCH HISTORY

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import GenbaForm from './pages/GenbaForm';
 import SuggestionForm from './pages/SuggestionForm';
+import SearchHistory from './pages/SearchHistory';
 import Header from './components/Header';
 import Footer from './components/Footer';
 
@@ -16,6 +17,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/genba-form" element={<GenbaForm />} />
             <Route path="/suggestion-form" element={<SuggestionForm />} />
+            <Route path="/search-history" element={<SearchHistory />} />
           </Routes>
         </main>
         <Footer />
