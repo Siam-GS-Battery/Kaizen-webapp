@@ -22,9 +22,9 @@ const Header = () => {
     const userSession = localStorage.getItem('userSession');
     if (userSession) {
       const session = JSON.parse(userSession);
-      const employee = employeeData.find(emp => emp.รหัสพนักงาน === session.รหัสพนักงาน);
+      const employee = employeeData.find(emp => emp.employeeId === session.employeeId);
       if (employee) {
-        setUserRole(employee.สิทธิ์);
+        setUserRole(employee.role);
         setCurrentUser(employee);
         setIsLoggedIn(true);
       }
@@ -219,7 +219,7 @@ const Header = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
-                  <span className="font-medium text-sm xl:text-base truncate max-w-24 xl:max-w-32">{currentUser.ชื่อ} {currentUser.นามสกุล}</span>
+                  <span className="font-medium text-sm xl:text-base truncate max-w-24 xl:max-w-32">{currentUser.firstName} {currentUser.lastName}</span>
                   <svg className={`w-3 h-3 xl:w-4 xl:h-4 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -237,9 +237,9 @@ const Header = () => {
                           </svg>
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="font-semibold text-gray-800 truncate">{currentUser.ชื่อ} {currentUser.นามสกุล}</div>
-                          <div className="text-sm text-gray-500">{currentUser.รหัสพนักงาน}</div>
-                          <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full inline-block mt-1">{currentUser.สิทธิ์}</div>
+                          <div className="font-semibold text-gray-800 truncate">{currentUser.firstName} {currentUser.lastName}</div>
+                          <div className="text-sm text-gray-500">{currentUser.employeeId}</div>
+                          <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full inline-block mt-1">{currentUser.role}</div>
                         </div>
                       </div>
                     </div>
@@ -300,7 +300,7 @@ const Header = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
-                  <span className="font-medium text-sm truncate max-w-20">{currentUser.ชื่อ}</span>
+                  <span className="font-medium text-sm truncate max-w-20">{currentUser.firstName}</span>
                   <svg className={`w-3 h-3 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -318,9 +318,9 @@ const Header = () => {
                           </svg>
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="font-semibold text-gray-800 truncate">{currentUser.ชื่อ} {currentUser.นามสกุล}</div>
-                          <div className="text-sm text-gray-500">{currentUser.รหัสพนักงาน}</div>
-                          <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full inline-block mt-1">{currentUser.สิทธิ์}</div>
+                          <div className="font-semibold text-gray-800 truncate">{currentUser.firstName} {currentUser.lastName}</div>
+                          <div className="text-sm text-gray-500">{currentUser.employeeId}</div>
+                          <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full inline-block mt-1">{currentUser.role}</div>
                         </div>
                       </div>
                     </div>
@@ -487,9 +487,9 @@ const Header = () => {
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-blue-800 truncate">{currentUser.ชื่อ} {currentUser.นามสกุล}</div>
-                        <div className="text-sm text-blue-600">{currentUser.รหัสพนักงาน}</div>
-                        <div className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full inline-block mt-1">{currentUser.สิทธิ์}</div>
+                        <div className="font-semibold text-blue-800 truncate">{currentUser.firstName} {currentUser.lastName}</div>
+                        <div className="text-sm text-blue-600">{currentUser.employeeId}</div>
+                        <div className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full inline-block mt-1">{currentUser.role}</div>
                       </div>
                     </div>
                     

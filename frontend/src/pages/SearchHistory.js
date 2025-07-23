@@ -25,24 +25,24 @@ const SearchHistory = () => {
       formType: 'genba',
       formData: {
         // Step 1: ข้อมูลทั่วไป
-        รหัสพนักงาน: '251307',
-        ชื่อ: 'ภัณฑิรา ศรีพิมพ์เมือง',
-        แผนก: 'IT & DM',
-        ชื่อกลุ่มห้าส: '5ส ณ บางปูใหม่',
-        พื้นที่จัดทำโครงการ: 'IT',
+        employeeId: '251307',
+        fullName: 'ภัณฑิรา ศรีพิมพ์เมือง',
+        department: 'IT & DM',
+        fiveSGroupName: '5ส ณ บางปูใหม่',
+        projectArea: 'IT',
         // Step 2: รายละเอียด
-        ชื่อโครงการ: 'ปรับปรุงระบบการจัดการข้อมูลดิจิทัล',
-        วันที่เริ่มทำโครงการ: '2023-12-01',
-        วันที่จบโครงการ: '2024-02-01',
-        ปัญหาที่เจอ: 'ระบบการจัดการข้อมูลดิจิทัลยังไม่เป็นระเบียบ ทำให้การค้นหาและเข้าถึงข้อมูลทำได้ยาก',
-        แนวทางแก้ไข: 'จัดระเบียบระบบไฟล์และโฟลเดอร์ตามหลัก 5ส พร้อมสร้างระบบการตั้งชื่อไฟล์ที่เป็นมาตรฐาน',
-        การรับรองมาตรฐาน: 'ได้รับการรับรองจากหัวหน้าแผนก IT & DM',
-        ผลลัพธ์ที่ได้: 'ลดเวลาการค้นหาไฟล์ได้ 60% และเพิ่มประสิทธิภาพการทำงานของทีม',
-        รูปก่อนจัดทำโครงการ: 'digital_before.jpg',
-        รูปหลังจัดทำโครงการ: 'digital_after.jpg',
+        projectName: 'ปรับปรุงระบบการจัดการข้อมูลดิจิทัล',
+        projectStartDate: '2023-12-01',
+        projectEndDate: '2024-02-01',
+        problemsEncountered: 'ระบบการจัดการข้อมูลดิจิทัลยังไม่เป็นระเบียบ ทำให้การค้นหาและเข้าถึงข้อมูลทำได้ยาก',
+        solutionApproach: 'จัดระเบียบระบบไฟล์และโฟลเดอร์ตามหลัก 5ส พร้อมสร้างระบบการตั้งชื่อไฟล์ที่เป็นมาตรฐาน',
+        standardCertification: 'ได้รับการรับรองจากหัวหน้าแผนก IT & DM',
+        resultsAchieved: 'ลดเวลาการค้นหาไฟล์ได้ 60% และเพิ่มประสิทธิภาพการทำงานของทีม',
+        beforeProjectImage: 'digital_before.jpg',
+        afterProjectImage: 'digital_after.jpg',
         // Step 3: ประเภทของกิจกรรม 5ส
-        ประเภท5ส: 'ส2',
-        หัวข้อที่ปรับปรุง: 'Delivery',
+        fiveSType: 'ส2',
+        improvementTopic: 'Delivery',
         SGS_Smart: 'Factory',
         SGS_Green: 'Branding',
         SGS_Strong: 'Workplace'
@@ -59,23 +59,23 @@ const SearchHistory = () => {
       formType: 'suggestion',
       formData: {
         // Step 1: ข้อมูลทั่วไป
-        รหัสพนักงาน: '251307',
-        ชื่อ: 'ภัณฑิรา ศรีพิมพ์เมือง',
-        แผนก: 'IT & DM',
-        ชื่อกลุ่มห้าส: '5ส ณ บางปูใหม่',
-        พื้นที่จัดทำโครงการ: 'IT',
+        employeeId: '251307',
+        fullName: 'ภัณฑิรา ศรีพิมพ์เมือง',
+        department: 'IT & DM',
+        fiveSGroupName: '5ส ณ บางปูใหม่',
+        projectArea: 'IT',
         // Step 2: รายละเอียด
-        ชื่อโครงการ: 'พัฒนาระบบการทำงานแบบอัตโนมัติ',
-        วันที่เริ่มทำโครงการ: '2023-10-15',
-        วันที่จบโครงการ: '2023-12-15',
-        ปัญหาที่เจอ: 'งานประจำที่ต้องทำซ้ำๆ ทำให้เสียเวลาและเกิดข้อผิดพลาดได้ง่าย',
-        แนวทางแก้ไข: 'พัฒนาโปรแกรมอัตโนมัติสำหรับงานประจำที่ทำซ้ำ เพื่อลดเวลาและความผิดพลาด',
-        การรับรองมาตรฐาน: 'ผ่านการทดสอบและได้รับการอนุมัติจากผู้จัดการฝ่าย',
-        ผลลัพธ์ที่ได้: 'ลดเวลาการทำงานประจำได้ 70% และลดข้อผิดพลาดได้ 90%',
-        รูปก่อนจัดทำโครงการ: 'automation_before.jpg',
+        projectName: 'พัฒนาระบบการทำงานแบบอัตโนมัติ',
+        projectStartDate: '2023-10-15',
+        projectEndDate: '2023-12-15',
+        problemsEncountered: 'งานประจำที่ต้องทำซ้ำๆ ทำให้เสียเวลาและเกิดข้อผิดพลาดได้ง่าย',
+        solutionApproach: 'พัฒนาโปรแกรมอัตโนมัติสำหรับงานประจำที่ทำซ้ำ เพื่อลดเวลาและความผิดพลาด',
+        standardCertification: 'ผ่านการทดสอบและได้รับการอนุมัติจากผู้จัดการฝ่าย',
+        resultsAchieved: 'ลดเวลาการทำงานประจำได้ 70% และลดข้อผิดพลาดได้ 90%',
+        beforeProjectImage: 'automation_before.jpg',
         // Step 3: ประเภทของกิจกรรม 5ส
-        ประเภท5ส: 'ส4',
-        หัวข้อที่ปรับปรุง: 'Cost',
+        fiveSType: 'ส4',
+        improvementTopic: 'Cost',
         SGS_Smart: 'People',
         SGS_Green: 'Teamwork',
         SGS_Strong: 'Energy_3R'
@@ -92,24 +92,24 @@ const SearchHistory = () => {
       formType: 'genba',
       formData: {
         // Step 1: ข้อมูลทั่วไป
-        รหัสพนักงาน: '251307',
-        ชื่อ: 'ภัณฑิรา ศรีพิมพ์เมือง',
-        แผนก: 'IT & DM',
-        ชื่อกลุ่มห้าส: '5ส ณ บางปูใหม่',
-        พื้นที่จัดทำโครงการ: 'IT',
+        employeeId: '251307',
+        fullName: 'ภัณฑิรา ศรีพิมพ์เมือง',
+        department: 'IT & DM',
+        fiveSGroupName: '5ส ณ บางปูใหม่',
+        projectArea: 'IT',
         // Step 2: รายละเอียด
-        ชื่อโครงการ: 'ปรับปรุงพื้นที่ทำงาน IT',
-        วันที่เริ่มทำโครงการ: '2023-08-01',
-        วันที่จบโครงการ: '2023-09-30',
-        ปัญหาที่เจอ: 'พื้นที่ทำงาน IT ไม่เป็นระเบียบ สายไฟรก และอุปกรณ์วางไม่เป็นที่',
-        แนวทางแก้ไข: 'จัดระเบียบพื้นที่ทำงาน จัดสายไฟ และสร้างป้ายบอกตำแหน่งอุปกรณ์',
-        การรับรองมาตรฐาน: 'ได้รับการรับรองจากหัวหน้าแผนกและทีมงาน',
-        ผลลัพธ์ที่ได้: 'เพิ่มความปลอดภัยและความเป็นระเบียบของพื้นที่ทำงาน',
-        รูปก่อนจัดทำโครงการ: 'it_workspace_before.jpg',
-        รูปหลังจัดทำโครงการ: 'it_workspace_after.jpg',
+        projectName: 'ปรับปรุงพื้นที่ทำงาน IT',
+        projectStartDate: '2023-08-01',
+        projectEndDate: '2023-09-30',
+        problemsEncountered: 'พื้นที่ทำงาน IT ไม่เป็นระเบียบ สายไฟรก และอุปกรณ์วางไม่เป็นที่',
+        solutionApproach: 'จัดระเบียบพื้นที่ทำงาน จัดสายไฟ และสร้างป้ายบอกตำแหน่งอุปกรณ์',
+        standardCertification: 'ได้รับการรับรองจากหัวหน้าแผนกและทีมงาน',
+        resultsAchieved: 'เพิ่มความปลอดภัยและความเป็นระเบียบของพื้นที่ทำงาน',
+        beforeProjectImage: 'it_workspace_before.jpg',
+        afterProjectImage: 'it_workspace_after.jpg',
         // Step 3: ประเภทของกิจกรรม 5ส
-        ประเภท5ส: 'ส1',
-        หัวข้อที่ปรับปรุง: 'Safety',
+        fiveSType: 'ส1',
+        improvementTopic: 'Safety',
         SGS_Smart: 'Factory',
         SGS_Green: 'Branding',
         SGS_Strong: 'Workplace'
@@ -126,24 +126,24 @@ const SearchHistory = () => {
       formType: 'genba',
       formData: {
         // Step 1: ข้อมูลทั่วไป
-        รหัสพนักงาน: '241303',
-        ชื่อ: 'รัชนก ราชรามทอง',
-        แผนก: 'IT DEVELOPMENT',
-        ชื่อกลุ่มห้าส: '5ส ณ บางปูใหม่',
-        พื้นที่จัดทำโครงการ: 'บางปูใหม่',
+        employeeId: '241303',
+        fullName: 'รัชนก ราชรามทอง',
+        department: 'IT DEVELOPMENT',
+        fiveSGroupName: '5ส ณ บางปูใหม่',
+        projectArea: 'บางปูใหม่',
         // Step 2: รายละเอียด
-        ชื่อโครงการ: 'ชื่อโครงการ THAILAND 5.0',
-        วันที่เริ่มทำโครงการ: '2023-09-15',
-        วันที่จบโครงการ: '2023-12-15',
-        ปัญหาที่เจอ: 'พบว่าพื้นที่ทำงานไม่เป็นระเบียบ ส่งผลให้เสียเวลาในการหาเครื่องมือ',
-        แนวทางแก้ไข: 'จัดระเบียบพื้นที่ทำงานตามหลัก 5ส และสร้างป้ายบอกตำแหน่ง',
-        การรับรองมาตรฐาน: 'ได้รับการรับรองจากหัวหน้าแผนกและผู้จัดการ',
-        ผลลัพธ์ที่ได้: 'ลดเวลาการหาเครื่องมือได้ 50% และเพิ่มประสิทธิภาพการทำงาน',
-        รูปก่อนจัดทำโครงการ: 'before.jpg',
-        รูปหลังจัดทำโครงการ: 'after.jpg',
+        projectName: 'ชื่อโครงการ THAILAND 5.0',
+        projectStartDate: '2023-09-15',
+        projectEndDate: '2023-12-15',
+        problemsEncountered: 'พบว่าพื้นที่ทำงานไม่เป็นระเบียบ ส่งผลให้เสียเวลาในการหาเครื่องมือ',
+        solutionApproach: 'จัดระเบียบพื้นที่ทำงานตามหลัก 5ส และสร้างป้ายบอกตำแหน่ง',
+        standardCertification: 'ได้รับการรับรองจากหัวหน้าแผนกและผู้จัดการ',
+        resultsAchieved: 'ลดเวลาการหาเครื่องมือได้ 50% และเพิ่มประสิทธิภาพการทำงาน',
+        beforeProjectImage: 'before.jpg',
+        afterProjectImage: 'after.jpg',
         // Step 3: ประเภทของกิจกรรม 5ส
-        ประเภท5ส: 'ส1',
-        หัวข้อที่ปรับปรุง: 'Quality',
+        fiveSType: 'ส1',
+        improvementTopic: 'Quality',
         SGS_Smart: 'People',
         SGS_Green: 'Teamwork',
         SGS_Strong: 'Workplace'
@@ -160,23 +160,23 @@ const SearchHistory = () => {
       formType: 'suggestion',
       formData: {
         // Step 1: ข้อมูลทั่วไป
-        รหัสพนักงาน: '241304',
-        ชื่อ: 'สมศรี ใจดี',
-        แผนก: 'QA',
-        ชื่อกลุ่มห้าส: '5ส ณ คลังสินค้า',
-        พื้นที่จัดทำโครงการ: 'คลังสินค้า',
+        employeeId: '241304',
+        fullName: 'สมศรี ใจดี',
+        department: 'QA',
+        fiveSGroupName: '5ส ณ คลังสินค้า',
+        projectArea: 'คลังสินค้า',
         // Step 2: รายละเอียด
-        ชื่อโครงการ: 'ปรับปรุงระบบการจัดเก็บสินค้า',
-        วันที่เริ่มทำโครงการ: '2023-10-01',
-        วันที่จบโครงการ: '2023-11-30',
-        ปัญหาที่เจอ: 'การจัดเก็บสินค้าไม่เป็นระบบ ทำให้หายากและเสียเวลา',
-        แนวทางแก้ไข: 'จัดทำระบบการจัดเก็บแบบใหม่ พร้อมป้ายบอกตำแหน่ง',
-        การรับรองมาตรฐาน: 'ผ่านการตรวจสอบจากหน่วยงาน QA',
-        ผลลัพธ์ที่ได้: 'เพิ่มประสิทธิภาพในการหาสินค้าได้ 70%',
-        รูปก่อนจัดทำโครงการ: 'warehouse_before.jpg',
+        projectName: 'ปรับปรุงระบบการจัดเก็บสินค้า',
+        projectStartDate: '2023-10-01',
+        projectEndDate: '2023-11-30',
+        problemsEncountered: 'การจัดเก็บสินค้าไม่เป็นระบบ ทำให้หายากและเสียเวลา',
+        solutionApproach: 'จัดทำระบบการจัดเก็บแบบใหม่ พร้อมป้ายบอกตำแหน่ง',
+        standardCertification: 'ผ่านการตรวจสอบจากหน่วยงาน QA',
+        resultsAchieved: 'เพิ่มประสิทธิภาพในการหาสินค้าได้ 70%',
+        beforeProjectImage: 'warehouse_before.jpg',
         // Step 3: ประเภทของกิจกรรม 5ส
-        ประเภท5ส: 'ส2',
-        หัวข้อที่ปรับปรุง: 'Delivery',
+        fiveSType: 'ส2',
+        improvementTopic: 'Delivery',
         SGS_Smart: 'Factory',
         SGS_Green: 'Branding',
         SGS_Strong: 'Energy_3R'
@@ -193,24 +193,24 @@ const SearchHistory = () => {
       formType: 'genba',
       formData: {
         // Step 1: ข้อมูลทั่วไป
-        รหัสพนักงาน: '241303',
-        ชื่อ: 'รัชนก ราชรามทอง',
-        แผนก: 'PC',
-        ชื่อกลุ่มห้าส: '5ส ณ โรงงาน A',
-        พื้นที่จัดทำโครงการ: 'โรงงาน A',
+        employeeId: '241303',
+        fullName: 'รัชนก ราชรามทอง',
+        department: 'PC',
+        fiveSGroupName: '5ส ณ โรงงาน A',
+        projectArea: 'โรงงาน A',
         // Step 2: รายละเอียด
-        ชื่อโครงการ: 'ปรับปรุงกระบวนการผลิต',
-        วันที่เริ่มทำโครงการ: '2023-08-20',
-        วันที่จบโครงการ: '2023-10-20',
-        ปัญหาที่เจอ: 'กระบวนการผลิตมีขั้นตอนที่ซ้ำซ้อน ทำให้เสียเวลา',
-        แนวทางแก้ไข: 'ปรับปรุงขั้นตอนการทำงาน ลดขั้นตอนที่ไม่จำเป็น',
-        การรับรองมาตรฐาน: 'ได้รับการอนุมัติจากผู้จัดการฝ่ายผลิต',
-        ผลลัพธ์ที่ได้: 'ลดเวลาการผลิตได้ 30% และเพิ่มคุณภาพสินค้า',
-        รูปก่อนจัดทำโครงการ: 'production_before.jpg',
-        รูปหลังจัดทำโครงการ: 'production_after.jpg',
+        projectName: 'ปรับปรุงกระบวนการผลิต',
+        projectStartDate: '2023-08-20',
+        projectEndDate: '2023-10-20',
+        problemsEncountered: 'กระบวนการผลิตมีขั้นตอนที่ซ้ำซ้อน ทำให้เสียเวลา',
+        solutionApproach: 'ปรับปรุงขั้นตอนการทำงาน ลดขั้นตอนที่ไม่จำเป็น',
+        standardCertification: 'ได้รับการอนุมัติจากผู้จัดการฝ่ายผลิต',
+        resultsAchieved: 'ลดเวลาการผลิตได้ 30% และเพิ่มคุณภาพสินค้า',
+        beforeProjectImage: 'production_before.jpg',
+        afterProjectImage: 'production_after.jpg',
         // Step 3: ประเภทของกิจกรรม 5ส
-        ประเภท5ส: 'ส4',
-        หัวข้อที่ปรับปรุง: 'Cost',
+        fiveSType: 'ส4',
+        improvementTopic: 'Cost',
         SGS_Smart: 'Factory',
         SGS_Green: 'Branding',
         SGS_Strong: 'Workplace'
@@ -227,23 +227,23 @@ const SearchHistory = () => {
       formType: 'suggestion',
       formData: {
         // Step 1: ข้อมูลทั่วไป
-        รหัสพนักงาน: '241305',
-        ชื่อ: 'วิชัย สมใจ',
-        แผนก: 'PD',
-        ชื่อกลุ่มห้าส: '5ส ณ หน่วยผลิต B',
-        พื้นที่จัดทำโครงการ: 'หน่วยผลิต B',
+        employeeId: '241305',
+        fullName: 'วิชัย สมใจ',
+        department: 'PD',
+        fiveSGroupName: '5ส ณ หน่วยผลิต B',
+        projectArea: 'หน่วยผลิต B',
         // Step 2: รายละเอียด
-        ชื่อโครงการ: 'ลดของเสียในการผลิต',
-        วันที่เริ่มทำโครงการ: '2023-11-05',
-        วันที่จบโครงการ: '2023-12-05',
-        ปัญหาที่เจอ: 'มีของเสียในการผลิตสูงเกินมาตรฐาน',
-        แนวทางแก้ไข: 'ปรับปรุงเครื่องจักรและกระบวนการตรวจสอบคุณภาพ',
-        การรับรองมาตรฐาน: 'อยู่ระหว่างการตรวจสอบจากฝ่าย QA',
-        ผลลัพธ์ที่ได้: 'คาดว่าจะลดของเสียได้ 40%',
-        รูปก่อนจัดทำโครงการ: 'waste_before.jpg',
+        projectName: 'ลดของเสียในการผลิต',
+        projectStartDate: '2023-11-05',
+        projectEndDate: '2023-12-05',
+        problemsEncountered: 'มีของเสียในการผลิตสูงเกินมาตรฐาน',
+        solutionApproach: 'ปรับปรุงเครื่องจักรและกระบวนการตรวจสอบคุณภาพ',
+        standardCertification: 'อยู่ระหว่างการตรวจสอบจากฝ่าย QA',
+        resultsAchieved: 'คาดว่าจะลดของเสียได้ 40%',
+        beforeProjectImage: 'waste_before.jpg',
         // Step 3: ประเภทของกิจกรรม 5ส
-        ประเภท5ส: 'ส3',
-        หัวข้อที่ปรับปรุง: 'Quality',
+        fiveSType: 'ส3',
+        improvementTopic: 'Quality',
         SGS_Smart: 'People',
         SGS_Green: 'Teamwork',
         SGS_Strong: 'Energy_3R'
@@ -256,17 +256,17 @@ const SearchHistory = () => {
     const userSession = localStorage.getItem('userSession');
     if (userSession) {
       const session = JSON.parse(userSession);
-      const employee = employeeData.find(emp => emp.รหัสพนักงาน === session.รหัสพนักงาน);
+      const employee = employeeData.find(emp => emp.employeeId === session.รหัสพนักงาน);
       if (employee) {
-        setUserRole(employee.สิทธิ์);
+        setUserRole(employee.role);
         setIsLoggedIn(true);
         
         // สำหรับ Supervisor และ Admin ให้ค้นหาข้อมูลอัตโนมัติ
-        if (employee.สิทธิ์ === 'Supervisor' || employee.สิทธิ์ === 'Admin') {
+        if (employee.role === 'Supervisor' || employee.role === 'Admin') {
           setEmployeeId(session.รหัสพนักงาน);
           // ทำการค้นหาข้อมูลอัตโนมัติ
           const filteredResults = allMockData.filter(item => 
-            item.formData.รหัสพนักงาน === session.รหัสพนักงาน
+            item.formData.employeeId === session.รหัสพนักงาน
           );
           setSearchResults(filteredResults);
           setHasSearched(true);
@@ -279,7 +279,7 @@ const SearchHistory = () => {
     if (employeeId.trim()) {
       // Filter data by employee ID
       const filteredResults = allMockData.filter(item => 
-        item.formData.รหัสพนักงาน === employeeId.trim()
+        item.formData.employeeId === employeeId.trim()
       );
       setSearchResults(filteredResults);
       setHasSearched(true);
@@ -499,23 +499,23 @@ const SearchHistory = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                         <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">รหัสพนักงาน</label>
-                        <p className="text-gray-900 font-medium text-sm">{formData.รหัสพนักงาน}</p>
+                        <p className="text-gray-900 font-medium text-sm">{formData.employeeId}</p>
                       </div>
                       <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                         <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">ชื่อ นามสกุล</label>
-                        <p className="text-gray-900 font-medium text-sm">{formData.ชื่อ}</p>
+                        <p className="text-gray-900 font-medium text-sm">{formData.fullName}</p>
                       </div>
                       <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                         <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">แผนก</label>
-                        <p className="text-gray-900 font-medium text-sm">{formData.แผนก}</p>
+                        <p className="text-gray-900 font-medium text-sm">{formData.department}</p>
                       </div>
                       <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                         <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">ชื่อกลุ่ม 5ส</label>
-                        <p className="text-gray-900 font-medium text-sm">{formData.ชื่อกลุ่มห้าส}</p>
+                        <p className="text-gray-900 font-medium text-sm">{formData.fiveSGroupName}</p>
                       </div>
                       <div className="sm:col-span-2 bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                         <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">พื้นที่จัดทำโครงการ</label>
-                        <p className="text-gray-900 font-medium text-sm">{formData.พื้นที่จัดทำโครงการ}</p>
+                        <p className="text-gray-900 font-medium text-sm">{formData.projectArea}</p>
                       </div>
                     </div>
                   </div>
@@ -535,40 +535,40 @@ const SearchHistory = () => {
                     <div className="space-y-4">
                       <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                         <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">ชื่อโครงการ</label>
-                        <p className="text-gray-900 font-medium text-sm">{formData.ชื่อโครงการ}</p>
+                        <p className="text-gray-900 font-medium text-sm">{formData.projectName}</p>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                           <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">วันที่เริ่มทำโครงการ</label>
                           <div className="bg-gray-50 rounded-md p-2 border">
-                            <p className="text-gray-900 font-medium text-sm">{formatDisplayDate(formData.วันที่เริ่มทำโครงการ)}</p>
+                            <p className="text-gray-900 font-medium text-sm">{formatDisplayDate(formData.projectStartDate)}</p>
                           </div>
                         </div>
                         <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                           <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">วันที่จบโครงการ</label>
                           <div className="bg-gray-50 rounded-md p-2 border">
-                            <p className="text-gray-900 font-medium text-sm">{formatDisplayDate(formData.วันที่จบโครงการ)}</p>
+                            <p className="text-gray-900 font-medium text-sm">{formatDisplayDate(formData.projectEndDate)}</p>
                           </div>
                         </div>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                           <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">ปัญหาที่เจอ</label>
-                          <p className="text-gray-900 font-medium text-sm leading-relaxed">{formData.ปัญหาที่เจอ}</p>
+                          <p className="text-gray-900 font-medium text-sm leading-relaxed">{formData.problemsEncountered}</p>
                         </div>
                         <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                           <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">แนวทางแก้ไข</label>
-                          <p className="text-gray-900 font-medium text-sm leading-relaxed">{formData.แนวทางแก้ไข}</p>
+                          <p className="text-gray-900 font-medium text-sm leading-relaxed">{formData.solutionApproach}</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                           <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">การรับรองมาตรฐาน</label>
-                          <p className="text-gray-900 font-medium text-sm leading-relaxed">{formData.การรับรองมาตรฐาน}</p>
+                          <p className="text-gray-900 font-medium text-sm leading-relaxed">{formData.standardCertification}</p>
                         </div>
                         <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                           <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">ผลลัพธ์ที่ได้</label>
-                          <p className="text-gray-900 font-medium text-sm leading-relaxed">{formData.ผลลัพธ์ที่ได้}</p>
+                          <p className="text-gray-900 font-medium text-sm leading-relaxed">{formData.resultsAchieved}</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -578,7 +578,7 @@ const SearchHistory = () => {
                             <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <p className="text-sm text-gray-500">{formData.รูปก่อนจัดทำโครงการ || 'ไม่มีรูปภาพ'}</p>
+                            <p className="text-sm text-gray-500">{formData.beforeProjectImage || 'ไม่มีรูปภาพ'}</p>
                           </div>
                         </div>
                         {isGenbaForm && (
@@ -588,7 +588,7 @@ const SearchHistory = () => {
                               <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
-                              <p className="text-sm text-gray-500">{formData.รูปหลังจัดทำโครงการ || 'ไม่มีรูปภาพ'}</p>
+                              <p className="text-sm text-gray-500">{formData.afterProjectImage || 'ไม่มีรูปภาพ'}</p>
                             </div>
                           </div>
                         )}
@@ -612,13 +612,13 @@ const SearchHistory = () => {
                       <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                         <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">ส. ที่ใช้ในการปรับปรุง</label>
                         <p className="text-gray-900 font-medium text-sm text-blue-600">
-                          {getS5Label(formData.ประเภท5ส)}
+                          {getS5Label(formData.fiveSType)}
                         </p>
                       </div>
                       <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                         <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">หัวข้อที่ปรับปรุง</label>
                         <p className="text-gray-900 font-medium text-sm text-green-600">
-                          {getImproveTopicLabel(formData.หัวข้อที่ปรับปรุง)}
+                          {getImproveTopicLabel(formData.improvementTopic)}
                         </p>
                       </div>
                       <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-200">
