@@ -7,23 +7,23 @@ import { employeeData } from '../data/employeeData';
 const GenbaForm = () => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    รหัสพนักงาน: '',
-    ชื่อ: '',
-    นามสกุล: '',
-    แผนก: '',
-    ชื่อกลุ่มห้าส: '',
-    พื้นที่จัดทำโครงการ: '',
-    ชื่อโครงการ: '',
-    วันที่เริ่มทำโครงการ: '',
-    วันที่จบโครงการ: '',
-    ปัญหาที่เจอ: '',
-    แนวทางแก้ไข: '',
-    การรับรองมาตรฐาน: '',
-    ผลลัพธ์ที่ได้: '',
-    รูปก่อนจัดทำโครงการ: null,
-    รูปหลังจัดทำโครงการ: null,
-    ประเภท5ส: '',
-    หัวข้อที่ปรับปรุง: '',
+    employeeId: '',
+    fullName: '',
+    lastName: '',
+    department: '',
+    fiveSGroupName: '',
+    projectArea: '',
+    projectName: '',
+    projectStartDate: '',
+    projectEndDate: '',
+    problemsEncountered: '',
+    solutionApproach: '',
+    standardCertification: '',
+    resultsAchieved: '',
+    beforeProjectImage: null,
+    afterProjectImage: null,
+    fiveSType: '',
+    improvementTopic: '',
     SGS_Smart: '',
     SGS_Strong: '',
     SGS_Green: '',
@@ -89,15 +89,15 @@ const GenbaForm = () => {
   };
 
   const handleCheck = () => {
-    const employee = employeeData.find(emp => emp.id === formData.รหัสพนักงาน);
+    const employee = employeeData.find(emp => emp.employeeId === formData.employeeId);
 
     if (employee) {
       setFormData(prev => ({
         ...prev,
-        ชื่อ: `${employee.firstName} ${employee.lastName}`,
-        แผนก: employee.department,
-        ชื่อกลุ่มห้าส: employee.group5s,
-        พื้นที่จัดทำโครงการ: employee.projectArea,
+        fullName: `${employee.firstName} ${employee.lastName}`,
+        department: employee.department,
+        fiveSGroupName: employee.fiveSArea,
+        projectArea: employee.projectArea,
       }));
       Swal.fire({
         icon: 'success',
@@ -130,21 +130,21 @@ const GenbaForm = () => {
       setStep(3);
     } else if (step === 3) {
       const requiredFields = {
-        รหัสพนักงาน: 'รหัสพนักงาน',
-        ชื่อ: 'ชื่อ นามสกุล',
-        แผนก: 'แผนก',
-        ชื่อกลุ่มห้าส: 'ชื่อกลุ่ม 5 ส',
-        พื้นที่จัดทำโครงการ: 'พื้นที่จัดทำโครงการ',
-        ชื่อโครงการ: 'ชื่อโครงการ',
-        วันที่เริ่มทำโครงการ: 'วันที่เริ่มทำโครงการ',
-        วันที่จบโครงการ: 'วันที่จบโครงการ',
-        ปัญหาที่เจอ: 'ปัญหาที่เจอ',
-        แนวทางแก้ไข: 'แนวทางแก้ไข',
-        ผลลัพธ์ที่ได้: 'ผลลัพธ์ที่ได้',
-        รูปก่อนจัดทำโครงการ: 'รูปก่อนจัดทำโครงการ',
-        รูปหลังจัดทำโครงการ: 'รูปหลังจัดทำโครงการ',
-        ประเภท5ส: 'ส. ที่ใช้ในการปรับปรุง',
-        หัวข้อที่ปรับปรุง: 'หัวข้อที่ปรับปรุง',
+        employeeId: 'รหัสพนักงาน',
+        fullName: 'ชื่อ นามสกุล',
+        department: 'แผนก',
+        fiveSGroupName: 'ชื่อกลุ่ม 5 ส',
+        projectArea: 'พื้นที่จัดทำโครงการ',
+        projectName: 'ชื่อโครงการ',
+        projectStartDate: 'วันที่เริ่มทำโครงการ',
+        projectEndDate: 'วันที่จบโครงการ',
+        problemsEncountered: 'ปัญหาที่เจอ',
+        solutionApproach: 'แนวทางแก้ไข',
+        resultsAchieved: 'ผลลัพธ์ที่ได้',
+        beforeProjectImage: 'รูปก่อนจัดทำโครงการ',
+        afterProjectImage: 'รูปหลังจัดทำโครงการ',
+        fiveSType: 'ส. ที่ใช้ในการปรับปรุง',
+        improvementTopic: 'หัวข้อที่ปรับปรุง',
         SGS_Smart: 'S : Smart',
         SGS_Green: 'G : Green',
         SGS_Strong: 'S : Strong',
@@ -267,8 +267,8 @@ const GenbaForm = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">รหัสพนักงาน</label>
                   <input
                     type="text"
-                    name="รหัสพนักงาน"
-                    value={formData.รหัสพนักงาน}
+                    name="employeeId"
+                    value={formData.employeeId}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder=""
@@ -289,8 +289,8 @@ const GenbaForm = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อ นามสกุล</label>
                   <input
                     type="text"
-                    name="ชื่อ"
-                    value={formData.ชื่อ}
+                    name="fullName"
+                    value={formData.fullName}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder=""
@@ -300,8 +300,8 @@ const GenbaForm = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">แผนก</label>
                   <select
-                    name="แผนก"
-                    value={formData.แผนก}
+                    name="department"
+                    value={formData.department}
                     onChange={handleInputChange}
                         className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none bg-no-repeat"
                         style={{
@@ -326,8 +326,8 @@ const GenbaForm = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อกลุ่ม 5 ส</label>
                   <input
                     type="text"
-                    name="ชื่อกลุ่ม 5 ส"
-                    value={formData.ชื่อกลุ่มห้าส}
+                    name="fiveSGroupName"
+                    value={formData.fiveSGroupName}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder=""
@@ -338,8 +338,8 @@ const GenbaForm = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">พื้นที่จัดทำโครงการ</label>
                   <input
                     type="text"
-                    name="พื้นที่จัดทำโครงการ"
-                    value={formData.พื้นที่จัดทำโครงการ}
+                    name="projectArea"
+                    value={formData.projectArea}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder=""
@@ -359,8 +359,8 @@ const GenbaForm = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อโครงการ</label>
                     <input
                       type="text"
-                      name="ชื่อโครงการ"
-                      value={formData.ชื่อโครงการ}
+                      name="projectName"
+                      value={formData.projectName}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
@@ -370,8 +370,8 @@ const GenbaForm = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-1">วันที่เริ่มทำโครงการ</label>
                       <input
                         type="date"
-                        name="วันที่เริ่มทำโครงการ"
-                        value={formData.วันที่เริ่มทำโครงการ}
+                        name="projectStartDate"
+                        value={formData.projectStartDate}
                         onChange={handleInputChange}
                         className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
                         style={{
@@ -385,8 +385,8 @@ const GenbaForm = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-1">วันที่จบโครงการ</label>
                       <input
                         type="date"
-                        name="วันที่จบโครงการ"
-                        value={formData.วันที่จบโครงการ}
+                        name="projectEndDate"
+                        value={formData.projectEndDate}
                         onChange={handleInputChange}
                         className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
                         style={{
@@ -401,8 +401,8 @@ const GenbaForm = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">ปัญหาที่เจอ</label>
                       <textarea
-                        name="ปัญหาที่เจอ"
-                        value={formData.ปัญหาที่เจอ}
+                        name="problemsEncountered"
+                        value={formData.problemsEncountered}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         rows={2}
@@ -411,8 +411,8 @@ const GenbaForm = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">แนวทางแก้ไข</label>
                       <textarea
-                        name="แนวทางแก้ไข"
-                        value={formData.แนวทางแก้ไข}
+                        name="solutionApproach"
+                        value={formData.solutionApproach}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         rows={2}
@@ -423,8 +423,8 @@ const GenbaForm = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">การรับรองมาตรฐาน</label>
                       <textarea
-                        name="การรับรองมาตรฐาน"
-                        value={formData.การรับรองมาตรฐาน}
+                        name="standardCertification"
+                        value={formData.standardCertification}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         rows={2}
@@ -433,8 +433,8 @@ const GenbaForm = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">ผลลัพธ์ที่ได้</label>
                       <textarea
-                        name="ผลลัพธ์ที่ได้"
-                        value={formData.ผลลัพธ์ที่ได้}
+                        name="resultsAchieved"
+                        value={formData.resultsAchieved}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         rows={2}
@@ -447,7 +447,7 @@ const GenbaForm = () => {
                       <div className="border-2 border-dashed border-gray-400 rounded-md p-4 flex flex-col items-center justify-center">
                         <input
                           type="file"
-                          name="รูปก่อนจัดทำโครงการ"
+                          name="beforeProjectImage"
                           accept="image/jpeg,image/png"
                           onChange={handleInputChange}
                           className="hidden"
@@ -458,7 +458,7 @@ const GenbaForm = () => {
                           <span className="text-gray-500 text-sm">Choose a file or drag & drop it here<br/>JPEG, PNG formats, up to 5 MB</span>
                           <span className="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-md">Browse files</span>
                         </label>
-                        {formData.รูปก่อนจัดทำโครงการ && <span className="mt-2 text-xs text-green-600">{formData.รูปก่อนจัดทำโครงการ.name}</span>}
+                        {formData.beforeProjectImage && <span className="mt-2 text-xs text-green-600">{formData.beforeProjectImage.name}</span>}
                       </div>
                     </div>
                     <div>
@@ -466,7 +466,7 @@ const GenbaForm = () => {
                       <div className="border-2 border-dashed border-gray-400 rounded-md p-4 flex flex-col items-center justify-center">
                         <input
                           type="file"
-                          name="รูปหลังจัดทำโครงการ"
+                          name="afterProjectImage"
                           accept="image/jpeg,image/png"
                           onChange={handleInputChange}
                           className="hidden"
@@ -477,7 +477,7 @@ const GenbaForm = () => {
                           <span className="text-gray-500 text-sm">Choose a file or drag & drop it here<br/>JPEG, PNG formats, up to 5 MB</span>
                           <span className="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-md">Browse files</span>
                         </label>
-                        {formData.รูปหลังจัดทำโครงการ && <span className="mt-2 text-xs text-green-600">{formData.รูปหลังจัดทำโครงการ.name}</span>}
+                        {formData.afterProjectImage && <span className="mt-2 text-xs text-green-600">{formData.afterProjectImage.name}</span>}
                       </div>
                     </div>
                   </div>
@@ -497,9 +497,9 @@ const GenbaForm = () => {
                         <label key={opt.value} className="flex items-center space-x-2">
                           <input
                             type="radio"
-                            name="ประเภท5ส"
+                            name="fiveSType"
                             value={opt.value}
-                            checked={formData.ประเภท5ส === opt.value}
+                            checked={formData.fiveSType === opt.value}
                             onChange={handleInputChange}
                             className="h-5 w-5 text-blue-600 border-gray-300"
                           />
@@ -516,9 +516,9 @@ const GenbaForm = () => {
                         <label key={opt.value} className="flex items-center space-x-2">
                           <input
                             type="radio"
-                            name="หัวข้อที่ปรับปรุง"
+                            name="improvementTopic"
                             value={opt.value}
-                            checked={formData.หัวข้อที่ปรับปรุง === opt.value}
+                            checked={formData.improvementTopic === opt.value}
                             onChange={handleInputChange}
                             className="h-5 w-5 text-blue-600 border-gray-300"
                           />

@@ -19,17 +19,17 @@ const Tasklist = () => {
       if (activeFilter === 'genba') {
         filtered = filtered.filter(item => 
           item.formType === 'genba' && 
-          (item.สถานะ === 'WAITING' || item.สถานะ === 'EDIT')
+          (item.status === 'WAITING' || item.status === 'EDIT')
         );
       } else if (activeFilter === 'suggestion') {
         filtered = filtered.filter(item => 
           item.formType === 'suggestion' && 
-          (item.สถานะ === 'WAITING' || item.สถานะ === 'EDIT')
+          (item.status === 'WAITING' || item.status === 'EDIT')
         );
       } else if (activeFilter === 'best_kaizen') {
         filtered = filtered.filter(item => 
           item.formType === 'best_kaizen' && 
-          item.สถานะ === 'APPROVED'
+          item.status === 'APPROVED'
         );
       }
     }
@@ -37,10 +37,10 @@ const Tasklist = () => {
     // Search ตามชื่อโครงการ
     if (searchTerm) {
       filtered = filtered.filter(item =>
-        item.ชื่อโครงการ.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.ชื่อ.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.นามสกุล.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.รหัสพนักงาน.includes(searchTerm)
+        item.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.employeeId.includes(searchTerm)
       );
     }
 
@@ -59,15 +59,15 @@ const Tasklist = () => {
     return {
       genba: tasklistData.filter(item => 
         item.formType === 'genba' && 
-        (item.สถานะ === 'WAITING' || item.สถานะ === 'EDIT')
+        (item.status === 'WAITING' || item.status === 'EDIT')
       ).length,
       suggestion: tasklistData.filter(item => 
         item.formType === 'suggestion' && 
-        (item.สถานะ === 'WAITING' || item.สถานะ === 'EDIT')
+        (item.status === 'WAITING' || item.status === 'EDIT')
       ).length,
       best_kaizen: tasklistData.filter(item => 
         item.formType === 'best_kaizen' && 
-        item.สถานะ === 'APPROVED'
+        item.status === 'APPROVED'
       ).length,
     };
   };
@@ -148,7 +148,7 @@ const Tasklist = () => {
     if (action === 'approve') {
       const result = await Swal.fire({
         title: 'อนุมัติโครงการ',
-        text: `คุณต้องการอนุมัติโครงการ "${item.ชื่อโครงการ}" ใช่หรือไม่?`,
+        text: `คุณต้องการอนุมัติโครงการ "${item.projectName}" ใช่หรือไม่?`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#22c55e',
@@ -175,7 +175,7 @@ const Tasklist = () => {
     } else if (action === 'delete') {
       const result = await Swal.fire({
         title: 'ลบโครงการ',
-        text: `คุณต้องการลบโครงการ "${item.ชื่อโครงการ}" ใช่หรือไม่?`,
+        text: `คุณต้องการลบโครงการ "${item.projectName}" ใช่หรือไม่?`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
@@ -468,17 +468,17 @@ const Tasklist = () => {
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <span className="font-medium text-sm">{item.ชื่อโครงการ}</span>
+                    <span className="font-medium text-sm">{item.projectName}</span>
                   </td>
-                  <td className="px-4 py-3 text-sm">{item.รหัสพนักงาน}</td>
-                  <td className="px-4 py-3 text-sm">{item.ชื่อ} {item.นามสกุล}</td>
-                  <td className="px-4 py-3 text-sm">{item.ตำแหน่ง}</td>
-                  <td className="px-4 py-3 text-sm">{item.แผนก}</td>
-                  <td className="px-4 py-3 text-sm">{item.ชื่อกลุ่ม5ส}</td>
-                  <td className="px-4 py-3 text-sm">{item.วันที่สร้าง}</td>
-                  <td className="px-4 py-3 text-sm">{item.วันที่ส่ง}</td>
+                  <td className="px-4 py-3 text-sm">{item.employeeId}</td>
+                  <td className="px-4 py-3 text-sm">{item.firstName} {item.lastName}</td>
+                  <td className="px-4 py-3 text-sm">{item.position}</td>
+                  <td className="px-4 py-3 text-sm">{item.department}</td>
+                  <td className="px-4 py-3 text-sm">{item.fiveSGroupName}</td>
+                  <td className="px-4 py-3 text-sm">{item.createdDateTh}</td>
+                  <td className="px-4 py-3 text-sm">{item.submittedDateTh}</td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={item.สถานะ} />
+                    <StatusBadge status={item.status} />
                   </td>
                   <td className="px-4 py-3 text-center">
                     <ActionDropdown item={item} index={index} totalItems={filteredData.length} />

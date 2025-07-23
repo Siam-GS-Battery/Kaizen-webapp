@@ -6,8 +6,8 @@ import { employeeData } from '../data/employeeData';
 const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    รหัสพนักงาน: '',
-    รหัสผ่าน: ''
+    employeeId: '',
+    password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +25,7 @@ const Login = () => {
     setIsLoading(true);
 
     // Validate input
-    if (!formData.รหัสพนักงาน || !formData.รหัสผ่าน) {
+    if (!formData.employeeId || !formData.password) {
       await Swal.fire({
         icon: 'warning',
         title: 'ข้อมูลไม่ครบถ้วน',
@@ -40,26 +40,26 @@ const Login = () => {
     // Simulate API call
     setTimeout(async () => {
       // Check if employee exists and password matches
-      if (formData.รหัสผ่าน === '123456') {
-        const employee = employeeData.find(emp => emp.รหัสพนักงาน === formData.รหัสพนักงาน);
+      if (formData.password === '123456') {
+        const employee = employeeData.find(emp => emp.employeeId === formData.employeeId);
         
         if (employee) {
           await Swal.fire({
             icon: 'success',
             title: 'เข้าสู่ระบบสำเร็จ!',
-            text: `ยินดีต้อนรับ ${employee.ชื่อ} ${employee.นามสกุล} (${employee.สิทธิ์})`,
+            text: `ยินดีต้อนรับ ${employee.firstName} ${employee.lastName} (${employee.role})`,
             confirmButtonText: 'ตกลง',
             confirmButtonColor: '#3b82f6'
           });
           
           // Store user session (in real app, use proper auth)
           localStorage.setItem('userSession', JSON.stringify({
-            รหัสพนักงาน: formData.รหัสพนักงาน,
+            employeeId: formData.employeeId,
             loginTime: new Date().toISOString()
           }));
           
           // สำหรับ Supervisor, Manager หรือ Admin ให้เข้าสู่หน้า Tasklist
-          if (employee.สิทธิ์ === 'Supervisor' || employee.สิทธิ์ === 'Manager' || employee.สิทธิ์ === 'Admin') {
+          if (employee.role === 'Supervisor' || employee.role === 'Manager' || employee.role === 'Admin') {
             navigate('/tasklist');
           } else {
             navigate('/');
@@ -116,8 +116,8 @@ const Login = () => {
                 </div>
                 <input
                   type="text"
-                  name="รหัสพนักงาน"
-                  value={formData.รหัสพนักงาน}
+                  name="employeeId"
+                  value={formData.employeeId}
                   onChange={handleInputChange}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
                   placeholder="กรอกรหัสพนักงาน"
@@ -139,8 +139,8 @@ const Login = () => {
                 </div>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  name="รหัสผ่าน"
-                  value={formData.รหัสผ่าน}
+                  name="password"
+                  value={formData.password}
                   onChange={handleInputChange}
                   className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
                   placeholder="กรอกรหัสผ่าน"
