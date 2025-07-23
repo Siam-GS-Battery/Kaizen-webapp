@@ -5,6 +5,7 @@ import GenbaForm from './pages/GenbaForm';
 import SuggestionForm from './pages/SuggestionForm';
 import SearchHistory from './pages/SearchHistory';
 import Tasklist from './pages/Tasklist';
+import EmployeesManagement from './pages/EmployeesManagement';
 import Login from './pages/Login';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -23,6 +24,7 @@ function AppLayout() {
           <Route path="/suggestion-form" element={<SuggestionForm />} />
           <Route path="/search-history" element={<SearchHistory />} />
           <Route path="/tasklist" element={<Tasklist />} />
+          <Route path="/employees-management" element={<EmployeesManagement />} />
           <Route path="/login" element={<Login />} />
         </Routes>
       </main>
