@@ -753,47 +753,56 @@ const EmployeesManagement = () => {
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden relative">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1000px] text-sm">
+        <div className="overflow-x-auto relative">
+          {/* Sticky Column Shadow Overlay */}
+          <div className="absolute top-0 left-[192px] bottom-0 w-4 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.1), rgba(0,0,0,0))' }}></div>
+          
+          <table className="w-full min-w-[1000px] text-sm relative">
             <thead className="bg-blue-600 text-white">
               <tr>
-                <th className="px-4 py-3 text-left text-sm">
-                  <input
-                    type="checkbox"
-                    checked={selectedItems.length === filteredData.length && filteredData.length > 0}
-                    onChange={(e) => handleSelectAll(e.target.checked)}
-                    className="rounded"
-                  />
-                </th>
-                <th className="px-4 py-3 text-left font-semibold text-sm">รหัสพนักงาน</th>
-                <th className="px-4 py-3 text-left font-semibold text-sm">ชื่อ-นามสกุล</th>
-                <th className="px-4 py-3 text-left font-semibold text-sm">ตำแหน่งงาน</th>
-                <th className="px-4 py-3 text-left font-semibold text-sm">แผนก</th>
-                <th className="px-4 py-3 text-left font-semibold text-sm">ชื่อกลุ่ม 5ส</th>
-                <th className="px-4 py-3 text-left font-semibold text-sm">สิทธิ์การเข้าถึง</th>
-                <th className="px-4 py-3 text-center font-semibold text-sm">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredData.map((employee, index) => (
-                <tr key={employee.employeeId} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                  <td className="px-4 py-3">
+                <th className="sticky left-0 z-20 bg-blue-600 px-6 py-3 text-left text-sm whitespace-nowrap">
+                  <div className="flex items-center h-full">
                     <input
                       type="checkbox"
-                      checked={selectedItems.includes(employee.employeeId)}
-                      onChange={() => handleSelectItem(employee.employeeId)}
+                      checked={selectedItems.length === filteredData.length && filteredData.length > 0}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
                       className="rounded"
                     />
+                  </div>
+                </th>
+                <th className="sticky left-[56px] z-20 bg-blue-600 px-4 py-3 text-left font-semibold text-sm whitespace-nowrap min-w-[136px]">รหัสพนักงาน</th>
+                <th className="px-4 py-3 text-left font-semibold text-sm min-w-[180px]">ชื่อ-นามสกุล</th>
+                <th className="px-4 py-3 text-left font-semibold text-sm min-w-[120px]">ตำแหน่งงาน</th>
+                <th className="px-4 py-3 text-left font-semibold text-sm min-w-[100px]">แผนก</th>
+                <th className="px-4 py-3 text-left font-semibold text-sm min-w-[150px]">ชื่อกลุ่ม 5ส</th>
+                <th className="px-4 py-3 text-left font-semibold text-sm min-w-[140px]">สิทธิ์การเข้าถึง</th>
+                <th className="px-4 py-3 text-center font-semibold text-sm min-w-[100px]">Action</th>
+              </tr>
+            </thead>
+            <tbody className="relative">
+              {filteredData.map((employee, index) => (
+                <tr key={employee.employeeId} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                  <td className="sticky left-0 z-20 px-4 py-3 whitespace-nowrap" style={{ backgroundColor: index % 2 === 0 ? '#f9fafb' : '#ffffff' }}>
+                    <div className="flex items-center h-full">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.includes(employee.employeeId)}
+                        onChange={() => handleSelectItem(employee.employeeId)}
+                        className="rounded"
+                      />
+                    </div>
                   </td>
-                  <td className="px-4 py-3 text-sm font-medium">{employee.employeeId}</td>
-                  <td className="px-4 py-3 text-sm">{employee.firstName} {employee.lastName}</td>
-                  <td className="px-4 py-3 text-sm">{employee.role}</td>
-                  <td className="px-4 py-3 text-sm">{employee.department}</td>
-                  <td className="px-4 py-3 text-sm">{employee.fiveSArea}</td>
-                  <td className="px-4 py-3">
+                  <td className="sticky left-[56px] z-20 px-4 py-3 text-sm font-medium whitespace-nowrap min-w-[136px]" style={{ backgroundColor: index % 2 === 0 ? '#f9fafb' : '#ffffff' }}>
+                    {employee.employeeId}
+                  </td>
+                  <td className="px-4 py-3 text-sm min-w-[180px]">{employee.firstName} {employee.lastName}</td>
+                  <td className="px-4 py-3 text-sm min-w-[120px]">{employee.role}</td>
+                  <td className="px-4 py-3 text-sm min-w-[100px]">{employee.department}</td>
+                  <td className="px-4 py-3 text-sm min-w-[150px]">{employee.fiveSArea}</td>
+                  <td className="px-4 py-3 min-w-[140px]">
                     <RoleBadge role={employee.role} />
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-4 py-3 text-center min-w-[100px]">
                     <ActionDropdown employee={employee} index={index} totalItems={filteredData.length} />
                   </td>
                 </tr>
