@@ -6,6 +6,8 @@ import SuggestionForm from './pages/SuggestionForm';
 import SearchHistory from './pages/SearchHistory';
 import Tasklist from './pages/Tasklist';
 import EmployeesManagement from './pages/EmployeesManagement';
+import AdminTeamSettings from './pages/AdminTeamSettings';
+import Report from './pages/Report';
 import Login from './pages/Login';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -25,6 +27,8 @@ function AppLayout() {
           <Route path="/search-history" element={<SearchHistory />} />
           <Route path="/tasklist" element={<Tasklist />} />
           <Route path="/employees-management" element={<EmployeesManagement />} />
+          <Route path="/admin-team-settings" element={<AdminTeamSettings />} />
+          <Route path="/report" element={<Report />} />
           <Route path="/login" element={<Login />} />
         </Routes>
       </main>

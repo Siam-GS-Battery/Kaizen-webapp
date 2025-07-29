@@ -4,27 +4,27 @@ import { employeeData } from '../data/employeeData';
 
 // Force hot-reload cache clear
 
-const EmployeesManagement = () => {
+const AdminTeamSettings = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('ALL');
   const [selectedItems, setSelectedItems] = useState([]);
   const [isManageDropdownOpen, setIsManageDropdownOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState(null);
-  const [filteredData, setFilteredData] = useState(employeeData);
-  const [employees, setEmployees] = useState(employeeData);
+  const [editingAdmin, setEditingAdmin] = useState(null);
+  const [filteredData, setFilteredData] = useState([]);
+  const [admins, setAdmins] = useState([]);
 
 
 
-  // Form data for adding/editing employees
+  // Form data for adding/editing admin team members
   const [formData, setFormData] = useState({
     employeeId: '',
     firstName: '',
     lastName: '',
     department: '',
     fiveSArea: '',
-    role: 'User',
+    role: 'Admin',
     subordinate: '',
     commander: ''
   });
@@ -33,12 +33,18 @@ const EmployeesManagement = () => {
 
   // Department options
   const departments = ['IT & DM', 'HR & AD', 'AF', 'PC', 'PD', 'QA', 'SD', 'TD', 'Admin'];
-  const roles = ['User', 'Supervisor', 'Manager', 'Admin'];
+  const roles = ['Admin', 'Manager', 'Supervisor'];
   const fiveSAreas = ['5ส ณ บางปูใหม่', '5ส ณ โรงงาน A', '5ส ณ โรงงาน B', '5ส ณ คลังสินค้า', 'กลุ่มวางแผนการผลิต'];
+
+  // Filter data to show only Admin team members
+  useEffect(() => {
+    const adminTeamMembers = employeeData.filter(emp => emp.role === 'Admin' || emp.role === 'Manager' || emp.role === 'Supervisor');
+    setAdmins(adminTeamMembers);
+  }, []);
 
   // Filter and search data
   useEffect(() => {
-    let filtered = employees;
+    let filtered = admins;
 
     // Filter by department
     if (selectedDepartment !== 'ALL') {
@@ -55,12 +61,12 @@ const EmployeesManagement = () => {
     }
 
     setFilteredData(filtered);
-  }, [searchTerm, selectedDepartment, employees]);
+  }, [searchTerm, selectedDepartment, admins]);
 
   // Get department counts
   const getDepartmentCounts = () => {
     const counts = {};
-    employees.forEach(emp => {
+    admins.forEach(emp => {
       counts[emp.department] = (counts[emp.department] || 0) + 1;
     });
     return counts;
@@ -94,7 +100,7 @@ const EmployeesManagement = () => {
       lastName: '',
       department: '',
       fiveSArea: '',
-      role: 'User',
+      role: 'Admin',
       subordinate: '',
       commander: ''
     });
@@ -117,8 +123,8 @@ const EmployeesManagement = () => {
 
 
 
-  // Handle add employee
-  const handleAddEmployee = async (formElement) => {
+  // Handle add admin team member
+  const handleAddAdmin = async (formElement) => {
     const data = getFormData(formElement);
     
     if (!data.employeeId || !data.firstName || !data.lastName || !data.department || !data.fiveSArea) {
@@ -132,7 +138,7 @@ const EmployeesManagement = () => {
     }
 
     // Check if employee ID already exists
-    if (employees.find(emp => emp.employeeId === data.employeeId)) {
+    if (admins.find(emp => emp.employeeId === data.employeeId)) {
       await Swal.fire({
         icon: 'error',
         title: 'รหัสพนักงานซ้ำ',
@@ -142,7 +148,7 @@ const EmployeesManagement = () => {
       return;
     }
 
-    const newEmployee = {
+    const newAdmin = {
       employeeId: data.employeeId,
       firstName: data.firstName,
       lastName: data.lastName,
@@ -152,20 +158,20 @@ const EmployeesManagement = () => {
       role: data.role
     };
 
-    setEmployees(prev => [...prev, newEmployee]);
+    setAdmins(prev => [...prev, newAdmin]);
     setIsAddModalOpen(false);
     resetFormData();
 
     await Swal.fire({
       icon: 'success',
-      title: 'เพิ่มพนักงานสำเร็จ',
-      text: 'เพิ่มข้อมูลพนักงานเรียบร้อยแล้ว',
+      title: 'เพิ่มผู้จัดการทีมสำเร็จ',
+      text: 'เพิ่มข้อมูลผู้จัดการทีมเรียบร้อยแล้ว',
       confirmButtonColor: '#3b82f6'
     });
   };
 
-  // Handle edit employee
-  const handleEditEmployee = async (formElement) => {
+  // Handle edit admin team member
+  const handleEditAdmin = async (formElement) => {
     const data = getFormData(formElement);
     
     if (!data.employeeId || !data.firstName || !data.lastName || !data.department || !data.fiveSArea) {
@@ -178,8 +184,8 @@ const EmployeesManagement = () => {
       return;
     }
 
-    const updatedEmployee = {
-      ...editingEmployee,
+    const updatedAdmin = {
+      ...editingAdmin,
       firstName: data.firstName,
       lastName: data.lastName,
       department: data.department,
@@ -187,26 +193,26 @@ const EmployeesManagement = () => {
       role: data.role
     };
 
-    setEmployees(prev => prev.map(emp => 
-      emp.employeeId === editingEmployee.employeeId ? updatedEmployee : emp
+    setAdmins(prev => prev.map(emp => 
+      emp.employeeId === editingAdmin.employeeId ? updatedAdmin : emp
     ));
     setIsEditModalOpen(false);
-    setEditingEmployee(null);
+    setEditingAdmin(null);
     resetFormData();
 
     await Swal.fire({
       icon: 'success',
       title: 'แก้ไขข้อมูลสำเร็จ',
-      text: 'แก้ไขข้อมูลพนักงานเรียบร้อยแล้ว',
+      text: 'แก้ไขข้อมูลผู้จัดการทีมเรียบร้อยแล้ว',
       confirmButtonColor: '#3b82f6'
     });
   };
 
-  // Handle delete individual employee
-  const handleDeleteEmployee = async (employee) => {
+  // Handle delete individual admin team member
+  const handleDeleteAdmin = async (admin) => {
     const result = await Swal.fire({
-      title: 'ลบพนักงาน',
-      text: `คุณต้องการลบ ${employee.firstName} ${employee.lastName} ใช่หรือไม่?`,
+      title: 'ลบผู้จัดการทีม',
+      text: `คุณต้องการลบ ${admin.firstName} ${admin.lastName} ใช่หรือไม่?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
@@ -216,10 +222,10 @@ const EmployeesManagement = () => {
     });
 
     if (result.isConfirmed) {
-      setEmployees(prev => prev.filter(emp => emp.employeeId !== employee.employeeId));
+      setAdmins(prev => prev.filter(emp => emp.employeeId !== admin.employeeId));
       await Swal.fire({
         title: 'ลบเรียบร้อย!',
-        text: 'ลบข้อมูลพนักงานเรียบร้อยแล้ว',
+        text: 'ลบข้อมูลผู้จัดการทีมเรียบร้อยแล้ว',
         icon: 'success',
         confirmButtonColor: '#3b82f6'
       });
@@ -231,8 +237,8 @@ const EmployeesManagement = () => {
     if (selectedItems.length === 0) return;
 
     const result = await Swal.fire({
-      title: 'ลบพนักงาน',
-      text: `คุณต้องการลบพนักงาน ${selectedItems.length} คนใช่หรือไม่?`,
+      title: 'ลบผู้จัดการทีม',
+      text: `คุณต้องการลบผู้จัดการทีม ${selectedItems.length} คนใช่หรือไม่?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
@@ -242,11 +248,11 @@ const EmployeesManagement = () => {
     });
 
     if (result.isConfirmed) {
-      setEmployees(prev => prev.filter(emp => !selectedItems.includes(emp.employeeId)));
+      setAdmins(prev => prev.filter(emp => !selectedItems.includes(emp.employeeId)));
       setSelectedItems([]);
       await Swal.fire({
         title: 'ลบเรียบร้อย!',
-        text: `ลบข้อมูลพนักงาน ${selectedItems.length} คนเรียบร้อยแล้ว`,
+        text: `ลบข้อมูลผู้จัดการทีม ${selectedItems.length} คนเรียบร้อยแล้ว`,
         icon: 'success',
         confirmButtonColor: '#3b82f6'
       });
@@ -254,15 +260,15 @@ const EmployeesManagement = () => {
   };
 
   // Open edit modal with useCallback
-  const openEditModal = React.useCallback((employee) => {
-    setEditingEmployee(employee);
+  const openEditModal = React.useCallback((admin) => {
+    setEditingAdmin(admin);
     setFormData({
-      employeeId: employee.employeeId,
-      firstName: employee.firstName,
-      lastName: employee.lastName,
-      department: employee.department,
-      fiveSArea: employee.fiveSArea,
-      role: employee.role,
+      employeeId: admin.employeeId,
+      firstName: admin.firstName,
+      lastName: admin.lastName,
+      department: admin.department,
+      fiveSArea: admin.fiveSArea,
+      role: admin.role,
       subordinate: '',
       commander: ''
     });
@@ -277,7 +283,7 @@ const EmployeesManagement = () => {
 
   const handleEditModalClose = () => {
     setIsEditModalOpen(false);
-    setEditingEmployee(null);
+    setEditingAdmin(null);
     resetFormData();
   };
 
@@ -297,7 +303,6 @@ const EmployeesManagement = () => {
           return 'bg-purple-100 text-purple-800';
         case 'Supervisor':
           return 'bg-orange-100 text-orange-800';
-        case 'User':
         default:
           return 'bg-blue-100 text-blue-800';
       }
@@ -311,48 +316,13 @@ const EmployeesManagement = () => {
   };
 
   // Action dropdown component for individual actions
-  const ActionDropdown = ({ employee, index, totalItems }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [buttonPosition, setButtonPosition] = useState({ top: 0, right: 0 });
-    
-    const isNearBottom = index >= totalItems - 2;
-
-    const handleToggleDropdown = (e) => {
-      e.stopPropagation();
-      
-      if (!isOpen) {
-        const buttonRect = e.currentTarget.getBoundingClientRect();
-        setButtonPosition({
-          top: buttonRect.top + window.scrollY,
-          right: window.innerWidth - buttonRect.right
-        });
-      }
-      
-      setIsOpen(!isOpen);
-    };
-
-    useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (isOpen && !event.target.closest('.action-dropdown')) {
-          setIsOpen(false);
-        }
-      };
-
-      if (isOpen) {
-        document.addEventListener('click', handleClickOutside);
-      }
-
-      return () => {
-        document.removeEventListener('click', handleClickOutside);
-      };
-    }, [isOpen]);
-
+  const ActionDropdown = ({ admin }) => {
     return (
       <div className="relative action-dropdown">
         {/* Edit and Delete buttons */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => openEditModal(employee)}
+            onClick={() => openEditModal(admin)}
             className="text-yellow-500 hover:text-yellow-600 bg-yellow-50 hover:bg-yellow-100 transition-colors p-2 rounded-lg"
             title="แก้ไข"
           >
@@ -361,7 +331,7 @@ const EmployeesManagement = () => {
             </svg>
           </button>
           <button
-            onClick={() => handleDeleteEmployee(employee)}
+            onClick={() => handleDeleteAdmin(admin)}
             className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 transition-colors p-2 rounded-lg"
             title="ลบ"
           >
@@ -374,40 +344,6 @@ const EmployeesManagement = () => {
     );
   };
 
-  // Controlled Input Component with ref support for focus management
-  const ControlledInput = React.forwardRef(({ name, value, onChange, placeholder, disabled, className, type = "text", onKeyDown }, ref) => {
-    return (
-      <input
-        ref={ref}
-        type={type}
-        name={name}
-        value={value || ''}
-        onChange={onChange}
-        onKeyDown={onKeyDown}
-        disabled={disabled}
-        className={className}
-        placeholder={placeholder}
-        autoComplete="off"
-        spellCheck="false"
-      />
-    );
-  });
-
-  // Controlled Select Component with ref support for focus management
-  const ControlledSelect = React.forwardRef(({ name, value, onChange, className, children, onKeyDown }, ref) => {
-    return (
-      <select
-        ref={ref}
-        name={name}
-        value={value || ''}
-        onChange={onChange}
-        onKeyDown={onKeyDown}
-        className={className}
-      >
-        {children}
-      </select>
-    );
-  });
 
   // Uncontrolled Input Component - no re-renders
   const UncontrolledInput = ({ name, defaultValue, placeholder, disabled, className, type = "text", autoFocus = false }) => {
@@ -440,7 +376,7 @@ const EmployeesManagement = () => {
   };
 
   // Add/Edit Modal Component - Redesigned with better UX
-  const EmployeeModal = ({ isOpen, onClose, onSave, title, isEdit = false }) => {
+  const AdminModal = ({ isOpen, onClose, onSave, title, isEdit = false }) => {
     if (!isOpen) return null;
 
     const handleSubmit = (e) => {
@@ -458,7 +394,7 @@ const EmployeesManagement = () => {
               <div>
                 <h2 className="text-xl font-bold">{title}</h2>
                 <p className="text-blue-100 text-sm mt-1">
-                  {isEdit ? 'แก้ไขข้อมูลพนักงาน' : 'เพิ่มพนักงานใหม่เข้าสู่ระบบ'}
+                  {isEdit ? 'แก้ไขข้อมูลผู้จัดการทีม' : 'เพิ่มผู้จัดการทีมใหม่เข้าสู่ระบบ'}
                 </p>
               </div>
               <button
@@ -577,7 +513,7 @@ const EmployeesManagement = () => {
                 <UncontrolledSelect
                   name="fiveSArea"
                   defaultValue={formData.fiveSArea}
-                  className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
+                  className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white transition-colors"
                 >
                   <option value="">-- เลือกกลุ่ม 5ส --</option>
                   {fiveSAreas.map(area => (
@@ -641,7 +577,7 @@ const EmployeesManagement = () => {
               type="submit"
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
             >
-              {isEdit ? 'บันทึกการแก้ไข' : 'เพิ่มพนักงาน'}
+              {isEdit ? 'บันทึกการแก้ไข' : 'เพิ่มผู้จัดการทีม'}
             </button>
           </div>
           </form>
@@ -653,7 +589,7 @@ const EmployeesManagement = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
-      <h1 className="text-3xl font-bold text-blue-600 mb-8">EMPLOYEES MANAGEMENT</h1>
+      <h1 className="text-3xl font-bold text-blue-600 mb-8">ADMIN TEAM SETTINGS</h1>
 
       {/* Search Bar and Add Button */}
       <div className="flex gap-2 mb-6">
@@ -780,30 +716,30 @@ const EmployeesManagement = () => {
               </tr>
             </thead>
             <tbody className="relative">
-              {filteredData.map((employee, index) => (
-                <tr key={employee.employeeId} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+              {filteredData.map((admin, index) => (
+                <tr key={admin.employeeId} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                   <td className="sticky left-0 z-20 px-4 py-3 whitespace-nowrap" style={{ backgroundColor: index % 2 === 0 ? '#f9fafb' : '#ffffff' }}>
                     <div className="flex items-center h-full pl-2">
                       <input
                         type="checkbox"
-                        checked={selectedItems.includes(employee.employeeId)}
-                        onChange={() => handleSelectItem(employee.employeeId)}
+                        checked={selectedItems.includes(admin.employeeId)}
+                        onChange={() => handleSelectItem(admin.employeeId)}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                     </div>
                   </td>
                   <td className="sticky left-[56px] z-20 px-4 py-3 text-sm font-medium whitespace-nowrap min-w-[136px]" style={{ backgroundColor: index % 2 === 0 ? '#f9fafb' : '#ffffff' }}>
-                    {employee.employeeId}
+                    {admin.employeeId}
                   </td>
-                  <td className="px-4 py-3 text-sm min-w-[180px]">{employee.firstName} {employee.lastName}</td>
-                  <td className="px-4 py-3 text-sm min-w-[120px]">{employee.role}</td>
-                  <td className="px-4 py-3 text-sm min-w-[100px]">{employee.department}</td>
-                  <td className="px-4 py-3 text-sm min-w-[150px]">{employee.fiveSArea}</td>
+                  <td className="px-4 py-3 text-sm min-w-[180px]">{admin.firstName} {admin.lastName}</td>
+                  <td className="px-4 py-3 text-sm min-w-[120px]">{admin.role}</td>
+                  <td className="px-4 py-3 text-sm min-w-[100px]">{admin.department}</td>
+                  <td className="px-4 py-3 text-sm min-w-[150px]">{admin.fiveSArea}</td>
                   <td className="px-4 py-3 min-w-[140px]">
-                    <RoleBadge role={employee.role} />
+                    <RoleBadge role={admin.role} />
                   </td>
                   <td className="px-4 py-3 text-center min-w-[100px]">
-                    <ActionDropdown employee={employee} index={index} totalItems={filteredData.length} />
+                    <ActionDropdown admin={admin} />
                   </td>
                 </tr>
               ))}
@@ -832,24 +768,24 @@ const EmployeesManagement = () => {
         </div>
       </div>
 
-      {/* Add Employee Modal */}
-      <EmployeeModal
+      {/* Add Admin Modal */}
+      <AdminModal
         isOpen={isAddModalOpen}
         onClose={handleAddModalClose}
-        onSave={handleAddEmployee}
-        title="ADD MEMBER FORM"
+        onSave={handleAddAdmin}
+        title="ADD ADMIN TEAM MEMBER"
       />
 
-      {/* Edit Employee Modal */}
-      <EmployeeModal
+      {/* Edit Admin Modal */}
+      <AdminModal
         isOpen={isEditModalOpen}
         onClose={handleEditModalClose}
-        onSave={handleEditEmployee}
-        title="EDIT MEMBER FORM"
+        onSave={handleEditAdmin}
+        title="EDIT ADMIN TEAM MEMBER"
         isEdit={true}
       />
     </div>
   );
 };
 
-export default EmployeesManagement;
+export default AdminTeamSettings;

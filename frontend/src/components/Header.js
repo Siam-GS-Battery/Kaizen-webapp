@@ -62,8 +62,8 @@ const Header = () => {
       return [
         { name: 'Tasklist', href: '/tasklist' },
         { name: 'Employees Management', href: '/employees-management' },
-        { name: 'Admin Team Setting', href: '/admin-team-setting' },
-        { name: 'Report Page', href: '/report-page' }
+        { name: 'Admin Team Settings', href: '/admin-team-settings' },
+        { name: 'Report Page', href: '/report' }
       ];
     }
     return [];
@@ -171,7 +171,7 @@ const Header = () => {
                   className={`font-medium transition-colors pb-1 flex items-center gap-1 text-sm xl:text-base ${
                     location.pathname.includes('/tasklist') || 
                     location.pathname.includes('/employees-management') || 
-                    location.pathname.includes('/admin-team-setting') || 
+                    location.pathname.includes('/admin-team-settings') || 
                     location.pathname.includes('/report-page')
                       ? 'border-b-2 border-blue-600 text-blue-600' 
                       : 'text-gray-600 hover:text-blue-600'
@@ -415,7 +415,10 @@ const Header = () => {
               {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin') && (
                 <div className="space-y-2">
                   <button
-                    onClick={() => setIsMobileCreateFormOpen(!isMobileCreateFormOpen)}
+                    onClick={() => {
+                      setIsMobileOperationsOpen(false); // ปิด Operations dropdown
+                      setIsMobileCreateFormOpen(!isMobileCreateFormOpen);
+                    }}
                     className="flex items-center justify-between w-full font-medium text-blue-600 text-sm uppercase tracking-wider hover:text-blue-800 transition-colors py-2 px-3 rounded-lg hover:bg-blue-50"
                   >
                     <span>CREATE FORM</span>
@@ -447,7 +450,10 @@ const Header = () => {
               {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin') && (
                 <div className="space-y-2">
                   <button
-                    onClick={() => setIsMobileOperationsOpen(!isMobileOperationsOpen)}
+                    onClick={() => {
+                      setIsMobileCreateFormOpen(false); // ปิด Create Form dropdown
+                      setIsMobileOperationsOpen(!isMobileOperationsOpen);
+                    }}
                     className="flex items-center justify-between w-full font-medium text-blue-600 text-sm uppercase tracking-wider hover:text-blue-800 transition-colors py-2 px-3 rounded-lg hover:bg-blue-50"
                   >
                     <span>OPERATIONS</span>
