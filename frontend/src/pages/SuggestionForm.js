@@ -368,33 +368,37 @@ const SuggestionForm = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">วันที่เริ่มทำโครงการ</label>
-                      <input
-                        type="date"
-                        name="projectStartDate"
-                        value={formData.projectStartDate}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
-                        style={{
-                          minHeight: '44px',
-                          WebkitAppearance: 'none',
-                          MozAppearance: 'textfield'
-                        }}
-                      />
+                      <div className="relative">
+                        <input
+                          type="date"
+                          name="projectStartDate"
+                          value={formData.projectStartDate}
+                          onChange={handleInputChange}
+                          onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                          className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base cursor-pointer"
+                          style={{
+                            minHeight: '44px',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">วันที่จบโครงการ</label>
-                      <input
-                        type="date"
-                        name="projectEndDate"
-                        value={formData.projectEndDate}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
-                        style={{
-                          minHeight: '44px',
-                          WebkitAppearance: 'none',
-                          MozAppearance: 'textfield'
-                        }}
-                      />
+                      <div className="relative">
+                        <input
+                          type="date"
+                          name="projectEndDate"
+                          value={formData.projectEndDate}
+                          onChange={handleInputChange}
+                          onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                          className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base cursor-pointer"
+                          style={{
+                            minHeight: '44px',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

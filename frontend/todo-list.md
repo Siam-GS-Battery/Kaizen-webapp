@@ -374,6 +374,18 @@
 - [x] สร้าง protected routes system พร้อม role-based access control
 - [x] เพิ่ม automatic redirect เมื่อ session หมดอายุหรือไม่มีสิทธิ์เข้าถึง
 
+### 35. Date Picker Mouse Click Enhancement
+- [x] แก้ไขปัญหาการเลือกวันที่ใน GenbaForm ที่ต้องกด spacebar
+- [x] แก้ไขปัญหาการเลือกวันที่ใน SuggestionForm ที่ต้องกด spacebar
+- [x] ปรับปรุง MobileDateFix.css เพื่อรองรับการคลิกเมาส์
+- [x] เพิ่ม cursor pointer และ enhanced click area สำหรับ date inputs
+- [x] เพิ่ม onClick handler พร้อม showPicker() API สำหรับ browser compatibility
+- [x] ปรับปรุง webkit calendar picker indicator positioning
+- [x] เพิ่ม relative container wrapper สำหรับ date inputs
+- [x] ปรับปรุง mobile responsive adjustments สำหรับ touch targets
+- [x] ทดสอบการทำงานข้าม browsers และ mobile devices
+- [x] รองรับการคลิกทั้งหน้า input field เพื่อเปิด date picker
+
 ## 📋 Pending Tasks
 
 ### Future Enhancements
@@ -389,8 +401,8 @@
 
 ### Key Components Modified:
 - `src/pages/Home.js` - Main dashboard with all enhancements
-- `src/pages/GenbaForm.js` - Form component with enhanced mobile date inputs
-- `src/pages/SuggestionForm.js` - Form component with enhanced mobile date inputs
+- `src/pages/GenbaForm.js` - Form component with enhanced date inputs and mouse click functionality
+- `src/pages/SuggestionForm.js` - Form component with enhanced date inputs and mouse click functionality
 - `src/pages/SearchHistory.js` - Search history page with role-based auto-search functionality
 - `src/pages/Tasklist.js` - Complete task management page with filtering, sorting, and bulk actions
 - `src/pages/EmployeesManagement.js` - Employee management page with CRUD operations and role-based access
@@ -403,7 +415,7 @@
 - `src/data/employeeData.js` - Updated employee data structure with role management and expanded sample data
 - `src/data/tasklistData.js` - Mock data for task management system
 - `src/App.js` - Added routing with session protection and role-based access control
-- `src/MobileDateFix.css` - New CSS file for mobile date input optimization
+- `src/MobileDateFix.css` - Enhanced CSS for date input optimization with mouse click support
 
 ### Libraries/Dependencies Used:
 - React Router for navigation and route protection
@@ -424,7 +436,8 @@
 - Activity tracking and session renewal system
 - Protected routing with role-based permissions
 - Modal-based user interactions with confirmations
+- Enhanced date picker functionality with mouse click support
 
 ---
 *Last Updated: 2025-01-29*  
-*Status: KAIZEN web application now features complete task management system with Tasklist page for supervisors, comprehensive Employees Management page for admins, a fully functional Report page with interactive charts and dynamic filtering, and advanced session management with automatic timeout protection. The system includes comprehensive session management with configurable timeouts (30 minutes), automatic activity tracking, session warning modals, and automatic logout functionality. Users can extend their sessions up to 3 times and use "Remember Me" for 7-day sessions. The Report page includes monthly data analysis with pie charts, bar charts, line charts, and detailed department tables with full interactivity. The system provides robust user authentication, role-based access control with protected routing, CREATE FORM navigation, and enhanced responsive design. All session data is managed through a sophisticated SessionManager utility that tracks user activity and prevents unauthorized access. The application includes automatic session expiration with warning modals, role-based route protection, and seamless session renewal functionality. All form data variables, employee data, and tasklist data have been converted from Thai to English for database compatibility while maintaining Thai UI labels. All features work seamlessly across desktop and mobile platforms with modern UI/UX design, complete session security, and are ready for database integration.*
+*Status: KAIZEN web application now features complete task management system with Tasklist page for supervisors, comprehensive Employees Management page for admins, a fully functional Report page with interactive charts and dynamic filtering, advanced session management with automatic timeout protection, and enhanced date picker functionality with proper mouse click support. The system includes comprehensive session management with configurable timeouts (30 minutes), automatic activity tracking, session warning modals, and automatic logout functionality. Users can extend their sessions up to 3 times and use "Remember Me" for 7-day sessions. The Report page includes monthly data analysis with pie charts, bar charts, line charts, and detailed department tables with full interactivity. Both GenbaForm and SuggestionForm now feature improved date picker functionality that responds to mouse clicks without requiring spacebar presses, with enhanced mobile compatibility and cross-browser support. The system provides robust user authentication, role-based access control with protected routing, CREATE FORM navigation, and enhanced responsive design. All session data is managed through a sophisticated SessionManager utility that tracks user activity and prevents unauthorized access. The application includes automatic session expiration with warning modals, role-based route protection, and seamless session renewal functionality. All form data variables, employee data, and tasklist data have been converted from Thai to English for database compatibility while maintaining Thai UI labels. All features work seamlessly across desktop and mobile platforms with modern UI/UX design, complete session security, improved form interactions, and are ready for database integration.*
