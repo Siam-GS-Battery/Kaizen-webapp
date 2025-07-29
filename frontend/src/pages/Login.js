@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { employeeData } from '../data/employeeData';
+import sessionManager from '../utils/sessionManager';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const Login = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -52,11 +54,8 @@ const Login = () => {
             confirmButtonColor: '#3b82f6'
           });
           
-          // Store user session (in real app, use proper auth)
-          localStorage.setItem('userSession', JSON.stringify({
-            employeeId: formData.employeeId,
-            loginTime: new Date().toISOString()
-          }));
+          // Create session using SessionManager
+          sessionManager.createSession(formData.employeeId, rememberMe);
           
           // สำหรับ Supervisor, Manager หรือ Admin ให้เข้าสู่หน้า Tasklist
           if (employee.role === 'Supervisor' || employee.role === 'Manager' || employee.role === 'Admin') {
@@ -160,6 +159,21 @@ const Login = () => {
                   </svg>
                 </button>
               </div>
+            </div>
+
+            {/* Remember Me Checkbox */}
+            <div className="flex items-center">
+              <input
+                id="rememberMe"
+                name="rememberMe"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
+                จดจำการเข้าสู่ระบบ (7 วัน)
+              </label>
             </div>
 
             {/* Demo Credentials */}

@@ -327,6 +327,53 @@
 - [x] รักษาสีพื้นหลังแบบ zebra stripe ในคอลัมน์ที่ตรึง
 - [x] ทำให้ shadow overlay เป็น pointer-events-none
 
+### 32. Report Page Implementation
+- [x] สร้างหน้า Report ตามภาพออกแบบสำหรับการดูรายงานผลรายเดือน
+- [x] ติดตั้ง Chart.js และ react-chartjs-2 สำหรับสร้างกราฟ
+- [x] สร้างโครงสร้างหน้าพื้นฐานด้วย stats cards สี่แผง
+- [x] เพิ่ม stats cards แสดงจำนวนพนักงานทั้งหมด, ส่งแล้ว, ยังไม่ส่ง, เปอร์เซ็นต์ความสำเร็จ
+- [x] สร้าง month picker และ department sort controls
+- [x] สร้าง pie chart แสดงความแตกต่างของจำนวนเรื่องที่ส่งและยังไม่ส่ง
+- [x] สร้าง bar chart แสดงเปอร์เซ็นต์การส่ง Kaizen ของแต่ละหน่วยงาน
+- [x] สร้าง line chart แสดงการส่ง Kaizen แต่ละแผนก
+- [x] สร้างตารางจำนวนการส่ง Kaizen แต่ละแผนกพร้อม completion rate bar
+- [x] เพิ่มปุ่ม export และ refresh functionality
+- [x] อัปเดต App.js routing เพื่อเพิ่มเส้นทาง `/report`
+
+### 33. Report Page Dynamic Filtering Enhancement
+- [x] เพิ่มข้อมูลครบทั้ง 12 เดือนพร้อมค่าต่างๆ ที่สมจริง
+- [x] สร้างฟังก์ชัน `getFilteredData()` สำหรับกรองข้อมูลตาม month และ department
+- [x] เพิ่มฟังก์ชัน `getMonthNameThai()` สำหรับแปลชื่อเดือนเป็นภาษาไทย
+- [x] อัปเดต h1 title ให้แสดงเดือนที่เลือกและแผนก (ถ้ามีการกรอง) แบบ dynamic
+- [x] อัปเดต stats cards ทั้ง 4 แผงให้แสดงข้อมูลที่ถูกกรองแล้ว
+- [x] เปลี่ยนป้ายข้อมูลใน stats cards ตามการกรอง (เช่น "จำนวนพนักงานในแผนก" เมื่อเลือกแผนก)
+- [x] อัปเดต pie chart ให้ใช้ข้อมูลที่กรองแล้ว
+- [x] อัปเดต bar chart ให้แสดงข้อมูลแผนกที่เลือกหรือทั้งหมด
+- [x] อัปเดต line chart ให้ใช้ข้อมูลที่กรองแล้ว
+- [x] อัปเดตตารางแผนกให้แสดงข้อมูลที่กรองแล้ว
+- [x] อัปเดตชื่อ bar chart ให้แสดงเดือนปัจจุบันที่เลือก
+- [x] แก้ไขปัญหา ESLint error โดยเปลี่ยน `mockData.departments` เป็น `allData[selectedMonth].departments`
+
+### 34. Session Management และ Auto-Logout System Implementation
+- [x] สร้าง session configuration constants ใน `/src/config/sessionConfig.js`
+- [x] กำหนดค่า session duration (30 นาที), warning time (5 นาที), maximum extensions (3 ครั้ง)
+- [x] เพิ่ม remember me functionality สำหรับ session ยาวนาน (7 วัน)
+- [x] สร้าง SessionManager utility class ใน `/src/utils/sessionManager.js`
+- [x] เพิ่มฟังก์ชัน session validation, activity tracking, และ automatic renewal
+- [x] สร้าง session monitoring system พร้อม warning และ expiration timers
+- [x] เพิ่ม activity tracking ที่ทำงานอัตโนมัติผ่าน global event listeners
+- [x] สร้าง SessionWarningModal component สำหรับแจ้งเตือนก่อนหมดเวลา
+- [x] เพิ่ม countdown timer และปุ่มขยายเวลาใน warning modal
+- [x] แสดงจำนวนครั้งที่ขยายเวลาแล้วและสถานะการขยายเวลา
+- [x] ปรับปรุง Login.js เพื่อใช้ SessionManager แทน localStorage ธรรมดา
+- [x] เพิ่ม "Remember Me" checkbox ในหน้า login
+- [x] ปรับปรุง Header.js เพื่อรองรับ session monitoring และ auto-logout
+- [x] เพิ่ม session event handlers สำหรับ warning, expiration, และ extension
+- [x] เพิ่ม session info display และ periodic session updates
+- [x] เพิ่ม app-wide session protection ใน App.js
+- [x] สร้าง protected routes system พร้อม role-based access control
+- [x] เพิ่ม automatic redirect เมื่อ session หมดอายุหรือไม่มีสิทธิ์เข้าถึง
+
 ## 📋 Pending Tasks
 
 ### Future Enhancements
@@ -347,18 +394,23 @@
 - `src/pages/SearchHistory.js` - Search history page with role-based auto-search functionality
 - `src/pages/Tasklist.js` - Complete task management page with filtering, sorting, and bulk actions
 - `src/pages/EmployeesManagement.js` - Employee management page with CRUD operations and role-based access
-- `src/pages/Login.js` - Enhanced login system with employee data validation
-- `src/components/Header.js` - Role-based navigation with Operations dropdown menu and enhanced responsive design
+- `src/pages/Login.js` - Enhanced login system with session management and Remember Me feature
+- `src/pages/Report.js` - Interactive report page with dynamic charts and filtering
+- `src/components/Header.js` - Role-based navigation with session monitoring and auto-logout functionality
+- `src/components/SessionWarningModal.js` - Session timeout warning modal with extend/logout options
+- `src/utils/sessionManager.js` - Complete session management utility with activity tracking and auto-logout
+- `src/config/sessionConfig.js` - Session configuration constants and settings
 - `src/data/employeeData.js` - Updated employee data structure with role management and expanded sample data
 - `src/data/tasklistData.js` - Mock data for task management system
-- `src/App.js` - Added routing for GenbaForm, SearchHistory, Tasklist, and EmployeesManagement
+- `src/App.js` - Added routing with session protection and role-based access control
 - `src/MobileDateFix.css` - New CSS file for mobile date input optimization
 
 ### Libraries/Dependencies Used:
-- React Router for navigation
+- React Router for navigation and route protection
 - Tailwind CSS for styling
 - React hooks (useState, useEffect)
 - SweetAlert2 for modal dialogs and confirmations
+- Chart.js และ react-chartjs-2 for interactive charts and graphs
 
 ### Code Patterns Implemented:
 - Thai localization with Buddhist Era conversion
@@ -368,7 +420,11 @@
 - Professional card layouts with hover effects
 - Role-based access control and navigation
 - Responsive breakpoint management
+- Session-based authentication with automatic timeout
+- Activity tracking and session renewal system
+- Protected routing with role-based permissions
+- Modal-based user interactions with confirmations
 
 ---
-*Last Updated: 2025-01-23*  
-*Status: KAIZEN web application now features complete task management system with Tasklist page for supervisors and comprehensive Employees Management page for admins, including filtering, sorting, bulk operations, and individual CRUD actions with fully fixed dropdown positioning. The system includes user authentication, role-based access control, CREATE FORM navigation, and enhanced responsive design with improved navbar dropdown auto-close functionality. All form data variables, employee data, and tasklist data have been converted from Thai to English for database compatibility while maintaining Thai UI labels. The new Employees Management page provides full employee lifecycle management with Add/Edit/Delete operations, role-based badges, department filtering, and advanced search functionality. All localStorage keys and component references have been updated to use English variable names. Action dropdowns use advanced portal-style positioning to appear above all content layers. Navbar dropdowns automatically close others when opened, providing better user experience. Users can manage both projects and employees through intuitive interfaces with proper confirmation dialogs and status tracking. All data structures are fully standardized with English variable names ready for database integration. All features work seamlessly across desktop and mobile platforms with modern UI/UX design.*
+*Last Updated: 2025-01-29*  
+*Status: KAIZEN web application now features complete task management system with Tasklist page for supervisors, comprehensive Employees Management page for admins, a fully functional Report page with interactive charts and dynamic filtering, and advanced session management with automatic timeout protection. The system includes comprehensive session management with configurable timeouts (30 minutes), automatic activity tracking, session warning modals, and automatic logout functionality. Users can extend their sessions up to 3 times and use "Remember Me" for 7-day sessions. The Report page includes monthly data analysis with pie charts, bar charts, line charts, and detailed department tables with full interactivity. The system provides robust user authentication, role-based access control with protected routing, CREATE FORM navigation, and enhanced responsive design. All session data is managed through a sophisticated SessionManager utility that tracks user activity and prevents unauthorized access. The application includes automatic session expiration with warning modals, role-based route protection, and seamless session renewal functionality. All form data variables, employee data, and tasklist data have been converted from Thai to English for database compatibility while maintaining Thai UI labels. All features work seamlessly across desktop and mobile platforms with modern UI/UX design, complete session security, and are ready for database integration.*

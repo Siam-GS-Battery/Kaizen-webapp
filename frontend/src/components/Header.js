@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { employeeData } from '../data/employeeData';
+import sessionManager from '../utils/sessionManager';
+import SessionWarningModal from './SessionWarningModal';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -12,27 +14,67 @@ const Header = () => {
   const [userRole, setUserRole] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showSessionWarning, setShowSessionWarning] = useState(false);
+  const [warningTime, setWarningTime] = useState(0);
+  const [sessionInfo, setSessionInfo] = useState(null);
   const location = useLocation();
 
   // ฟังก์ชันเช็ค active
   const isActive = (path) => location.pathname === path;
 
-  // ตรวจสอบสิทธิ์ผู้ใช้จาก localStorage
+  // ตรวจสอบสิทธิ์ผู้ใช้และตั้งค่า session monitoring
   useEffect(() => {
-    const userSession = localStorage.getItem('userSession');
-    if (userSession) {
-      const session = JSON.parse(userSession);
-      const employee = employeeData.find(emp => emp.employeeId === session.employeeId);
-      if (employee) {
-        setUserRole(employee.role);
-        setCurrentUser(employee);
-        setIsLoggedIn(true);
+    const checkSession = () => {
+      const session = sessionManager.getCurrentSession();
+      if (session && sessionManager.isSessionValid()) {
+        const employee = employeeData.find(emp => emp.employeeId === session.employeeId);
+        if (employee) {
+          setUserRole(employee.role);
+          setCurrentUser(employee);
+          setIsLoggedIn(true);
+          setSessionInfo(sessionManager.getSessionInfo());
+        }
+      } else {
+        setUserRole(null);
+        setCurrentUser(null);
+        setIsLoggedIn(false);
+        setSessionInfo(null);
       }
-    } else {
-      setUserRole(null);
-      setCurrentUser(null);
-      setIsLoggedIn(false);
+    };
+
+    // Initial check
+    checkSession();
+
+    // Set up session event handlers
+    sessionManager.setEventHandlers({
+      onExpired: () => {
+        handleSessionExpired();
+      },
+      onWarning: (remainingTime) => {
+        setWarningTime(remainingTime);
+        setShowSessionWarning(true);
+      },
+      onExtended: () => {
+        setShowSessionWarning(false);
+        checkSession();
+      }
+    });
+
+    // Start monitoring if session exists
+    if (sessionManager.isSessionValid()) {
+      sessionManager.startSessionMonitoring();
     }
+
+    // Set up interval to update session info
+    const sessionInfoInterval = setInterval(() => {
+      if (sessionManager.isSessionValid()) {
+        setSessionInfo(sessionManager.getSessionInfo());
+      }
+    }, 10000); // Update every 10 seconds
+
+    return () => {
+      clearInterval(sessionInfoInterval);
+    };
   }, []);
 
   // ปิด dropdowns เมื่อคลิกนอกเมนู
@@ -80,15 +122,42 @@ const Header = () => {
     return [];
   };
 
+  // ฟังก์ชัน session expired
+  const handleSessionExpired = () => {
+    sessionManager.destroySession();
+    setUserRole(null);
+    setCurrentUser(null);
+    setIsLoggedIn(false);
+    setShowSessionWarning(false);
+    setSessionInfo(null);
+    
+    // Show expiration message
+    alert('เซสชั่นหมดอายุแล้ว กรุณาเข้าสู่ระบบใหม่');
+    window.location.href = '/login';
+  };
+
   // ฟังก์ชัน logout
   const handleLogout = () => {
-    localStorage.removeItem('userSession');
+    sessionManager.destroySession();
     setUserRole(null);
     setCurrentUser(null);
     setIsLoggedIn(false);
     setIsUserMenuOpen(false);
+    setShowSessionWarning(false);
+    setSessionInfo(null);
     // กลับเข้าสู่หน้าหลัก home
     window.location.href = '/';
+  };
+
+  // ฟังก์ชัน extend session
+  const handleExtendSession = () => {
+    setShowSessionWarning(false);
+    const success = sessionManager.extendSession();
+    if (success) {
+      setSessionInfo(sessionManager.getSessionInfo());
+    } else {
+      handleSessionExpired();
+    }
   };
 
   return (
@@ -524,6 +593,14 @@ const Header = () => {
           </nav>
         )}
       </div>
+
+      {/* Session Warning Modal */}
+      <SessionWarningModal
+        isOpen={showSessionWarning}
+        onExtend={handleExtendSession}
+        onLogout={handleLogout}
+        remainingTime={warningTime}
+      />
     </header>
   );
 };

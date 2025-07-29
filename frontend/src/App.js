@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import Home from './pages/Home';
 import GenbaForm from './pages/GenbaForm';
 import SuggestionForm from './pages/SuggestionForm';
@@ -11,10 +11,62 @@ import Report from './pages/Report';
 import Login from './pages/Login';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import sessionManager from './utils/sessionManager';
+
+// Protected routes that require authentication
+const protectedRoutes = ['/tasklist', '/employees-management', '/admin-team-settings', '/report'];
+
+// Routes that require specific roles
+const roleProtectedRoutes = {
+  '/tasklist': ['Supervisor', 'Manager', 'Admin'],
+  '/employees-management': ['Admin'],
+  '/admin-team-settings': ['Admin'],  
+  '/report': ['Admin']
+};
 
 function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const isLoginPage = location.pathname === '/login';
+
+  // Session protection effect
+  useEffect(() => {
+    const currentPath = location.pathname;
+    
+    // Skip protection for login page and home page
+    if (currentPath === '/login' || currentPath === '/') {
+      return;
+    }
+
+    // Check if current route requires authentication
+    const isProtectedRoute = protectedRoutes.includes(currentPath);
+    
+    if (isProtectedRoute) {
+      const session = sessionManager.getCurrentSession();
+      
+      if (!session || !sessionManager.isSessionValid()) {
+        // Session invalid, redirect to login
+        sessionManager.destroySession();
+        navigate('/login');
+        return;
+      }
+
+      // Check role-based access
+      const requiredRoles = roleProtectedRoutes[currentPath];
+      if (requiredRoles) {
+        // Get user role from employeeData based on session
+        const { employeeData } = require('./data/employeeData');
+        const employee = employeeData.find(emp => emp.employeeId === session.employeeId);
+        
+        if (!employee || !requiredRoles.includes(employee.role)) {
+          // Insufficient permissions, redirect to home
+          alert('คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
+          navigate('/');
+          return;
+        }
+      }
+    }
+  }, [location.pathname, navigate]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
