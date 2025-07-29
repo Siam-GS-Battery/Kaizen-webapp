@@ -384,8 +384,14 @@ const AdminTeamSettings = () => {
       onSave(e.target);
     };
 
+    const handleOverlayClick = (e) => {
+      if (e.target === e.currentTarget) {
+        onClose();
+      }
+    };
+
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" onClick={handleOverlayClick}>
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           <form onSubmit={handleSubmit}>
           {/* Modal Header - Improved Design */}
@@ -478,30 +484,44 @@ const AdminTeamSettings = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     แผนก <span className="text-red-500">*</span>
                   </label>
-                  <UncontrolledSelect
-                    name="department"
-                    defaultValue={formData.department}
-                    className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
-                  >
-                    <option value="">-- เลือกแผนก --</option>
-                    {departments.map(dept => (
-                      <option key={dept} value={dept}>{dept}</option>
-                    ))}
-                  </UncontrolledSelect>
+                  <div className="relative">
+                    <UncontrolledSelect
+                      name="department"
+                      defaultValue={formData.department}
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
+                    >
+                      <option value="">-- เลือกแผนก --</option>
+                      {departments.map(dept => (
+                        <option key={dept} value={dept}>{dept}</option>
+                      ))}
+                    </UncontrolledSelect>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     ตำแหน่งงาน <span className="text-red-500">*</span>
                   </label>
-                  <UncontrolledSelect
-                    name="role"
-                    defaultValue={formData.role}
-                    className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
-                  >
-                    {roles.map(role => (
-                      <option key={role} value={role}>{role}</option>
-                    ))}
-                  </UncontrolledSelect>
+                  <div className="relative">
+                    <UncontrolledSelect
+                      name="role"
+                      defaultValue={formData.role}
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
+                    >
+                      {roles.map(role => (
+                        <option key={role} value={role}>{role}</option>
+                      ))}
+                    </UncontrolledSelect>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -510,16 +530,23 @@ const AdminTeamSettings = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   ชื่อกลุ่ม 5ส <span className="text-red-500">*</span>
                 </label>
-                <UncontrolledSelect
-                  name="fiveSArea"
-                  defaultValue={formData.fiveSArea}
-                  className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white transition-colors"
-                >
-                  <option value="">-- เลือกกลุ่ม 5ส --</option>
-                  {fiveSAreas.map(area => (
-                    <option key={area} value={area}>{area}</option>
-                  ))}
-                </UncontrolledSelect>
+                <div className="relative">
+                  <UncontrolledSelect
+                    name="fiveSArea"
+                    defaultValue={formData.fiveSArea}
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
+                  >
+                    <option value="">-- เลือกกลุ่ม 5ส --</option>
+                    {fiveSAreas.map(area => (
+                      <option key={area} value={area}>{area}</option>
+                    ))}
+                  </UncontrolledSelect>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -537,28 +564,42 @@ const AdminTeamSettings = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Subordinate
                   </label>
-                  <UncontrolledSelect
-                    name="subordinate"
-                    defaultValue={formData.subordinate}
-                    className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
-                  >
-                    <option value="">-- เลือก Subordinate --</option>
-                    {/* Add subordinate options as needed */}
-                  </UncontrolledSelect>
+                  <div className="relative">
+                    <UncontrolledSelect
+                      name="subordinate"
+                      defaultValue={formData.subordinate}
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
+                    >
+                      <option value="">-- เลือก Subordinate --</option>
+                      {/* Add subordinate options as needed */}
+                    </UncontrolledSelect>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Commander
                   </label>
-                  <UncontrolledSelect
-                    name="commander"
-                    defaultValue={formData.commander}
-                    className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
-                  >
-                    <option value="">-- เลือก Commander --</option>
-                    {/* Add commander options as needed */}
-                  </UncontrolledSelect>
+                  <div className="relative">
+                    <UncontrolledSelect
+                      name="commander"
+                      defaultValue={formData.commander}
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
+                    >
+                      <option value="">-- เลือก Commander --</option>
+                      {/* Add commander options as needed */}
+                    </UncontrolledSelect>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -4,7 +4,7 @@ import { tasklistData } from '../data/tasklistData';
 
 const Tasklist = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [activeFilter, setActiveFilter] = useState('genba');
   const [selectedItems, setSelectedItems] = useState([]);
   const [isManageDropdownOpen, setIsManageDropdownOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState('newest'); // 'newest' or 'oldest'
