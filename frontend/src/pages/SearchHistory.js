@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import '../CustomSwal.css';
 import { employeeData } from '../data/employeeData';
+import sessionManager from '../utils/sessionManager';
 
 const SearchHistory = () => {
   const [employeeId, setEmployeeId] = useState('');
@@ -12,11 +13,12 @@ const SearchHistory = () => {
   const [userRole, setUserRole] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Mock data for demonstration
+  // Mock data for demonstration - มีข้อมูลสำหรับผู้ใช้หลายคน
   const allMockData = [
+    // User 241303 - รัชนก ราชรามทอง (User)
     {
       id: 1,
-      projectName: 'ปรับปรุงระบบการจัดการข้อมูลดิจิทัล test',
+      projectName: 'ปรับปรุงระบบการจัดการข้อมูลดิจิทัล',
       startDate: '01/12/2658',
       department: 'IT & DM',
       partner: '5ส ณ บางปูใหม่',
@@ -24,13 +26,11 @@ const SearchHistory = () => {
       createdDate: '01/12/2658',
       formType: 'genba',
       formData: {
-        // Step 1: ข้อมูลทั่วไป
-        employeeId: '251307',
-        fullName: 'ภัณฑิรา ศรีพิมพ์เมือง',
+        employeeId: '241303',
+        fullName: 'รัชนก ราชรามทอง',
         department: 'IT & DM',
         fiveSGroupName: '5ส ณ บางปูใหม่',
         projectArea: 'IT',
-        // Step 2: รายละเอียด
         projectName: 'ปรับปรุงระบบการจัดการข้อมูลดิจิทัล',
         projectStartDate: '2023-12-01',
         projectEndDate: '2024-02-01',
@@ -40,7 +40,6 @@ const SearchHistory = () => {
         resultsAchieved: 'ลดเวลาการค้นหาไฟล์ได้ 60% และเพิ่มประสิทธิภาพการทำงานของทีม',
         beforeProjectImage: 'digital_before.jpg',
         afterProjectImage: 'digital_after.jpg',
-        // Step 3: ประเภทของกิจกรรม 5ส
         fiveSType: 'ส2',
         improvementTopic: 'Delivery',
         SGS_Smart: 'Factory',
@@ -50,6 +49,33 @@ const SearchHistory = () => {
     },
     {
       id: 2,
+      projectName: 'จัดระเบียบสถานที่ทำงาน IT',
+      startDate: '15/11/2658',
+      department: 'IT & DM',
+      partner: '5ส ณ บางปูใหม่',
+      status: 'WAITING',
+      createdDate: '15/11/2658',
+      formType: 'suggestion',
+      formData: {
+        employeeId: '241303',
+        fullName: 'รัชนก ราชรามทอง',
+        department: 'IT & DM',
+        fiveSGroupName: '5ส ณ บางปูใหม่',
+        projectArea: 'IT',
+        projectName: 'จัดระเบียบสถานที่ทำงาน IT',
+        projectStartDate: '2023-11-15',
+        projectEndDate: '2023-12-15',
+        problemsEncountered: 'สถานที่ทำงานไม่เป็นระเบียบ อุปกรณ์วางไม่เป็นที่',
+        solutionApproach: 'จัดทำตู้เก็บของและป้ายบอกตำแหน่ง',
+        standardCertification: 'อยู่ระหว่างการตรวจสอบ',
+        resultsAchieved: 'คาดว่าจะเพิ่มประสิทธิภาพได้ 40%',
+        beforeProjectImage: 'workspace_before.jpg',
+        fiveSType: 'ส1',
+        improvementTopic: 'Workplace'
+      }
+    },
+    {
+      id: 3,
       projectName: 'พัฒนาระบบการทำงานแบบอัตโนมัติ',
       startDate: '15/10/2658',
       department: 'IT & DM',
@@ -82,7 +108,7 @@ const SearchHistory = () => {
       }
     },
     {
-      id: 3,
+      id: 8,
       projectName: 'ปรับปรุงพื้นที่ทำงาน IT',
       startDate: '01/08/2658',
       department: 'IT & DM',
@@ -119,7 +145,7 @@ const SearchHistory = () => {
       id: 4,
       projectName: 'ชื่อโครงการ THAILAND 5.0',
       startDate: '15/09/2658',
-      department: 'IT DEVELOPMENT',
+      department: 'IT & DM',
       partner: '5ส ณ บางปูใหม่',
       status: 'APPROVED',
       createdDate: '15/09/2658',
@@ -151,29 +177,29 @@ const SearchHistory = () => {
     },
     {
       id: 5,
-      projectName: 'ปรับปรุงระบบการจัดเก็บสินค้า',
+      projectName: 'ปรับปรุงระบบการจัดการบุคลากร',
       startDate: '01/10/2658',
-      department: 'QA',
-      partner: '5ส ณ คลังสินค้า',
+      department: 'HR & AD',
+      partner: '5ส ณ บางปูใหม่',
       status: 'WAITING',
       createdDate: '01/10/2658',
       formType: 'suggestion',
       formData: {
         // Step 1: ข้อมูลทั่วไป
         employeeId: '241304',
-        fullName: 'สมศรี ใจดี',
-        department: 'QA',
-        fiveSGroupName: '5ส ณ คลังสินค้า',
-        projectArea: 'คลังสินค้า',
+        fullName: 'สมชาย ใจดี',
+        department: 'HR & AD',
+        fiveSGroupName: '5ส ณ บางปูใหม่',
+        projectArea: 'HR',
         // Step 2: รายละเอียด
-        projectName: 'ปรับปรุงระบบการจัดเก็บสินค้า',
+        projectName: 'ปรับปรุงระบบการจัดการบุคลากร',
         projectStartDate: '2023-10-01',
         projectEndDate: '2023-11-30',
-        problemsEncountered: 'การจัดเก็บสินค้าไม่เป็นระบบ ทำให้หายากและเสียเวลา',
-        solutionApproach: 'จัดทำระบบการจัดเก็บแบบใหม่ พร้อมป้ายบอกตำแหน่ง',
-        standardCertification: 'ผ่านการตรวจสอบจากหน่วยงาน QA',
-        resultsAchieved: 'เพิ่มประสิทธิภาพในการหาสินค้าได้ 70%',
-        beforeProjectImage: 'warehouse_before.jpg',
+        problemsEncountered: 'การจัดการข้อมูลบุคลากรยังไม่เป็นระบบ ทำให้การติดตามผลงานยาก',
+        solutionApproach: 'จัดทำระบบฐานข้อมูลบุคลากรใหม่ พร้อมการติดตามผลงาน',
+        standardCertification: 'ผ่านการตรวจสอบจากหัวหน้าแผนก HR',
+        resultsAchieved: 'เพิ่มประสิทธิภาพในการจัดการบุคลากรได้ 50%',
+        beforeProjectImage: 'hr_before.jpg',
         // Step 3: ประเภทของกิจกรรม 5ส
         fiveSType: 'ส2',
         improvementTopic: 'Delivery',
@@ -186,7 +212,7 @@ const SearchHistory = () => {
       id: 6,
       projectName: 'ปรับปรุงกระบวนการผลิต',
       startDate: '20/08/2658',
-      department: 'PC',
+      department: 'IT & DM',
       partner: '5ส ณ โรงงาน A',
       status: 'APPROVED',
       createdDate: '20/08/2658',
@@ -195,7 +221,7 @@ const SearchHistory = () => {
         // Step 1: ข้อมูลทั่วไป
         employeeId: '241303',
         fullName: 'รัชนก ราชรามทอง',
-        department: 'PC',
+        department: 'IT & DM',
         fiveSGroupName: '5ส ณ โรงงาน A',
         projectArea: 'โรงงาน A',
         // Step 2: รายละเอียด
@@ -218,29 +244,29 @@ const SearchHistory = () => {
     },
     {
       id: 7,
-      projectName: 'ลดของเสียในการผลิต',
+      projectName: 'ปรับปรุงระบบควบคุมการผลิต',
       startDate: '05/11/2658',
-      department: 'PD',
-      partner: '5ส ณ หน่วยผลิต B',
+      department: 'PC',
+      partner: '5ส ณ โรงงาน B',
       status: 'WAITING',
       createdDate: '05/11/2658',
       formType: 'suggestion',
       formData: {
         // Step 1: ข้อมูลทั่วไป
         employeeId: '241305',
-        fullName: 'วิชัย สมใจ',
-        department: 'PD',
-        fiveSGroupName: '5ส ณ หน่วยผลิต B',
-        projectArea: 'หน่วยผลิต B',
+        fullName: 'นภัสกร สมบูรณ์',
+        department: 'PC',
+        fiveSGroupName: '5ส ณ โรงงาน B',
+        projectArea: 'Production Control',
         // Step 2: รายละเอียด
-        projectName: 'ลดของเสียในการผลิต',
+        projectName: 'ปรับปรุงระบบควบคุมการผลิต',
         projectStartDate: '2023-11-05',
         projectEndDate: '2023-12-05',
-        problemsEncountered: 'มีของเสียในการผลิตสูงเกินมาตรฐาน',
-        solutionApproach: 'ปรับปรุงเครื่องจักรและกระบวนการตรวจสอบคุณภาพ',
-        standardCertification: 'อยู่ระหว่างการตรวจสอบจากฝ่าย QA',
-        resultsAchieved: 'คาดว่าจะลดของเสียได้ 40%',
-        beforeProjectImage: 'waste_before.jpg',
+        problemsEncountered: 'ระบบควบคุมการผลิตยังไม่มีประสิทธิภาพ ทำให้เกิดความล่าช้า',
+        solutionApproach: 'ปรับปรุงระบบติดตามและควบคุมการผลิตแบบเรียลไทม์',
+        standardCertification: 'อยู่ระหว่างการตรวจสอบจากผู้จัดการ',
+        resultsAchieved: 'คาดว่าจะเพิ่มประสิทธิภาพได้ 35%',
+        beforeProjectImage: 'control_before.jpg',
         // Step 3: ประเภทของกิจกรรม 5ส
         fiveSType: 'ส3',
         improvementTopic: 'Quality',
@@ -248,42 +274,263 @@ const SearchHistory = () => {
         SGS_Green: 'Teamwork',
         SGS_Strong: 'Energy_3R'
       }
+    },
+    // User 251308 - อนุชา มั่นคง (Supervisor)
+    {
+      id: 9,
+      projectName: 'ยกระดับมาตรฐานคุณภาพสินค้า',
+      startDate: '01/09/2658',
+      department: 'QA',
+      partner: '5ส ณ คลังสินค้า',
+      status: 'APPROVED',
+      createdDate: '01/09/2658',
+      formType: 'genba',
+      formData: {
+        // Step 1: ข้อมูลทั่วไป
+        employeeId: '251308',
+        fullName: 'อนุชา มั่นคง',
+        department: 'QA',
+        fiveSGroupName: '5ส ณ คลังสินค้า',
+        projectArea: 'Quality',
+        // Step 2: รายละเอียด
+        projectName: 'ยกระดับมาตรฐานคุณภาพสินค้า',
+        projectStartDate: '2023-09-01',
+        projectEndDate: '2023-11-01',
+        problemsEncountered: 'มาตรฐานคุณภาพของสินค้าไม่เป็นไปตามเกณฑ์ที่กำหนด มีสินค้าที่ผ่านการตรวจสอบไม่ครบ',
+        solutionApproach: 'ปรับปรุงกระบวนการตรวจสอบคุณภาพและสร้างระบบติดตามคุณภาพแบบเรียลไทม์',
+        standardCertification: 'ได้รับการรับรองจากหัวหน้าแผนก QA และทีมคุณภาพ',
+        resultsAchieved: 'เพิ่มมาตรฐานคุณภาพของสินค้าขึ้น 85% และลดความผิดพลาดในการตรวจสอบ',
+        beforeProjectImage: 'quality_before.jpg',
+        afterProjectImage: 'quality_after.jpg',
+        // Step 3: ประเภทของกิจกรรม 5ส
+        fiveSType: 'ส4',
+        improvementTopic: 'Quality',
+        SGS_Smart: 'Factory',
+        SGS_Green: 'Branding',
+        SGS_Strong: 'Workplace'
+      }
+    },
+    // User 261402 - วิชัย เจริญ (Manager)
+    {
+      id: 10,
+      projectName: 'เพิ่มประสิทธิภาพการขายและการตลาด',
+      startDate: '10/10/2658',
+      department: 'SD',
+      partner: '5ส ณ โรงงาน A',
+      status: 'APPROVED',
+      createdDate: '10/10/2658',
+      formType: 'suggestion',
+      formData: {
+        // Step 1: ข้อมูลทั่วไป
+        employeeId: '261402',
+        fullName: 'วิชัย เจริญ',
+        department: 'SD',
+        fiveSGroupName: '5ส ณ โรงงาน A',
+        projectArea: 'Sales',
+        // Step 2: รายละเอียด
+        projectName: 'เพิ่มประสิทธิภาพการขายและการตลาด',
+        projectStartDate: '2023-10-10',
+        projectEndDate: '2023-12-10',
+        problemsEncountered: 'กระบวนการขายและการติดตามลูกค้ายังไม่มีประสิทธิภาพ ทำให้สูญเสียโอกาสในการขาย',
+        solutionApproach: 'จัดทำระบบ CRM ใหม่ และปรับปรุงกระบวนการติดตามลูกค้าให้เป็นระบบ',
+        standardCertification: 'ได้รับการอนุมัติจากผู้อำนวยการฝ่ายขาย',
+        resultsAchieved: 'เพิ่มยอดขายได้ 45% และเพิ่มความพึงพอใจของลูกค้า',
+        beforeProjectImage: 'sales_before.jpg',
+        // Step 3: ประเภทของกิจกรรม 5ส
+        fiveSType: 'ส2',
+        improvementTopic: 'Delivery',
+        SGS_Smart: 'People',
+        SGS_Green: 'Branding',
+        SGS_Strong: 'Energy_3R'
+      }
+    },
+    // User 241306 - สุดา แก้วใส (User)
+    {
+      id: 11,
+      projectName: 'จัดระเบียบระบบการเงินและบัญชี',
+      startDate: '25/09/2658',
+      department: 'AF',
+      partner: '5ส ณ บางปูใหม่',
+      status: 'WAITING',
+      createdDate: '25/09/2658',
+      formType: 'suggestion',
+      formData: {
+        // Step 1: ข้อมูลทั่วไป
+        employeeId: '241306',
+        fullName: 'สุดา แก้วใส',
+        department: 'AF',
+        fiveSGroupName: '5ส ณ บางปูใหม่',
+        projectArea: 'Accounting',
+        // Step 2: รายละเอียด
+        projectName: 'จัดระเบียบระบบการเงินและบัญชี',
+        projectStartDate: '2023-09-25',
+        projectEndDate: '2023-11-25',
+        problemsEncountered: 'เอกสารทางการเงินและบัญชีไม่เป็นระเบียบ ทำให้การตรวจสอบและรายงานใช้เวลานาน',
+        solutionApproach: 'จัดระเบียบระบบเก็บเอกสารและสร้างแม่แบบการรายงานมาตรฐาน',
+        standardCertification: 'อยู่ระหว่างการตรวจสอบจากหัวหน้าแผนกบัญชี',
+        resultsAchieved: 'คาดว่าจะลดเวลาการทำงานได้ 40% และเพิ่มความแม่นยำ',
+        beforeProjectImage: 'accounting_before.jpg',
+        // Step 3: ประเภทของกิจกรรม 5ส
+        fiveSType: 'ส1',
+        improvementTopic: 'Cost',
+        SGS_Smart: 'People',
+        SGS_Green: 'Teamwork',
+        SGS_Strong: 'Workplace'
+      }
+    },
+    // User 251309 - ธนาคาร ศรีสุข (Supervisor)
+    {
+      id: 12,
+      projectName: 'พัฒนาระบบเทคนิคการผลิต',
+      startDate: '15/08/2658',
+      department: 'TD',
+      partner: '5ส ณ โรงงาน B',
+      status: 'APPROVED',
+      createdDate: '15/08/2658',
+      formType: 'genba',
+      formData: {
+        // Step 1: ข้อมูลทั่วไป
+        employeeId: '251309',
+        fullName: 'ธนาคาร ศรีสุข',
+        department: 'TD',
+        fiveSGroupName: '5ส ณ โรงงาน B',
+        projectArea: 'Technical',
+        // Step 2: รายละเอียด
+        projectName: 'พัฒนาระบบเทคนิคการผลิต',
+        projectStartDate: '2023-08-15',
+        projectEndDate: '2023-10-15',
+        problemsEncountered: 'เทคนิคการผลิตยังไม่ทันสมัย ทำให้ประสิทธิภาพการผลิตต่ำ',
+        solutionApproach: 'นำเทคโนโลยีใหม่มาใช้ในการผลิต และฝึกอบรมพนักงานให้มีทักษะที่ทันสมัย',
+        standardCertification: 'ผ่านการทดสอบและได้รับการรับรองจากผู้เชียวชาญด้านเทคนิค',
+        resultsAchieved: 'เพิ่มประสิทธิภาพการผลิตได้ 60% และลดการใช้ทรัพยากร',
+        beforeProjectImage: 'technical_before.jpg',
+        afterProjectImage: 'technical_after.jpg',
+        // Step 3: ประเภทของกิจกรรม 5ส
+        fiveSType: 'ส5',
+        improvementTopic: 'Quality',
+        SGS_Smart: 'Factory',
+        SGS_Green: 'Teamwork',
+        SGS_Strong: 'Energy_3R'
+      }
+    },
+    // User 261401 - มนตรี ธนวัฒน์ (Manager)
+    {
+      id: 13,
+      projectName: 'ปรับปรุงกระบวนการจัดการผลิตภัณฑ์',
+      startDate: '01/07/2658',
+      department: 'PD',
+      partner: '5ส ณ โรงงาน A',
+      status: 'APPROVED',
+      createdDate: '01/07/2658',
+      formType: 'genba',
+      formData: {
+        // Step 1: ข้อมูลทั่วไป
+        employeeId: '261401',
+        fullName: 'มนตรี ธนวัฒน์',
+        department: 'PD',
+        fiveSGroupName: '5ส ณ โรงงาน A',
+        projectArea: 'Production',
+        // Step 2: รายละเอียด
+        projectName: 'ปรับปรุงกระบวนการจัดการผลิตภัณฑ์',
+        projectStartDate: '2023-07-01',
+        projectEndDate: '2023-09-01',
+        problemsEncountered: 'กระบวนการจัดการผลิตภัณฑ์มีความซับซ้อนและไม่เป็นระบบ ทำให้เกิดความล่าช้า',
+        solutionApproach: 'ปรับปรุงขั้นตอนการทำงานให้เป็นระบบและใช้เทคโนโลยีช่วยในการติดตาม',
+        standardCertification: 'ได้รับการรับรองจากคณะกรรมการบริหารโรงงาน',
+        resultsAchieved: 'ลดเวลาการผลิตได้ 40% และเพิ่มคุณภาพผลิตภัณฑ์',
+        beforeProjectImage: 'production_mgmt_before.jpg',
+        afterProjectImage: 'production_mgmt_after.jpg',
+        // Step 3: ประเภทของกิจกรรม 5ส
+        fiveSType: 'ส4',
+        improvementTopic: 'Cost',
+        SGS_Smart: 'Factory',
+        SGS_Green: 'Branding',
+        SGS_Strong: 'Workplace'
+      }
+    },
+    // User admin - Admin
+    {
+      id: 14,
+      projectName: 'ปรับปรุงระบบการจัดการองค์กร',
+      startDate: '01/06/2658',
+      department: 'Admin',
+      partner: 'กลุ่มวางแผนการผลิต',
+      status: 'APPROVED',
+      createdDate: '01/06/2658',
+      formType: 'genba',
+      formData: {
+        // Step 1: ข้อมูลทั่วไป
+        employeeId: 'admin',
+        fullName: 'admin admin',
+        department: 'Admin',
+        fiveSGroupName: 'กลุ่มวางแผนการผลิต',
+        projectArea: 'ออฟฟิศฝ่ายวางแผน',
+        // Step 2: รายละเอียด
+        projectName: 'ปรับปรุงระบบการจัดการองค์กร',
+        projectStartDate: '2023-06-01',
+        projectEndDate: '2023-08-01',
+        problemsEncountered: 'ระบบการจัดการองค์กรยังไม่เป็นระบบ ทำให้การประสานงานระหว่างแผนกไม่มีประสิทธิภาพ',
+        solutionApproach: 'จัดทำระบบการจัดการองค์กรแบบดิจิทัลและปรับปรุงกระบวนการสื่อสาร',
+        standardCertification: 'ได้รับการอนุมัติจากผู้บริหารระดับสูง',
+        resultsAchieved: 'เพิ่มประสิทธิภาพการทำงานระหว่างแผนกได้ 70% และลดเวลาการประสานงาน',
+        beforeProjectImage: 'admin_before.jpg',
+        afterProjectImage: 'admin_after.jpg',
+        // Step 3: ประเภทของกิจกรรม 5ส
+        fiveSType: 'ส2',
+        improvementTopic: 'Delivery',
+        SGS_Smart: 'People',
+        SGS_Green: 'Teamwork',
+        SGS_Strong: 'Workplace'
+      }
     }
   ];
 
-  // ตรวจสอบสิทธิ์ผู้ใช้และทำการค้นหาอัตโนมัติสำหรับ Supervisor และ Admin
+  // ตรวจสอบสิทธิ์ผู้ใช้และแสดงข้อมูลอัตโนมัติสำหรับผู้ใช้ที่ล็อกอิน
   useEffect(() => {
-    const userSession = localStorage.getItem('userSession');
-    if (userSession) {
-      const session = JSON.parse(userSession);
-      const employee = employeeData.find(emp => emp.employeeId === session.รหัสพนักงาน);
+    const session = sessionManager.getCurrentSession();
+    const currentIsLoggedIn = session && sessionManager.isSessionValid();
+    
+    if (currentIsLoggedIn) {
+      const employee = employeeData.find(emp => emp.employeeId === session.employeeId);
       if (employee) {
         setUserRole(employee.role);
         setIsLoggedIn(true);
+        setEmployeeId(session.employeeId);
         
-        // สำหรับ Supervisor และ Admin ให้ค้นหาข้อมูลอัตโนมัติ
-        if (employee.role === 'Supervisor' || employee.role === 'Admin') {
-          setEmployeeId(session.รหัสพนักงาน);
-          // ทำการค้นหาข้อมูลอัตโนมัติ
-          const filteredResults = allMockData.filter(item => 
-            item.formData.employeeId === session.รหัสพนักงาน
-          );
-          setSearchResults(filteredResults);
-          setHasSearched(true);
-        }
+        // แสดงข้อมูลอัตโนมัติสำหรับผู้ใช้ที่ล็อกอินแล้ว
+        const filteredResults = allMockData.filter(item => 
+          item.formData.employeeId === session.employeeId
+        );
+        setSearchResults(filteredResults);
+        setHasSearched(true);
+      }
+    } else {
+      // ถ้าไม่มี session และก่อนหน้านี้เคยล็อกอินอยู่ ให้รีเซ็ตข้อมูล
+      if (isLoggedIn) {
+        setUserRole(null);
+        setIsLoggedIn(false);
+        setEmployeeId('');
+        setSearchResults([]);
+        setHasSearched(false);
       }
     }
-  }, [allMockData]);
+  }, [isLoggedIn, allMockData]);
 
   const handleSearch = () => {
     if (employeeId.trim()) {
-      // Filter data by employee ID
+      // Filter data by employee ID สำหรับผู้ใช้ที่ไม่ได้ล็อกอิน
       const filteredResults = allMockData.filter(item => 
         item.formData.employeeId === employeeId.trim()
       );
       setSearchResults(filteredResults);
       setHasSearched(true);
+      
+      // แสดงข้อความเมื่อไม่พบข้อมูล
+      if (filteredResults.length === 0) {
+        console.log('No data found for employee ID:', employeeId.trim());
+      }
     } else {
+      // กรณีไม่กรอกรหัสพนักงาน
       setSearchResults([]);
       setHasSearched(true);
     }
@@ -693,8 +940,8 @@ const SearchHistory = () => {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-blue-600 mb-8">SEARCH HISTORY</h1>
 
-      {/* Search Section - ซ่อนสำหรับ Supervisor และ Admin ที่ล็อกอินแล้ว */}
-      {!(isLoggedIn && (userRole === 'Supervisor' || userRole === 'Admin')) && (
+      {/* Search Section - แสดงเฉพาะผู้ใช้ที่ไม่ได้ล็อกอิน */}
+      {!isLoggedIn && (
         <div className="mb-8">
           <div className="flex gap-2 max-w-md">
             <input
@@ -717,8 +964,8 @@ const SearchHistory = () => {
         </div>
       )}
 
-      {/* User Info Section สำหรับ Supervisor และ Admin */}
-      {isLoggedIn && (userRole === 'Supervisor' || userRole === 'Admin') && (
+      {/* User Info Section สำหรับผู้ใช้ที่ล็อกอินแล้ว */}
+      {isLoggedIn && (
         <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
@@ -729,7 +976,7 @@ const SearchHistory = () => {
             <div>
               <h3 className="font-semibold text-blue-800">ผู้ใช้งาน: {employeeId}</h3>
               <p className="text-blue-600 text-sm">สิทธิ์: {userRole}</p>
-              <p className="text-blue-500 text-xs">แสดงผลการค้นหาประวัติของคุณโดยอัตโนมัติ</p>
+              <p className="text-blue-500 text-xs">แสดงประวัติการส่งฟอร์มของคุณโดยอัตโนมัติ</p>
             </div>
           </div>
         </div>
