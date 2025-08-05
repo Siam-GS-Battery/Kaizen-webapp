@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { tasklistData } from '../data/tasklistData';
 
 const Tasklist = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('genba');
   const [selectedItems, setSelectedItems] = useState([]);
@@ -166,12 +168,19 @@ const Tasklist = () => {
         });
       }
     } else if (action === 'edit') {
-      await Swal.fire({
-        title: 'แก้ไขโครงการ',
-        text: 'ฟีเจอร์การแก้ไขยังอยู่ในระหว่างการพัฒนา',
-        icon: 'info',
-        confirmButtonColor: '#3b82f6'
-      });
+      // Check if the item has EDIT status
+      if (item.status !== 'EDIT') {
+        await Swal.fire({
+          title: 'ไม่สามารถแก้ไขได้',
+          text: 'สามารถแก้ไขได้เฉพาะโครงการที่มีสถานะ "EDIT" เท่านั้น',
+          icon: 'warning',
+          confirmButtonColor: '#3b82f6'
+        });
+        return;
+      }
+      
+      // Navigate to edit form with the item ID
+      navigate(`/edit-form/${item.id}`);
     } else if (action === 'delete') {
       const result = await Swal.fire({
         title: 'ลบโครงการ',
