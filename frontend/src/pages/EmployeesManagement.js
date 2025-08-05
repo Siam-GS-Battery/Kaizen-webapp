@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
-import { employeeData } from '../data/employeeData';
+import { employeeAPI } from '../services/apiService';
 
 // Force hot-reload cache clear
 
@@ -12,8 +12,10 @@ const EmployeesManagement = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
-  const [filteredData, setFilteredData] = useState(employeeData);
-  const [employees, setEmployees] = useState(employeeData);
+  const [filteredData, setFilteredData] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
 
 
@@ -35,6 +37,35 @@ const EmployeesManagement = () => {
   const departments = ['IT & DM', 'HR & AD', 'AF', 'PC', 'PD', 'QA', 'SD', 'TD', 'Admin'];
   const roles = ['User', 'Supervisor', 'Manager', 'Admin'];
   const fiveSAreas = ['5ส ณ บางปูใหม่', '5ส ณ โรงงาน A', '5ส ณ โรงงาน B', '5ส ณ คลังสินค้า', 'กลุ่มวางแผนการผลิต'];
+
+  // Fetch employees from API on component mount
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await employeeAPI.getAll();
+      if (response.data.success) {
+        setEmployees(response.data.data);
+      } else {
+        throw new Error('Failed to fetch employees');
+      }
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      setError('Failed to load employees. Please try again.');
+      await Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: 'ไม่สามารถโหลดข้อมูลพนักงานได้ กรุณาลองใหม่อีกครั้ง',
+        confirmButtonColor: '#3b82f6'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter and search data
   useEffect(() => {
@@ -131,37 +162,49 @@ const EmployeesManagement = () => {
       return;
     }
 
-    // Check if employee ID already exists
-    if (employees.find(emp => emp.employeeId === data.employeeId)) {
+    try {
+      const newEmployeeData = {
+        employeeId: data.employeeId,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        department: data.department,
+        fiveSArea: data.fiveSArea,
+        projectArea: data.department, // Using department as project area for simplicity
+        role: data.role
+      };
+
+      const response = await employeeAPI.create(newEmployeeData);
+      
+      if (response.data.success) {
+        // Refresh the employee list
+        await fetchEmployees();
+        setIsAddModalOpen(false);
+        resetFormData();
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'เพิ่มพนักงานสำเร็จ',
+          text: 'เพิ่มข้อมูลพนักงานเรียบร้อยแล้ว',
+          confirmButtonColor: '#3b82f6'
+        });
+      }
+    } catch (error) {
+      console.error('Error adding employee:', error);
+      let errorMessage = 'เกิดข้อผิดพลาดในการเพิ่มพนักงาน';
+      
+      if (error.response?.status === 409) {
+        errorMessage = 'รหัสพนักงานนี้มีอยู่ในระบบแล้ว';
+      } else if (error.response?.data?.error?.message) {
+        errorMessage = error.response.data.error.message;
+      }
+      
       await Swal.fire({
         icon: 'error',
-        title: 'รหัสพนักงานซ้ำ',
-        text: 'รหัสพนักงานนี้มีอยู่ในระบบแล้ว',
+        title: 'เกิดข้อผิดพลาด',
+        text: errorMessage,
         confirmButtonColor: '#3b82f6'
       });
-      return;
     }
-
-    const newEmployee = {
-      employeeId: data.employeeId,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      department: data.department,
-      fiveSArea: data.fiveSArea,
-      projectArea: data.department, // Using department as project area for simplicity
-      role: data.role
-    };
-
-    setEmployees(prev => [...prev, newEmployee]);
-    setIsAddModalOpen(false);
-    resetFormData();
-
-    await Swal.fire({
-      icon: 'success',
-      title: 'เพิ่มพนักงานสำเร็จ',
-      text: 'เพิ่มข้อมูลพนักงานเรียบร้อยแล้ว',
-      confirmButtonColor: '#3b82f6'
-    });
   };
 
   // Handle edit employee
@@ -178,28 +221,47 @@ const EmployeesManagement = () => {
       return;
     }
 
-    const updatedEmployee = {
-      ...editingEmployee,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      department: data.department,
-      fiveSArea: data.fiveSArea,
-      role: data.role
-    };
+    try {
+      const updateData = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        department: data.department,
+        fiveSArea: data.fiveSArea,
+        projectArea: data.department, // Using department as project area
+        role: data.role
+      };
 
-    setEmployees(prev => prev.map(emp => 
-      emp.employeeId === editingEmployee.employeeId ? updatedEmployee : emp
-    ));
-    setIsEditModalOpen(false);
-    setEditingEmployee(null);
-    resetFormData();
+      const response = await employeeAPI.update(editingEmployee.employeeId, updateData);
+      
+      if (response.data.success) {
+        // Refresh the employee list
+        await fetchEmployees();
+        setIsEditModalOpen(false);
+        setEditingEmployee(null);
+        resetFormData();
 
-    await Swal.fire({
-      icon: 'success',
-      title: 'แก้ไขข้อมูลสำเร็จ',
-      text: 'แก้ไขข้อมูลพนักงานเรียบร้อยแล้ว',
-      confirmButtonColor: '#3b82f6'
-    });
+        await Swal.fire({
+          icon: 'success',
+          title: 'แก้ไขข้อมูลสำเร็จ',
+          text: 'แก้ไขข้อมูลพนักงานเรียบร้อยแล้ว',
+          confirmButtonColor: '#3b82f6'
+        });
+      }
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      let errorMessage = 'เกิดข้อผิดพลาดในการแก้ไขข้อมูลพนักงาน';
+      
+      if (error.response?.data?.error?.message) {
+        errorMessage = error.response.data.error.message;
+      }
+      
+      await Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: errorMessage,
+        confirmButtonColor: '#3b82f6'
+      });
+    }
   };
 
   // Handle delete individual employee
@@ -216,13 +278,34 @@ const EmployeesManagement = () => {
     });
 
     if (result.isConfirmed) {
-      setEmployees(prev => prev.filter(emp => emp.employeeId !== employee.employeeId));
-      await Swal.fire({
-        title: 'ลบเรียบร้อย!',
-        text: 'ลบข้อมูลพนักงานเรียบร้อยแล้ว',
-        icon: 'success',
-        confirmButtonColor: '#3b82f6'
-      });
+      try {
+        const response = await employeeAPI.delete(employee.employeeId);
+        
+        if (response.data.success) {
+          // Refresh the employee list
+          await fetchEmployees();
+          await Swal.fire({
+            title: 'ลบเรียบร้อย!',
+            text: 'ลบข้อมูลพนักงานเรียบร้อยแล้ว',
+            icon: 'success',
+            confirmButtonColor: '#3b82f6'
+          });
+        }
+      } catch (error) {
+        console.error('Error deleting employee:', error);
+        let errorMessage = 'เกิดข้อผิดพลาดในการลบพนักงาน';
+        
+        if (error.response?.data?.error?.message) {
+          errorMessage = error.response.data.error.message;
+        }
+        
+        await Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: errorMessage,
+          confirmButtonColor: '#3b82f6'
+        });
+      }
     }
   };
 
@@ -242,14 +325,36 @@ const EmployeesManagement = () => {
     });
 
     if (result.isConfirmed) {
-      setEmployees(prev => prev.filter(emp => !selectedItems.includes(emp.employeeId)));
-      setSelectedItems([]);
-      await Swal.fire({
-        title: 'ลบเรียบร้อย!',
-        text: `ลบข้อมูลพนักงาน ${selectedItems.length} คนเรียบร้อยแล้ว`,
-        icon: 'success',
-        confirmButtonColor: '#3b82f6'
-      });
+      try {
+        // Delete employees one by one
+        const deletePromises = selectedItems.map(employeeId => 
+          employeeAPI.delete(employeeId)
+        );
+        
+        await Promise.all(deletePromises);
+        
+        // Refresh the employee list
+        await fetchEmployees();
+        setSelectedItems([]);
+        
+        await Swal.fire({
+          title: 'ลบเรียบร้อย!',
+          text: `ลบข้อมูลพนักงาน ${selectedItems.length} คนเรียบร้อยแล้ว`,
+          icon: 'success',
+          confirmButtonColor: '#3b82f6'
+        });
+      } catch (error) {
+        console.error('Error bulk deleting employees:', error);
+        await Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: 'เกิดข้อผิดพลาดในการลบพนักงานบางคน กรุณาลองใหม่อีกครั้ง',
+          confirmButtonColor: '#3b82f6'
+        });
+        // Refresh the list to show current state
+        await fetchEmployees();
+        setSelectedItems([]);
+      }
     }
   };
 
@@ -305,7 +410,7 @@ const EmployeesManagement = () => {
 
     return (
       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full w-24 justify-center ${getRoleStyle()}`}>
-        {role.toUpperCase()}
+        {role ? role.toUpperCase() : 'N/A'}
       </span>
     );
   };
@@ -792,9 +897,36 @@ const EmployeesManagement = () => {
         </div>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
+          <p className="text-gray-600">กำลังโหลดข้อมูลพนักงาน...</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <div className="text-red-500 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={fetchEmployees}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            ลองใหม่อีกครั้ง
+          </button>
+        </div>
+      )}
+
       {/* Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden relative">
-        <div className="overflow-x-auto relative">
+      {!loading && !error && (
+        <div className="bg-white rounded-lg shadow overflow-hidden relative">
+          <div className="overflow-x-auto relative">
           {/* Sticky Column Shadow Overlay */}
           <div className="absolute top-0 left-[192px] bottom-0 w-4 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.1), rgba(0,0,0,0))' }}></div>
           
@@ -871,7 +1003,8 @@ const EmployeesManagement = () => {
             </button>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Add Employee Modal */}
       <EmployeeModal

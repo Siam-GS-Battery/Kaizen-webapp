@@ -55,11 +55,20 @@ function AppLayout() {
       // Check role-based access
       const requiredRoles = roleProtectedRoutes[currentPath];
       if (requiredRoles) {
-        // Get user role from employeeData based on session
-        const { employeeData } = require('./data/employeeData');
-        const employee = employeeData.find(emp => emp.employeeId === session.employeeId);
+        // Get user role from localStorage
+        const userDataStr = localStorage.getItem('user');
+        let userRole = null;
         
-        if (!employee || !requiredRoles.includes(employee.role)) {
+        if (userDataStr) {
+          try {
+            const userData = JSON.parse(userDataStr);
+            userRole = userData.role;
+          } catch (error) {
+            console.error('Error parsing user data:', error);
+          }
+        }
+        
+        if (!userRole || !requiredRoles.includes(userRole)) {
           // Insufficient permissions, redirect to home
           alert('คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
           navigate('/');

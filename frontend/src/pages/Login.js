@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { employeeData } from '../data/employeeData';
+import apiService from '../services/apiService';
 import sessionManager from '../utils/sessionManager';
 
 const Login = () => {
@@ -39,50 +39,76 @@ const Login = () => {
       return;
     }
 
-    // Simulate API call
-    setTimeout(async () => {
-      // Check if employee exists and password matches
-      if (formData.password === '123456') {
-        const employee = employeeData.find(emp => emp.employeeId === formData.employeeId);
+    try {
+      // Call backend API for authentication
+      const response = await apiService.post('/auth/login', {
+        employeeId: formData.employeeId,
+        password: formData.password
+      });
+
+      console.log('Login response:', response.data);
+
+      if (response.data.success) {
+        console.log('Login successful, extracting data...');
+        const { token, user } = response.data.data;
         
-        if (employee) {
-          await Swal.fire({
-            icon: 'success',
-            title: 'เข้าสู่ระบบสำเร็จ!',
-            text: `ยินดีต้อนรับ ${employee.firstName} ${employee.lastName} (${employee.role})`,
-            confirmButtonText: 'ตกลง',
-            confirmButtonColor: '#3b82f6'
-          });
-          
-          // Create session using SessionManager
-          sessionManager.createSession(formData.employeeId, rememberMe);
-          
-          // สำหรับ Supervisor, Manager หรือ Admin ให้เข้าสู่หน้า Tasklist
-          if (employee.role === 'Supervisor' || employee.role === 'Manager' || employee.role === 'Admin') {
-            navigate('/tasklist');
-          } else {
-            navigate('/');
-          }
+        console.log('Token:', token);
+        console.log('User:', user);
+        
+        // Store token in localStorage
+        localStorage.setItem('token', token);
+        
+        // Store user data if needed
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        // Create session using sessionManager
+        sessionManager.createSession(user.employeeId, rememberMe);
+        
+        console.log('Session created and data stored');
+        
+        await Swal.fire({
+          icon: 'success',
+          title: 'เข้าสู่ระบบสำเร็จ!',
+          text: `ยินดีต้อนรับ ${user.firstName} ${user.lastName} (${user.role})`,
+          confirmButtonText: 'ตกลง',
+          confirmButtonColor: '#3b82f6'
+        });
+        
+        console.log('Success alert shown, preparing to navigate...');
+        console.log('User role:', user.role);
+        
+        // สำหรับ Supervisor, Manager หรือ Admin ให้เข้าสู่หน้า Tasklist
+        if (user.role === 'Supervisor' || user.role === 'Manager' || user.role === 'Admin') {
+          console.log('Navigating to /tasklist');
+          navigate('/tasklist');
         } else {
-          await Swal.fire({
-            icon: 'error',
-            title: 'เข้าสู่ระบบไม่สำเร็จ',
-            text: 'ไม่พบรหัสพนักงานในระบบ',
-            confirmButtonText: 'ลองใหม่',
-            confirmButtonColor: '#ef4444'
-          });
+          console.log('Navigating to /');
+          navigate('/');
         }
       } else {
-        await Swal.fire({
-          icon: 'error',
-          title: 'เข้าสู่ระบบไม่สำเร็จ',
-          text: 'รหัสพนักงานหรือรหัสผ่านไม่ถูกต้อง',
-          confirmButtonText: 'ลองใหม่',
-          confirmButtonColor: '#ef4444'
-        });
+        console.log('Login failed - response.data.success is false');
+        console.log('Response data:', response.data);
       }
-      setIsLoading(false);
-    }, 1500);
+    } catch (error) {
+      console.error('Login error:', error);
+      let errorMessage = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
+      
+      if (error.response?.status === 401) {
+        errorMessage = 'รหัสพนักงานหรือรหัสผ่านไม่ถูกต้อง';
+      } else if (error.response?.data?.error?.message) {
+        errorMessage = error.response.data.error.message;
+      }
+      
+      await Swal.fire({
+        icon: 'error',
+        title: 'เข้าสู่ระบบไม่สำเร็จ',
+        text: errorMessage,
+        confirmButtonText: 'ลองใหม่',
+        confirmButtonColor: '#ef4444'
+      });
+    }
+    
+    setIsLoading(false);
   };
 
   return (

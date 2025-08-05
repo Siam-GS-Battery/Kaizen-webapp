@@ -310,7 +310,7 @@ const AdminTeamSettings = () => {
 
     return (
       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full w-24 justify-center ${getRoleStyle()}`}>
-        {role.toUpperCase()}
+        {role ? role.toUpperCase() : 'N/A'}
       </span>
     );
   };
