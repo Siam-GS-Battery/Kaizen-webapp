@@ -32,9 +32,8 @@ apiService.interceptors.response.use(
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          // Handle unauthorized
+          // Handle unauthorized - just remove token
           localStorage.removeItem('token');
-          window.location.href = '/login';
           break;
         case 403:
           // Handle forbidden

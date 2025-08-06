@@ -40,6 +40,10 @@ const Login = () => {
     }
 
     try {
+      // Clear any existing tokens before login attempt
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
       // Call backend API for authentication
       const response = await apiService.post('/auth/login', {
         employeeId: formData.employeeId,
