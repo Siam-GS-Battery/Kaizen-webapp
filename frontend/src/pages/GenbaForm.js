@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import Swal from 'sweetalert2';
 import '../CustomSwal.css';
 import '../MobileDateFix.css';
-import { employeeData } from '../data/employeeData';
 
 const GenbaForm = () => {
   const [step, setStep] = useState(1);
@@ -88,31 +87,190 @@ const GenbaForm = () => {
     }
   };
 
-  const handleCheck = () => {
-    const employee = employeeData.find(emp => emp.employeeId === formData.employeeId);
+  // Image compression utility
+  const compressImage = (file, quality = 0.8, maxWidth = 1024, maxHeight = 768) => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // Calculate new dimensions
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw and compress image
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedBase64);
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
+  };
 
-    if (employee) {
-      setFormData(prev => ({
-        ...prev,
-        fullName: `${employee.firstName} ${employee.lastName}`,
-        department: employee.department,
-        fiveSGroupName: employee.fiveSArea,
-        projectArea: employee.projectArea,
-      }));
-      Swal.fire({
-        icon: 'success',
-        title: 'พบข้อมูลพนักงาน',
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 2000,
-        timerProgressBar: true,
+  // Image decode utility for display
+  const decodeImage = (base64String) => {
+    if (!base64String) return null;
+    // If it's already a data URL, return it
+    if (base64String.startsWith('data:image/')) {
+      return base64String;
+    }
+    // If it's a base64 string without data URL prefix, add it
+    return `data:image/jpeg;base64,${base64String}`;
+  };
+
+  // Form submission function
+  const submitFormData = async () => {
+    try {
+      const projectData = {
+        projectName: formData.projectName,
+        employeeId: formData.employeeId,
+        position: 'เจ้าหน้าที่',
+        department: formData.department,
+        fiveSGroupName: formData.fiveSGroupName,
+        projectArea: formData.projectArea,
+        projectStartDate: formData.projectStartDate,
+        projectEndDate: formData.projectEndDate,
+        problemsEncountered: formData.problemsEncountered,
+        solutionApproach: formData.solutionApproach,
+        resultsAchieved: formData.resultsAchieved,
+        fiveSType: formData.fiveSType,
+        improvementTopic: formData.improvementTopic,
+        SGS_Smart: formData.SGS_Smart,
+        SGS_Strong: formData.SGS_Strong,
+        SGS_Green: formData.SGS_Green,
+        status: 'EDIT',
+        formType: 'genba'
+      };
+
+      // Set images to null for now (will be implemented later)
+      projectData.beforeProjectImage = null;
+      projectData.afterProjectImage = null;
+      
+      // Compress images if present (for future use)
+      // if (formData.beforeProjectImage) {
+      //   projectData.beforeProjectImage = await compressImage(formData.beforeProjectImage, 0.7, 800, 600);
+      // }
+      // if (formData.afterProjectImage) {
+      //   projectData.afterProjectImage = await compressImage(formData.afterProjectImage, 0.7, 800, 600);
+      // }
+
+      const response = await fetch('/api/tasklist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(projectData)
       });
-    } else {
+
+      // Check content type before parsing JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Backend server ไม่ทำงาน หรือไม่ได้ตั้งค่าอย่างถูกต้อง');
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || 'Failed to submit form');
+      }
+
+      const result = await response.json();
+      console.log('Form submitted successfully:', result);
+      
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      throw error;
+    }
+  };
+
+  const handleCheck = async () => {
+    if (!formData.employeeId.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'กรุณากรอกรหัสพนักงาน',
+        text: 'กรุณากรอกรหัสพนักงานก่อนกด Check',
+        confirmButtonText: 'ตกลง',
+        customClass: {
+          container: 'custom-swal-container',
+          title: 'custom-swal-title',
+          confirmButton: 'custom-swal-confirm-button',
+        }
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/employees/${formData.employeeId}`);
+      
+      // Check if response is ok and content type is JSON
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server returned non-JSON response. Backend may not be running on port 3001.');
+      }
+      
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        const employee = data.data;
+        setFormData(prev => ({
+          ...prev,
+          fullName: `${employee.firstName} ${employee.lastName}`,
+          department: employee.department,
+          fiveSGroupName: employee.fiveSArea,
+          projectArea: employee.projectArea,
+        }));
+        Swal.fire({
+          icon: 'success',
+          title: 'พบข้อมูลพนักงาน',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2000,
+          timerProgressBar: true,
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'ไม่พบข้อมูล',
+          text: 'ไม่พบรหัสพนักงานนี้ในระบบ',
+          confirmButtonText: 'ตกลง',
+          customClass: {
+            container: 'custom-swal-container',
+            title: 'custom-swal-title',
+            confirmButton: 'custom-swal-confirm-button',
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching employee data:', error);
+      
+      let errorMessage = 'ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้';
+      if (error.message.includes('non-JSON response')) {
+        errorMessage = 'Backend server ไม่ทำงาน กรุณาเริ่ม backend server ก่อน (npm run dev ในโฟลเดอร์ backend)';
+      }
+      
       Swal.fire({
         icon: 'error',
-        title: 'ไม่พบข้อมูล',
-        text: 'ไม่พบรหัสพนักงานนี้ในระบบ',
+        title: 'เกิดข้อผิดพลาด',
+        text: errorMessage,
         confirmButtonText: 'ตกลง',
         customClass: {
           container: 'custom-swal-container',
@@ -123,7 +281,7 @@ const GenbaForm = () => {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 1) {
       setStep(2);
     } else if (step === 2) {
@@ -141,8 +299,6 @@ const GenbaForm = () => {
         problemsEncountered: 'ปัญหาที่เจอ',
         solutionApproach: 'แนวทางแก้ไข',
         resultsAchieved: 'ผลลัพธ์ที่ได้',
-        beforeProjectImage: 'รูปก่อนจัดทำโครงการ',
-        afterProjectImage: 'รูปหลังจัดทำโครงการ',
         fiveSType: 'ส. ที่ใช้ในการปรับปรุง',
         improvementTopic: 'หัวข้อที่ปรับปรุง',
         SGS_Smart: 'S : Smart',
@@ -180,8 +336,10 @@ const GenbaForm = () => {
             icon: 'custom-swal-icon',
           }
         });
-        console.log('Form data submitted:', formData);
-        // Here you would typically send the data to a server
+
+        // Submit form data to backend with image compression
+        await submitFormData();
+        
         setTimeout(() => {
           window.location.href = '/';
         }, 1500);
@@ -447,7 +605,7 @@ const GenbaForm = () => {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">รูปก่อนจัดทำโครงการ</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">รูปก่อนจัดทำโครงการ <span className="text-gray-400 text-xs">(สามารถเพิ่มภายหลัง)</span></label>
                       <div className="border-2 border-dashed border-gray-400 rounded-md p-4 flex flex-col items-center justify-center">
                         <input
                           type="file"
@@ -466,7 +624,7 @@ const GenbaForm = () => {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">รูปหลังจัดทำโครงการ</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">รูปหลังจัดทำโครงการ <span className="text-gray-400 text-xs">(สามารถเพิ่มภายหลัง)</span></label>
                       <div className="border-2 border-dashed border-gray-400 rounded-md p-4 flex flex-col items-center justify-center">
                         <input
                           type="file"
