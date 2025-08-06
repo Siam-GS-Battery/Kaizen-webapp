@@ -28,7 +28,9 @@ const EmployeesManagement = () => {
     fiveSArea: '',
     role: 'User',
     subordinate: '',
-    commander: ''
+    commander: '',
+    password: '',
+    resetPassword: false
   });
 
 
@@ -127,7 +129,9 @@ const EmployeesManagement = () => {
       fiveSArea: '',
       role: 'User',
       subordinate: '',
-      commander: ''
+      commander: '',
+      password: '',
+      resetPassword: false
     });
   };
 
@@ -142,7 +146,9 @@ const EmployeesManagement = () => {
       fiveSArea: formData.get('fiveSArea'),
       role: formData.get('role'),
       subordinate: formData.get('subordinate'),
-      commander: formData.get('commander')
+      commander: formData.get('commander'),
+      password: formData.get('password'),
+      resetPassword: formData.get('resetPassword') === 'on'
     };
   };
 
@@ -172,6 +178,11 @@ const EmployeesManagement = () => {
         projectArea: data.department, // Using department as project area for simplicity
         role: data.role
       };
+
+      // Add password if provided
+      if (data.password && data.password.trim()) {
+        newEmployeeData.password = data.password.trim();
+      }
 
       const response = await employeeAPI.create(newEmployeeData);
       
@@ -230,6 +241,13 @@ const EmployeesManagement = () => {
         projectArea: data.department, // Using department as project area
         role: data.role
       };
+
+      // Handle password updates
+      if (data.resetPassword) {
+        updateData.resetPassword = true;
+      } else if (data.password && data.password.trim()) {
+        updateData.password = data.password.trim();
+      }
 
       const response = await employeeAPI.update(editingEmployee.employeeId, updateData);
       
@@ -369,7 +387,9 @@ const EmployeesManagement = () => {
       fiveSArea: employee.fiveSArea,
       role: employee.role,
       subordinate: '',
-      commander: ''
+      commander: '',
+      password: '',
+      resetPassword: false
     });
     setIsEditModalOpen(true);
   }, []);
@@ -715,6 +735,57 @@ const EmployeesManagement = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Security Section */}
+            <div className="border-b border-gray-200 pb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+                ความปลอดภัย
+              </h3>
+
+              {isEdit && (
+                <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="resetPassword"
+                      id="resetPassword"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3"
+                    />
+                    <label htmlFor="resetPassword" className="text-sm font-medium text-yellow-800 cursor-pointer">
+                      รีเซ็ตรหัสผ่าน (ลบรหัสผ่านออกจากระบบ)
+                    </label>
+                  </div>
+                  <p className="text-xs text-yellow-600 mt-1 ml-6">
+                    เมื่อเลือกตัวเลือกนี้ รหัสผ่านของพนักงานจะถูกลบออกจากระบบ
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {isEdit ? 'รหัสผ่านใหม่' : 'รหัสผ่าน'} 
+                    <span className="text-gray-500 font-normal">(ไม่บังคับ)</span>
+                  </label>
+                  <UncontrolledInput
+                    name="password"
+                    type="password"
+                    defaultValue=""
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder={isEdit ? "กรอกรหัสผ่านใหม่หากต้องการเปลี่ยน" : "กรอกรหัสผ่าน"}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {isEdit 
+                      ? "หากไม่ต้องการเปลี่ยนรหัสผ่าน ให้เว้นว่างไว้" 
+                      : "หากไม่กรอกรหัสผ่าน พนักงานจะสามารถเข้าสู่ระบบได้โดยไม่ต้องใช้รหัสผ่าน"
+                    }
+                  </p>
                 </div>
               </div>
             </div>

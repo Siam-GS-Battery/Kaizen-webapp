@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import { supabase, supabaseAdmin } from '../config/database';
 import { authenticateToken, AuthenticatedRequest, requireRole } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
@@ -147,7 +148,8 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
       department,
       fiveSArea,
       projectArea,
-      role = 'User'
+      role = 'User',
+      password
     } = req.body;
 
     if (!employeeId || !firstName || !lastName || !department) {
@@ -165,6 +167,13 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
       throw createError('Employee ID already exists', 409);
     }
 
+    // Hash password if provided
+    let passwordHash = null;
+    if (password && password.trim()) {
+      const saltRounds = 12;
+      passwordHash = await bcrypt.hash(password.trim(), saltRounds);
+    }
+
     const newEmployee = {
       employee_id: employeeId,
       first_name: firstName,
@@ -173,6 +182,7 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
       five_s_area: fiveSArea,
       project_area: projectArea,
       role,
+      password_hash: passwordHash,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -237,7 +247,9 @@ router.put('/:employeeId', async (req: any, res: Response): Promise<void> => {
       department,
       fiveSArea,
       projectArea,
-      role
+      role,
+      password,
+      resetPassword
     } = req.body;
 
     const updateData: any = {
@@ -250,6 +262,16 @@ router.put('/:employeeId', async (req: any, res: Response): Promise<void> => {
     if (fiveSArea !== undefined) updateData.five_s_area = fiveSArea;
     if (projectArea !== undefined) updateData.project_area = projectArea;
     if (role !== undefined) updateData.role = role;
+
+    // Handle password updates
+    if (resetPassword === true) {
+      // Reset password (set to null)
+      updateData.password_hash = null;
+    } else if (password && password.trim()) {
+      // Set new password
+      const saltRounds = 12;
+      updateData.password_hash = await bcrypt.hash(password.trim(), saltRounds);
+    }
 
     const { data: employee, error } = await supabaseAdmin
       .from('users')
