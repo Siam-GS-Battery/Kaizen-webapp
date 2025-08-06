@@ -211,7 +211,7 @@ const EmployeesManagement = () => {
   const handleEditEmployee = async (formElement) => {
     const data = getFormData(formElement);
     
-    if (!data.employeeId || !data.firstName || !data.lastName || !data.department || !data.fiveSArea) {
+    if (!data.firstName || !data.lastName || !data.department || !data.fiveSArea) {
       await Swal.fire({
         icon: 'warning',
         title: 'ข้อมูลไม่ครบถ้วน',
