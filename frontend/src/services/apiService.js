@@ -70,4 +70,48 @@ export const employeeAPI = {
   delete: (employeeId) => apiService.delete(`/employees/${employeeId}`)
 };
 
+// Tasklist API functions
+export const tasklistAPI = {
+  // Get all tasks with filters and pagination
+  getAll: (params = {}) => {
+    const queryString = new URLSearchParams();
+    
+    // Add parameters only if they have values
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryString.append(key, value);
+      }
+    });
+    
+    const url = `/tasklist${queryString.toString() ? '?' + queryString.toString() : ''}`;
+    return apiService.get(url);
+  },
+  
+  // Get task by ID
+  getById: (taskId) => apiService.get(`/tasklist/${taskId}`),
+  
+  // Create new task
+  create: (taskData) => apiService.post('/tasklist', taskData),
+  
+  // Update task
+  update: (taskId, taskData) => apiService.put(`/tasklist/${taskId}`, taskData),
+  
+  // Delete task
+  delete: (taskId) => apiService.delete(`/tasklist/${taskId}`),
+  
+  // Bulk approve tasks
+  bulkApprove: (taskIds) => {
+    return Promise.all(
+      taskIds.map(id => apiService.put(`/tasklist/${id}`, { status: 'APPROVED' }))
+    );
+  },
+  
+  // Bulk delete tasks
+  bulkDelete: (taskIds) => {
+    return Promise.all(
+      taskIds.map(id => apiService.delete(`/tasklist/${id}`))
+    );
+  }
+};
+
 export default apiService; 

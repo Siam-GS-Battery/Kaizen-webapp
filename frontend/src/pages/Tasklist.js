@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { tasklistData } from '../data/tasklistData';
+import { tasklistAPI } from '../services/apiService';
 
 const Tasklist = () => {
   const navigate = useNavigate();
@@ -10,11 +10,47 @@ const Tasklist = () => {
   const [selectedItems, setSelectedItems] = useState([]);
   const [isManageDropdownOpen, setIsManageDropdownOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState('newest'); // 'newest' or 'oldest'
-  const [filteredData, setFilteredData] = useState(tasklistData);
+  const [filteredData, setFilteredData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [allTasks, setAllTasks] = useState([]);
+
+  // Fetch data from API
+  const fetchTasks = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const params = {
+        sortBy: 'created_date',
+        sortOrder: sortOrder === 'newest' ? 'desc' : 'asc',
+        limit: '1000' // Get all tasks for client-side filtering
+      };
+      
+      const response = await tasklistAPI.getAll(params);
+      
+      if (response.data && response.data.success) {
+        const tasks = response.data.data.projects || [];
+        setAllTasks(tasks);
+      } else {
+        throw new Error('Failed to fetch tasks');
+      }
+    } catch (err) {
+      console.error('Error fetching tasks:', err);
+      setError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchTasks();
+  }, [sortOrder]);
 
   // Filter และ search ข้อมูล
   useEffect(() => {
-    let filtered = tasklistData;
+    let filtered = allTasks;
 
     // Filter ตาม type และ status
     if (activeFilter !== 'all') {
@@ -46,28 +82,21 @@ const Tasklist = () => {
       );
     }
 
-    // Sort ตามวันที่
-    filtered = filtered.sort((a, b) => {
-      const dateA = new Date(a.createdDate);
-      const dateB = new Date(b.createdDate);
-      return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
-    });
-
     setFilteredData(filtered);
-  }, [searchTerm, activeFilter, sortOrder]);
+  }, [searchTerm, activeFilter, allTasks]);
 
   // Get filter counts based on status requirements
   const getFilterCounts = () => {
     return {
-      genba: tasklistData.filter(item => 
+      genba: allTasks.filter(item => 
         item.formType === 'genba' && 
         (item.status === 'WAITING' || item.status === 'EDIT')
       ).length,
-      suggestion: tasklistData.filter(item => 
+      suggestion: allTasks.filter(item => 
         item.formType === 'suggestion' && 
         (item.status === 'WAITING' || item.status === 'EDIT')
       ).length,
-      best_kaizen: tasklistData.filter(item => 
+      best_kaizen: allTasks.filter(item => 
         item.formType === 'best_kaizen' && 
         item.status === 'APPROVED'
       ).length,
@@ -110,13 +139,24 @@ const Tasklist = () => {
     });
 
     if (result.isConfirmed) {
-      await Swal.fire({
-        title: 'อนุมัติเรียบร้อย!',
-        text: `อนุมัติโครงการ ${selectedItems.length} รายการเรียบร้อยแล้ว`,
-        icon: 'success',
-        confirmButtonColor: '#3b82f6'
-      });
-      setSelectedItems([]);
+      try {
+        await tasklistAPI.bulkApprove(selectedItems);
+        await Swal.fire({
+          title: 'อนุมัติเรียบร้อย!',
+          text: `อนุมัติโครงการ ${selectedItems.length} รายการเรียบร้อยแล้ว`,
+          icon: 'success',
+          confirmButtonColor: '#3b82f6'
+        });
+        setSelectedItems([]);
+        await fetchTasks(); // Refresh data
+      } catch (error) {
+        await Swal.fire({
+          title: 'เกิดข้อผิดพลาด',
+          text: 'ไม่สามารถอนุมัติโครงการได้ กรุณาลองใหม่อีกครั้ง',
+          icon: 'error',
+          confirmButtonColor: '#3b82f6'
+        });
+      }
     }
   };
 
@@ -135,13 +175,24 @@ const Tasklist = () => {
     });
 
     if (result.isConfirmed) {
-      await Swal.fire({
-        title: 'ลบเรียบร้อย!',
-        text: `ลบโครงการ ${selectedItems.length} รายการเรียบร้อยแล้ว`,
-        icon: 'success',
-        confirmButtonColor: '#3b82f6'
-      });
-      setSelectedItems([]);
+      try {
+        await tasklistAPI.bulkDelete(selectedItems);
+        await Swal.fire({
+          title: 'ลบเรียบร้อย!',
+          text: `ลบโครงการ ${selectedItems.length} รายการเรียบร้อยแล้ว`,
+          icon: 'success',
+          confirmButtonColor: '#3b82f6'
+        });
+        setSelectedItems([]);
+        await fetchTasks(); // Refresh data
+      } catch (error) {
+        await Swal.fire({
+          title: 'เกิดข้อผิดพลาด',
+          text: 'ไม่สามารถลบโครงการได้ กรุณาลองใหม่อีกครั้ง',
+          icon: 'error',
+          confirmButtonColor: '#3b82f6'
+        });
+      }
     }
   };
 
@@ -160,12 +211,23 @@ const Tasklist = () => {
       });
 
       if (result.isConfirmed) {
-        await Swal.fire({
-          title: 'อนุมัติเรียบร้อย!',
-          text: 'อนุมัติโครงการเรียบร้อยแล้ว',
-          icon: 'success',
-          confirmButtonColor: '#3b82f6'
-        });
+        try {
+          await tasklistAPI.update(item.id, { status: 'APPROVED' });
+          await Swal.fire({
+            title: 'อนุมัติเรียบร้อย!',
+            text: 'อนุมัติโครงการเรียบร้อยแล้ว',
+            icon: 'success',
+            confirmButtonColor: '#3b82f6'
+          });
+          await fetchTasks(); // Refresh data
+        } catch (error) {
+          await Swal.fire({
+            title: 'เกิดข้อผิดพลาด',
+            text: 'ไม่สามารถอนุมัติโครงการได้ กรุณาลองใหม่อีกครั้ง',
+            icon: 'error',
+            confirmButtonColor: '#3b82f6'
+          });
+        }
       }
     } else if (action === 'edit') {
       // Check if the item has EDIT status
@@ -194,12 +256,23 @@ const Tasklist = () => {
       });
 
       if (result.isConfirmed) {
-        await Swal.fire({
-          title: 'ลบเรียบร้อย!',
-          text: 'ลบโครงการเรียบร้อยแล้ว',
-          icon: 'success',
-          confirmButtonColor: '#3b82f6'
-        });
+        try {
+          await tasklistAPI.delete(item.id);
+          await Swal.fire({
+            title: 'ลบเรียบร้อย!',
+            text: 'ลบโครงการเรียบร้อยแล้ว',
+            icon: 'success',
+            confirmButtonColor: '#3b82f6'
+          });
+          await fetchTasks(); // Refresh data
+        } catch (error) {
+          await Swal.fire({
+            title: 'เกิดข้อผิดพลาด',
+            text: 'ไม่สามารถลบโครงการได้ กรุณาลองใหม่อีกครั้ง',
+            icon: 'error',
+            confirmButtonColor: '#3b82f6'
+          });
+        }
       }
     }
   };
@@ -439,10 +512,37 @@ const Tasklist = () => {
         </button>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-600">กำลังโหลดข้อมูล...</span>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <span className="text-red-800">{error}</span>
+          </div>
+          <button
+            onClick={fetchTasks}
+            className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            ลองใหม่อีกครั้ง
+          </button>
+        </div>
+      )}
+
       {/* Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden relative">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1000px] text-sm">
+      {!loading && !error && (
+        <div className="bg-white rounded-lg shadow overflow-hidden relative">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1000px] text-sm">
             <thead className="bg-blue-600 text-white">
               <tr>
                 <th className="px-4 py-3 text-left text-sm">
@@ -496,6 +596,17 @@ const Tasklist = () => {
               ))}
             </tbody>
           </table>
+
+          {/* Empty State */}
+          {filteredData.length === 0 && (
+            <div className="text-center py-12">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H8a2 2 0 00-2 2v7m4 0v6m0 0v6m0-12a2 2 0 100-4m0 4a2 2 0 100 4m0 0h12m-6 0a2 2 0 100-4m0 4a2 2 0 100 4m-6 0h12" />
+              </svg>
+              <p className="mt-4 text-gray-600">ไม่พบข้อมูลโครงการ</p>
+              <p className="text-sm text-gray-400">ลองปรับเปลี่ยนการค้นหาหรือตัวกรองข้อมูล</p>
+            </div>
+          )}
         </div>
 
         {/* Pagination */}
@@ -518,6 +629,7 @@ const Tasklist = () => {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };
