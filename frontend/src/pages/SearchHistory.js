@@ -16,6 +16,9 @@ const SearchHistory = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Function to fetch projects from API
   const fetchProjects = async (employeeIdParam = null) => {
@@ -179,34 +182,97 @@ const SearchHistory = () => {
     }
   };
 
-  const handleRequestEdit = async (_item) => {
-    const { value: reason } = await Swal.fire({
-      title: 'เหตุผลในการแก้ไข',
-      input: 'textarea',
-      inputPlaceholder: 'กรุณากรอกเหตุผลในการขอแก้ไข...',
-      inputAttributes: {
-        'aria-label': 'กรอกเหตุผลในการแก้ไข'
-      },
-      showCancelButton: true,
-      confirmButtonText: 'ส่งคำขอ',
-      cancelButtonText: 'ยกเลิก',
-      confirmButtonColor: '#3b82f6',
-      cancelButtonColor: '#6b7280',
-      inputValidator: (value) => {
-        if (!value) {
-          return 'กรุณากรอกเหตุผลในการแก้ไข!'
-        }
-      }
-    });
-
-    if (reason) {
+  const handleRequestEdit = async (item) => {
+    // Check if user can edit based on status and role
+    if (item.status !== 'WAITING' && userRole !== 'Admin') {
       await Swal.fire({
-        title: 'ส่งคำขอเรียบร้อยแล้ว!',
-        text: 'คำขอแก้ไขได้ถูกส่งไปยังหัวหน้าเรียบร้อยแล้ว',
-        icon: 'success',
+        title: 'ไม่สามารถแก้ไขได้',
+        text: 'สามารถแก้ไขได้เฉพาะโครงการที่มีสถานะ WAITING เท่านั้น หรือต้องเป็นผู้ใช้สิทธิ์ Admin',
+        icon: 'warning',
         confirmButtonText: 'ตกลง',
-        confirmButtonColor: '#3b82f6'
+        confirmButtonColor: '#f59e0b'
       });
+      return;
+    }
+
+    // Set up edit form data
+    setEditFormData({
+      id: item.id,
+      projectName: item.projectName,
+      projectStartDate: item.formData.projectStartDate,
+      projectEndDate: item.formData.projectEndDate,
+      problemsEncountered: item.formData.problemsEncountered,
+      solutionApproach: item.formData.solutionApproach,
+      resultsAchieved: item.formData.resultsAchieved,
+      fiveSType: item.formData.fiveSType,
+      improvementTopic: item.formData.improvementTopic,
+      SGS_Smart: item.formData.SGS_Smart,
+      SGS_Green: item.formData.SGS_Green,
+      SGS_Strong: item.formData.SGS_Strong
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditFormChange = (field, value) => {
+    setEditFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleUpdateProject = async () => {
+    if (!editFormData) return;
+
+    try {
+      setIsUpdating(true);
+      
+      const updateData = {
+        projectName: editFormData.projectName,
+        projectStartDate: editFormData.projectStartDate,
+        projectEndDate: editFormData.projectEndDate,
+        problemsEncountered: editFormData.problemsEncountered,
+        solutionApproach: editFormData.solutionApproach,
+        resultsAchieved: editFormData.resultsAchieved,
+        fiveSType: editFormData.fiveSType,
+        improvementTopic: editFormData.improvementTopic,
+        SGS_Smart: editFormData.SGS_Smart,
+        SGS_Green: editFormData.SGS_Green,
+        SGS_Strong: editFormData.SGS_Strong
+      };
+
+      const response = await tasklistAPI.update(editFormData.id, updateData);
+      
+      if (response.data.success) {
+        await Swal.fire({
+          title: 'แก้ไขเรียบร้อยแล้ว!',
+          text: 'ข้อมูลโครงการได้ถูกอัปเดตเรียบร้อยแล้ว',
+          icon: 'success',
+          confirmButtonText: 'ตกลง',
+          confirmButtonColor: '#3b82f6'
+        });
+        
+        // Refresh the data
+        const projects = isLoggedIn 
+          ? await fetchProjects(employeeId) 
+          : await fetchProjects(employeeId);
+        setSearchResults(projects);
+        
+        setShowEditModal(false);
+        setEditFormData(null);
+      } else {
+        throw new Error(response.data.message || 'Failed to update project');
+      }
+    } catch (err) {
+      console.error('Error updating project:', err);
+      await Swal.fire({
+        title: 'เกิดข้อผิดพลาด',
+        text: 'ไม่สามารถอัปเดตข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
+        icon: 'error',
+        confirmButtonText: 'ตกลง',
+        confirmButtonColor: '#ef4444'
+      });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -226,6 +292,268 @@ const SearchHistory = () => {
     } catch (error) {
       return dateString; // fallback to original string
     }
+  };
+
+  const renderEditModal = () => {
+    if (!editFormData) return null;
+
+    const s5Options = [
+      { value: 'ส1', label: 'ส1 : สะสาง' },
+      { value: 'ส2', label: 'ส2 : สะดวก' },
+      { value: 'ส3', label: 'ส3 : สะอาด' },
+      { value: 'ส4', label: 'ส4 : สร้างมาตรฐาน' },
+      { value: 'ส5', label: 'ส5 : สร้างวินัย' },
+    ];
+
+    const improveTopics = [
+      { value: 'Safety', label: 'Safety (ความปลอดภัย)' },
+      { value: 'Env', label: 'Env. (สิ่งแวดล้อม)' },
+      { value: 'Quality', label: 'Quality (คุณภาพ)' },
+      { value: 'Cost', label: 'Cost (ต้นทุน)' },
+      { value: 'Delivery', label: 'Delivery (การส่งมอบ)' },
+    ];
+
+    const sgsOptions = {
+      Smart: [
+        { value: 'People', label: 'People (เพิ่มทักษะการทำงาน)' },
+        { value: 'Factory', label: 'Factory (ใช้เทคโนโลยีเพิ่มประสิทธิภาพการทำงาน)' },
+      ],
+      Strong: [
+        { value: 'Energy_3R', label: 'Energy (ลดการใช้พลังงาน) , 3R ( Reduce,Reuse,Recycle )' },
+        { value: 'Workplace', label: 'Workplace (ปรับปรุงการทำงานให้ปลอดภัย)' },
+      ],
+      Green: [
+        { value: 'Teamwork', label: 'Teamwork (ปรับปรุงงานร่วมกับต่างหน่วยงาน)' },
+        { value: 'Branding', label: 'Branding (ปรับปรุงคุณภาพของผลิตภัณฑ์ หรือ ส่งมอบตรงเวลา)' },
+      ]
+    };
+
+    return (
+      <div
+        className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowEditModal(false);
+            setEditFormData(null);
+          }
+        }}
+      >
+        <div
+          className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Modal Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold">แก้ไขโครงการ</h2>
+                  <p className="text-blue-100 text-sm opacity-90">ปรับปรุงข้อมูลโครงการ</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditFormData(null);
+                }}
+                className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="space-y-6">
+              {/* Project Basic Info */}
+              <div className="bg-gradient-to-br from-white to-blue-50 rounded-xl border border-blue-100 shadow-sm p-6">
+                <h3 className="text-lg font-bold text-blue-600 mb-4">ข้อมูลพื้นฐาน</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">ชื่อโครงการ</label>
+                    <input
+                      type="text"
+                      value={editFormData.projectName}
+                      onChange={(e) => handleEditFormChange('projectName', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">วันที่เริ่มโครงการ</label>
+                      <input
+                        type="date"
+                        value={editFormData.projectStartDate}
+                        onChange={(e) => handleEditFormChange('projectStartDate', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">วันที่จบโครงการ</label>
+                      <input
+                        type="date"
+                        value={editFormData.projectEndDate}
+                        onChange={(e) => handleEditFormChange('projectEndDate', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Project Details */}
+              <div className="bg-gradient-to-br from-white to-blue-50 rounded-xl border border-blue-100 shadow-sm p-6">
+                <h3 className="text-lg font-bold text-blue-600 mb-4">รายละเอียดโครงการ</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">ปัญหาที่เจอ</label>
+                    <textarea
+                      value={editFormData.problemsEncountered}
+                      onChange={(e) => handleEditFormChange('problemsEncountered', e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">แนวทางแก้ไข</label>
+                    <textarea
+                      value={editFormData.solutionApproach}
+                      onChange={(e) => handleEditFormChange('solutionApproach', e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">ผลลัพธ์ที่ได้</label>
+                    <textarea
+                      value={editFormData.resultsAchieved}
+                      onChange={(e) => handleEditFormChange('resultsAchieved', e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 5S Categories */}
+              <div className="bg-gradient-to-br from-white to-blue-50 rounded-xl border border-blue-100 shadow-sm p-6">
+                <h3 className="text-lg font-bold text-blue-600 mb-4">ประเภทของกิจกรรม 5ส</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">ส. ที่ใช้ในการปรับปรุง</label>
+                    <select
+                      value={editFormData.fiveSType}
+                      onChange={(e) => handleEditFormChange('fiveSType', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {s5Options.map(option => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">หัวข้อที่ปรับปรุง</label>
+                    <select
+                      value={editFormData.improvementTopic}
+                      onChange={(e) => handleEditFormChange('improvementTopic', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {improveTopics.map(option => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* SGS Way */}
+                  <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-200">
+                    <label className="block text-sm font-bold text-blue-600 mb-3">ส่งเสริมอัตลักษณ์ SGS Way ด้าน</label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <span className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">S : Smart</span>
+                        <select
+                          value={editFormData.SGS_Smart}
+                          onChange={(e) => handleEditFormChange('SGS_Smart', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          <option value="">เลือก...</option>
+                          {sgsOptions.Smart.map(option => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <span className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">G : Green</span>
+                        <select
+                          value={editFormData.SGS_Green}
+                          onChange={(e) => handleEditFormChange('SGS_Green', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          <option value="">เลือก...</option>
+                          {sgsOptions.Green.map(option => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <span className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">S : Strong</span>
+                        <select
+                          value={editFormData.SGS_Strong}
+                          onChange={(e) => handleEditFormChange('SGS_Strong', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          <option value="">เลือก...</option>
+                          {sgsOptions.Strong.map(option => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Modal Footer */}
+          <div className="bg-gray-50 border-t border-gray-200 p-6">
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditFormData(null);
+                }}
+                className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-semibold"
+                disabled={isUpdating}
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={handleUpdateProject}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold flex items-center gap-2"
+                disabled={isUpdating}
+              >
+                {isUpdating ? (
+                  <>
+                    <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
+                    กำลังอัปเดต...
+                  </>
+                ) : (
+                  'ยืนยันการแก้ไข'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const renderFormModal = () => {
@@ -687,12 +1015,16 @@ const SearchHistory = () => {
                         <td className="px-4 py-3">{item.createdDate}</td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2">
+                            {/* Edit button with conditional styling based on permissions */}
                             <button
                               onClick={() => handleRequestEdit(item)}
-                              className="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded-full p-2 shadow-sm transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                              title="Request to Edit"
+                              className={`rounded-full p-2 shadow-sm transition-colors flex items-center justify-center focus:outline-none focus:ring-2 ${
+                                item.status === 'WAITING' || userRole === 'Admin'
+                                  ? 'bg-green-100 hover:bg-green-200 text-green-700 focus:ring-green-400'
+                                  : 'bg-gray-100 hover:bg-gray-200 text-gray-500 focus:ring-gray-400 cursor-not-allowed'
+                              }`}
+                              title={item.status === 'WAITING' || userRole === 'Admin' ? 'แก้ไขโครงการ' : 'ไม่สามารถแก้ไขได้ (สถานะต้องเป็น WAITING หรือเป็น Admin)'}
                             >
-                              {/* New Pen Icon */}
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12.004 20.995h7.5M16.504 3.495a2.121 2.121 0 113 3l-11 11-4 1 1-4 11-11z" />
                               </svg>
@@ -700,9 +1032,8 @@ const SearchHistory = () => {
                             <button
                               onClick={() => handleViewForm(item)}
                               className="bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-full p-2 shadow-sm transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-400"
-                              title="View Form"
+                              title="ดูรายละเอียดฟอร์ม"
                             >
-                              {/* Eye Icon */}
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -756,6 +1087,8 @@ const SearchHistory = () => {
 
       {/* Form Modal */}
       {showFormModal && renderFormModal()}
+      {/* Edit Modal */}
+      {showEditModal && renderEditModal()}
     </div>
   );
 };
