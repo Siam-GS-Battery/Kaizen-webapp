@@ -4,6 +4,7 @@ import '../CustomSwal.css';
 import { employeeData } from '../data/employeeData';
 import sessionManager from '../utils/sessionManager';
 import { tasklistAPI } from '../services/apiService';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 const SearchHistory = () => {
   const [employeeId, setEmployeeId] = useState('');
@@ -631,12 +632,7 @@ const SearchHistory = () => {
       )}
 
       {/* Loading State */}
-      {loading && (
-        <div className="text-center py-16">
-          <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-500 text-lg">กำลังโหลดข้อมูล...</p>
-        </div>
-      )}
+      {loading && <SkeletonLoader rows={5} />}
 
       {/* Error State */}
       {error && !loading && (

@@ -153,7 +153,7 @@ const GenbaForm = () => {
         SGS_Smart: formData.SGS_Smart,
         SGS_Strong: formData.SGS_Strong,
         SGS_Green: formData.SGS_Green,
-        status: 'EDIT',
+        status: 'WAITING',
         formType: 'genba'
       };
 
