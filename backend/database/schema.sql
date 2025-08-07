@@ -93,7 +93,7 @@ CREATE TABLE projects (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Sessions table for user session management
+-- Sessions table for user session management∆
 CREATE TABLE sessions (
     id SERIAL PRIMARY KEY,
     employee_id VARCHAR(20) REFERENCES users(employee_id) ON DELETE CASCADE,

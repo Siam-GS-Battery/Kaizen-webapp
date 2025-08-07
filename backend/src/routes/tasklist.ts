@@ -83,7 +83,10 @@ router.get('/', async (req: any, res: Response): Promise<void> => {
     }
     
     if (employeeId) {
-      query = query.eq('employee_id', employeeId);
+      // Ensure exact match for employee_id with proper trimming
+      const trimmedEmployeeId = employeeId.toString().trim();
+      console.log('Filtering by employee_id:', trimmedEmployeeId);
+      query = query.eq('employee_id', trimmedEmployeeId);
     }
 
     // Search functionality
@@ -260,10 +263,10 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
     ];
 
     // Optional fields that can be empty or null
-    const optionalFields = [
-      'beforeProjectImage', 'afterProjectImage', 'resultsAchieved', 
-      'SGS_Smart', 'SGS_Strong', 'SGS_Green', 'standardCertification'
-    ];
+    // const optionalFields = [
+    //   'beforeProjectImage', 'afterProjectImage', 'resultsAchieved', 
+    //   'SGS_Smart', 'SGS_Strong', 'SGS_Green', 'standardCertification'
+    // ];
 
     for (const field of requiredFields) {
       if (!taskData[field as keyof TaskListItem]) {
