@@ -75,7 +75,7 @@ const SearchHistory = () => {
       department: project.department,
       partner: project.fiveSGroupName || 'ไม่ระบุ',
       status: project.status,
-      createdDate: project.createdDateTh || formatThaiDate(project.createdDate),
+      createdDate: formatThaiDate(project.createdDate),
       formType: project.formType,
       formData: {
         employeeId: project.employeeId,
@@ -101,15 +101,15 @@ const SearchHistory = () => {
     }));
   };
 
-  // Function to format date to Thai format
+  // Function to format date to dd-mm-yyyy format (Christian Era)
   const formatThaiDate = (dateString) => {
     if (!dateString) return 'ไม่ระบุ';
     try {
       const date = new Date(dateString);
       const day = String(date.getDate()).padStart(2, '0');
       const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = date.getFullYear() + 543; // Convert to Buddhist Era
-      return `${day}/${month}/${year}`;
+      const year = date.getFullYear(); // Christian Era
+      return `${day}-${month}-${year}`;
     } catch (error) {
       return 'ไม่ระบุ';
     }
@@ -218,11 +218,10 @@ const SearchHistory = () => {
     if (!dateString) return 'ไม่ระบุ';
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('th-TH', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear(); // Christian Era
+      return `${day}-${month}-${year}`;
     } catch (error) {
       return dateString; // fallback to original string
     }
@@ -573,6 +572,8 @@ const SearchHistory = () => {
         return <span className={baseClass + " bg-green-100 text-green-800"}>APPROVED</span>;
       case 'WAITING':
         return <span className={baseClass + " bg-yellow-100 text-yellow-800"}>WAITING</span>;
+      case 'EDIT':
+        return <span className={baseClass + " bg-yellow-100 text-yellow-800"}>EDIT</span>;
       default:
         return <span className={baseClass + " bg-gray-100 text-gray-800"}>{status}</span>;
     }
