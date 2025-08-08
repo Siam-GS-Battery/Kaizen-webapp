@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import ImageUpload from '../components/ImageUpload';
 import '../CustomSwal.css';
 import '../MobileDateFix.css';
 
@@ -22,6 +23,7 @@ const SuggestionForm = () => {
     standardCertification: '',
     resultsAchieved: '',
     beforeProjectImage: null,
+    beforeProjectImageFile: null,
     fiveSType: '',
     improvementTopic: '',
     SGS_Smart: '',
@@ -74,18 +76,19 @@ const SuggestionForm = () => {
   ];
 
   const handleInputChange = (e) => {
-    const { name, value, type, files } = e.target;
-    if (type === 'file') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: files[0]
-      }));
-    } else {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    }
+  };
+
+  const handleImageSelect = (imageType, file, base64) => {
+    setFormData(prev => ({
+      ...prev,
+      [`${imageType}ProjectImage`]: base64,
+      [`${imageType}ProjectImageFile`]: file
+    }));
   };
 
   // Image compression utility
@@ -104,8 +107,7 @@ const SuggestionForm = () => {
             width = maxWidth;
           }
         } else {
-          if (height > maxHeight) {
-            width = (width * maxHeight) / height;
+          if (height > maxHeight) { width = (width * maxHeight) / height;
             height = maxHeight;
           }
         }
@@ -123,16 +125,6 @@ const SuggestionForm = () => {
     });
   };
 
-  // Image decode utility for display
-  const decodeImage = (base64String) => {
-    if (!base64String) return null;
-    // If it's already a data URL, return it
-    if (base64String.startsWith('data:image/')) {
-      return base64String;
-    }
-    // If it's a base64 string without data URL prefix, add it
-    return `data:image/jpeg;base64,${base64String}`;
-  };
 
   // Form submission function
   const submitFormData = async () => {
@@ -154,17 +146,17 @@ const SuggestionForm = () => {
         SGS_Smart: formData.SGS_Smart,
         SGS_Strong: formData.SGS_Strong,
         SGS_Green: formData.SGS_Green,
-        status: 'EDIT',
+        status: 'WAITING',
         formType: 'suggestion'
       };
 
-      // Set image to null for now (will be implemented later)
-      projectData.beforeProjectImage = null;
+      // Set image (only before image for suggestion form)
+      projectData.beforeProjectImage = formData.beforeProjectImage;
       
-      // Compress image if present (for future use)
-      // if (formData.beforeProjectImage) {
-      //   projectData.beforeProjectImage = await compressImage(formData.beforeProjectImage, 0.7, 800, 600);
-      // }
+      // Compress image if present
+      if (formData.beforeProjectImageFile) {
+        projectData.beforeProjectImage = await compressImage(formData.beforeProjectImageFile, 0.7, 800, 600);
+      }
 
       const response = await fetch('/api/tasklist', {
         method: 'POST',
@@ -600,26 +592,28 @@ const SuggestionForm = () => {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">รูปก่อนจัดทำโครงการ <span className="text-gray-400 text-xs">(สามารถเพิ่มภายหลัง)</span></label>
-                      <div className="border-2 border-dashed border-gray-400 rounded-md p-4 flex flex-col items-center justify-center">
-                        <input
-                          type="file"
-                          name="beforeProjectImage"
-                          accept="image/jpeg,image/png"
-                          onChange={handleInputChange}
-                          className="hidden"
-                          id="beforeImg"
-                        />
-                        <label htmlFor="beforeImg" className="cursor-pointer flex flex-col items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4a1 1 0 011-1h8a1 1 0 011 1v12m-4 4h-4a1 1 0 01-1-1v-4h6v4a1 1 0 01-1 1z" /></svg>
-                          <span className="text-gray-500 text-sm">Choose a file or drag & drop it here<br/>JPEG, PNG formats, up to 5 MB</span>
-                          <span className="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-md">Browse files</span>
-                        </label>
-                        {formData.beforeProjectImage && <span className="mt-2 text-xs text-green-600">{formData.beforeProjectImage.name}</span>}
+                  <div className="grid grid-cols-1 gap-4">
+                    <ImageUpload
+                      id="beforeImg"
+                      label="รูปก่อนจัดทำโครงการ"
+                      onImageSelect={(file, base64) => handleImageSelect('before', file, base64)}
+                      currentImage={formData.beforeProjectImage}
+                      acceptedFormats="image/jpeg,image/png,image/webp"
+                      maxSizeMB={5}
+                    />
+                    {/* <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                      <div className="flex">
+                        <svg className="w-5 h-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        <div>
+                          <h3 className="text-sm font-medium text-yellow-800">หมายเหตุ</h3>
+                          <p className="text-sm text-yellow-700 mt-1">
+                            ฟอร์มข้อเสนอแนะจำเป็นต้องแนบเฉพาะรูปก่อนจัดทำโครงการเท่านั้น
+                          </p>
+                        </div>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </>

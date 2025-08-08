@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Swal from 'sweetalert2';
+import ImageUpload from '../components/ImageUpload';
 import '../CustomSwal.css';
 import '../MobileDateFix.css';
 
@@ -20,7 +21,9 @@ const GenbaForm = () => {
     standardCertification: '',
     resultsAchieved: '',
     beforeProjectImage: null,
+    beforeProjectImageFile: null,
     afterProjectImage: null,
+    afterProjectImageFile: null,
     fiveSType: '',
     improvementTopic: '',
     SGS_Smart: '',
@@ -73,18 +76,19 @@ const GenbaForm = () => {
   ];
 
   const handleInputChange = (e) => {
-    const { name, value, type, files } = e.target;
-    if (type === 'file') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: files[0]
-      }));
-    } else {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    }
+  };
+
+  const handleImageSelect = (imageType, file, base64) => {
+    setFormData(prev => ({
+      ...prev,
+      [`${imageType}ProjectImage`]: base64,
+      [`${imageType}ProjectImageFile`]: file
+    }));
   };
 
   // Image compression utility
@@ -122,16 +126,6 @@ const GenbaForm = () => {
     });
   };
 
-  // Image decode utility for display
-  const decodeImage = (base64String) => {
-    if (!base64String) return null;
-    // If it's already a data URL, return it
-    if (base64String.startsWith('data:image/')) {
-      return base64String;
-    }
-    // If it's a base64 string without data URL prefix, add it
-    return `data:image/jpeg;base64,${base64String}`;
-  };
 
   // Form submission function
   const submitFormData = async () => {
@@ -157,17 +151,17 @@ const GenbaForm = () => {
         formType: 'genba'
       };
 
-      // Set images to null for now (will be implemented later)
-      projectData.beforeProjectImage = null;
-      projectData.afterProjectImage = null;
+      // Set images
+      projectData.beforeProjectImage = formData.beforeProjectImage;
+      projectData.afterProjectImage = formData.afterProjectImage;
       
-      // Compress images if present (for future use)
-      // if (formData.beforeProjectImage) {
-      //   projectData.beforeProjectImage = await compressImage(formData.beforeProjectImage, 0.7, 800, 600);
-      // }
-      // if (formData.afterProjectImage) {
-      //   projectData.afterProjectImage = await compressImage(formData.afterProjectImage, 0.7, 800, 600);
-      // }
+      // Compress images if present
+      if (formData.beforeProjectImageFile) {
+        projectData.beforeProjectImage = await compressImage(formData.beforeProjectImageFile, 0.7, 800, 600);
+      }
+      if (formData.afterProjectImageFile) {
+        projectData.afterProjectImage = await compressImage(formData.afterProjectImageFile, 0.7, 800, 600);
+      }
 
       const response = await fetch('/api/tasklist', {
         method: 'POST',
@@ -604,44 +598,22 @@ const GenbaForm = () => {
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">รูปก่อนจัดทำโครงการ <span className="text-gray-400 text-xs">(สามารถเพิ่มภายหลัง)</span></label>
-                      <div className="border-2 border-dashed border-gray-400 rounded-md p-4 flex flex-col items-center justify-center">
-                        <input
-                          type="file"
-                          name="beforeProjectImage"
-                          accept="image/jpeg,image/png"
-                          onChange={handleInputChange}
-                          className="hidden"
-                          id="beforeImg"
-                        />
-                        <label htmlFor="beforeImg" className="cursor-pointer flex flex-col items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4a1 1 0 011-1h8a1 1 0 011 1v12m-4 4h-4a1 1 0 01-1-1v-4h6v4a1 1 0 01-1 1z" /></svg>
-                          <span className="text-gray-500 text-sm">Choose a file or drag & drop it here<br/>JPEG, PNG formats, up to 5 MB</span>
-                          <span className="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-md">Browse files</span>
-                        </label>
-                        {formData.beforeProjectImage && <span className="mt-2 text-xs text-green-600">{formData.beforeProjectImage.name}</span>}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">รูปหลังจัดทำโครงการ <span className="text-gray-400 text-xs">(สามารถเพิ่มภายหลัง)</span></label>
-                      <div className="border-2 border-dashed border-gray-400 rounded-md p-4 flex flex-col items-center justify-center">
-                        <input
-                          type="file"
-                          name="afterProjectImage"
-                          accept="image/jpeg,image/png"
-                          onChange={handleInputChange}
-                          className="hidden"
-                          id="afterImg"
-                        />
-                        <label htmlFor="afterImg" className="cursor-pointer flex flex-col items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4a1 1 0 011-1h8a1 1 0 011 1v12m-4 4h-4a1 1 0 01-1-1v-4h6v4a1 1 0 01-1 1z" /></svg>
-                          <span className="text-gray-500 text-sm">Choose a file or drag & drop it here<br/>JPEG, PNG formats, up to 5 MB</span>
-                          <span className="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-md">Browse files</span>
-                        </label>
-                        {formData.afterProjectImage && <span className="mt-2 text-xs text-green-600">{formData.afterProjectImage.name}</span>}
-                      </div>
-                    </div>
+                    <ImageUpload
+                      id="beforeImg"
+                      label="รูปก่อนจัดทำโครงการ"
+                      onImageSelect={(file, base64) => handleImageSelect('before', file, base64)}
+                      currentImage={formData.beforeProjectImage}
+                      acceptedFormats="image/jpeg,image/png,image/webp"
+                      maxSizeMB={5}
+                    />
+                    <ImageUpload
+                      id="afterImg"
+                      label="รูปหลังจัดทำโครงการ"
+                      onImageSelect={(file, base64) => handleImageSelect('after', file, base64)}
+                      currentImage={formData.afterProjectImage}
+                      acceptedFormats="image/jpeg,image/png,image/webp"
+                      maxSizeMB={5}
+                    />
                   </div>
                 </div>
               </>

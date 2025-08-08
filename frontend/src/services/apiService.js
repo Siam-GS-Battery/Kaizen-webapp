@@ -39,7 +39,10 @@ apiService.interceptors.response.use(
           // Handle forbidden
           break;
         case 404:
-          // Handle not found
+          // Handle not found - could be bucket or resource issue
+          if (error.response.data?.message?.includes('Bucket not found')) {
+            console.warn('Storage bucket not found - this may be a Supabase configuration issue');
+          }
           break;
         case 500:
           // Handle server error
@@ -96,8 +99,8 @@ export const tasklistAPI = {
   // Update task
   update: (taskId, taskData) => apiService.put(`/tasklist/${taskId}`, taskData),
   
-  // Delete task
-  delete: (taskId) => apiService.delete(`/tasklist/${taskId}`),
+  // Delete task (soft delete - updates status to DELETED)
+  delete: (taskId) => apiService.put(`/tasklist/${taskId}`, { status: 'DELETED' }),
   
   // Bulk approve tasks
   bulkApprove: (taskIds) => {
@@ -106,10 +109,10 @@ export const tasklistAPI = {
     );
   },
   
-  // Bulk delete tasks
+  // Bulk delete tasks (soft delete)
   bulkDelete: (taskIds) => {
     return Promise.all(
-      taskIds.map(id => apiService.delete(`/tasklist/${id}`))
+      taskIds.map(id => apiService.put(`/tasklist/${id}`, { status: 'DELETED' }))
     );
   }
 };

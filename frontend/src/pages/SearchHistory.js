@@ -5,6 +5,7 @@ import { employeeData } from '../data/employeeData';
 import sessionManager from '../utils/sessionManager';
 import { tasklistAPI } from '../services/apiService';
 import SkeletonLoader from '../components/SkeletonLoader';
+import ProjectImage from '../components/ProjectImage';
 
 const SearchHistory = () => {
   const [employeeId, setEmployeeId] = useState('');
@@ -19,6 +20,13 @@ const SearchHistory = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [beforeImagePreview, setBeforeImagePreview] = useState(null);
+  const [afterImagePreview, setAfterImagePreview] = useState(null);
+  const [originalBeforeImage, setOriginalBeforeImage] = useState(null);
+  const [originalAfterImage, setOriginalAfterImage] = useState(null);
+  const [isBeforeImageModified, setIsBeforeImageModified] = useState(false);
+  const [isAfterImageModified, setIsAfterImageModified] = useState(false);
 
   // Function to fetch projects from API
   const fetchProjects = async (employeeIdParam = null) => {
@@ -72,7 +80,16 @@ const SearchHistory = () => {
 
   // Function to transform API data to match frontend format
   const transformAPIData = (projects) => {
-    return projects.map(project => ({
+    // Filter out DELETED projects before transforming
+    const activeProjects = projects.filter(project => project.status !== 'DELETED');
+    
+    // Debug logging for DELETED filtering
+    const deletedCount = projects.length - activeProjects.length;
+    if (deletedCount > 0) {
+      console.log(`Filtered out ${deletedCount} DELETED projects`);
+    }
+    
+    return activeProjects.map(project => ({
       id: project.id,
       projectName: project.projectName,
       startDate: formatThaiDate(project.projectStartDate),
@@ -187,7 +204,7 @@ const SearchHistory = () => {
     if (item.status !== 'WAITING' && userRole !== 'Admin') {
       await Swal.fire({
         title: 'ไม่สามารถแก้ไขได้',
-        text: 'สามารถแก้ไขได้เฉพาะโครงการที่มีสถานะ WAITING เท่านั้น หรือต้องเป็นผู้ใช้สิทธิ์ Admin',
+        text: 'สามารถแก้ไขได้เฉพาะโครงการที่มีสถานะ WAITING เท่านั้น',
         icon: 'warning',
         confirmButtonText: 'ตกลง',
         confirmButtonColor: '#f59e0b'
@@ -198,6 +215,7 @@ const SearchHistory = () => {
     // Set up edit form data
     setEditFormData({
       id: item.id,
+      formType: item.formType,
       projectName: item.projectName,
       projectStartDate: item.formData.projectStartDate,
       projectEndDate: item.formData.projectEndDate,
@@ -208,8 +226,17 @@ const SearchHistory = () => {
       improvementTopic: item.formData.improvementTopic,
       SGS_Smart: item.formData.SGS_Smart,
       SGS_Green: item.formData.SGS_Green,
-      SGS_Strong: item.formData.SGS_Strong
+      SGS_Strong: item.formData.SGS_Strong,
+      beforeProjectImage: item.formData.beforeProjectImage,
+      afterProjectImage: item.formData.afterProjectImage
     });
+    // Set up image previews and store original values - preserve original images for display
+    setBeforeImagePreview(item.formData.beforeProjectImage);
+    setAfterImagePreview(item.formData.afterProjectImage);
+    setOriginalBeforeImage(item.formData.beforeProjectImage);
+    setOriginalAfterImage(item.formData.afterProjectImage);
+    setIsBeforeImageModified(false);
+    setIsAfterImageModified(false);
     setShowEditModal(true);
   };
 
@@ -220,12 +247,57 @@ const SearchHistory = () => {
     }));
   };
 
+  const handleImageUpload = (field, file) => {
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageData = e.target.result;
+        setEditFormData(prev => ({
+          ...prev,
+          [field]: imageData
+        }));
+        if (field === 'beforeProjectImage') {
+          setBeforeImagePreview(imageData);
+          setIsBeforeImageModified(true);
+        } else if (field === 'afterProjectImage') {
+          setAfterImagePreview(imageData);
+          setIsAfterImageModified(true);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleImageRemove = (field) => {
+    setEditFormData(prev => ({
+      ...prev,
+      [field]: null
+    }));
+    if (field === 'beforeProjectImage') {
+      setBeforeImagePreview(null);
+      setIsBeforeImageModified(true);
+    } else if (field === 'afterProjectImage') {
+      setAfterImagePreview(null);
+      setIsAfterImageModified(true);
+    }
+  };
+
   const handleUpdateProject = async () => {
     if (!editFormData) return;
 
     try {
       setIsUpdating(true);
       
+      // Preserve original images if they haven't been explicitly changed
+      // This ensures that when editing only one image, the other remains unchanged
+      const beforeImage = isBeforeImageModified 
+        ? editFormData.beforeProjectImage 
+        : originalBeforeImage;
+      const afterImage = isAfterImageModified 
+        ? editFormData.afterProjectImage 
+        : originalAfterImage;
+
+
       const updateData = {
         projectName: editFormData.projectName,
         projectStartDate: editFormData.projectStartDate,
@@ -237,7 +309,9 @@ const SearchHistory = () => {
         improvementTopic: editFormData.improvementTopic,
         SGS_Smart: editFormData.SGS_Smart,
         SGS_Green: editFormData.SGS_Green,
-        SGS_Strong: editFormData.SGS_Strong
+        SGS_Strong: editFormData.SGS_Strong,
+        beforeProjectImage: beforeImage,
+        afterProjectImage: afterImage
       };
 
       const response = await tasklistAPI.update(editFormData.id, updateData);
@@ -259,6 +333,12 @@ const SearchHistory = () => {
         
         setShowEditModal(false);
         setEditFormData(null);
+        setBeforeImagePreview(null);
+        setAfterImagePreview(null);
+        setOriginalBeforeImage(null);
+        setOriginalAfterImage(null);
+        setIsBeforeImageModified(false);
+        setIsAfterImageModified(false);
       } else {
         throw new Error(response.data.message || 'Failed to update project');
       }
@@ -273,6 +353,68 @@ const SearchHistory = () => {
       });
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteProject = async (item) => {
+    // Check if user can delete based on status and role
+    if (item.status !== 'WAITING' && userRole !== 'Admin') {
+      await Swal.fire({
+        title: 'ไม่สามารถลบได้',
+        text: 'สามารถลบได้เฉพาะโครงการที่มีสถานะ WAITING เท่านั้น',
+        icon: 'warning',
+        confirmButtonText: 'ตกลง',
+        confirmButtonColor: '#f59e0b'
+      });
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: 'ยืนยันการลบโครงการ',
+      text: `คุณต้องการลบโครงการ "${item.projectName}" ใช่หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'ลบ',
+      cancelButtonText: 'ยกเลิก'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        setIsDeleting(true);
+        
+        const response = await tasklistAPI.delete(item.id);
+        
+        if (response.data.success) {
+          await Swal.fire({
+            title: 'ลบเรียบร้อยแล้ว!',
+            text: 'โครงการได้ถูกลบเรียบร้อยแล้ว',
+            icon: 'success',
+            confirmButtonText: 'ตกลง',
+            confirmButtonColor: '#3b82f6'
+          });
+          
+          // Refresh the data
+          const projects = isLoggedIn 
+            ? await fetchProjects(employeeId) 
+            : await fetchProjects(employeeId);
+          setSearchResults(projects);
+        } else {
+          throw new Error(response.data.message || 'Failed to delete project');
+        }
+      } catch (err) {
+        console.error('Error deleting project:', err);
+        await Swal.fire({
+          title: 'เกิดข้อผิดพลาด',
+          text: 'ไม่สามารถลบโครงการได้ กรุณาลองใหม่อีกครั้ง',
+          icon: 'error',
+          confirmButtonText: 'ตกลง',
+          confirmButtonColor: '#ef4444'
+        });
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -335,6 +477,12 @@ const SearchHistory = () => {
           if (e.target === e.currentTarget) {
             setShowEditModal(false);
             setEditFormData(null);
+            setBeforeImagePreview(null);
+            setAfterImagePreview(null);
+            setOriginalBeforeImage(null);
+            setOriginalAfterImage(null);
+            setIsBeforeImageModified(false);
+            setIsAfterImageModified(false);
           }
         }}
       >
@@ -360,6 +508,12 @@ const SearchHistory = () => {
                 onClick={() => {
                   setShowEditModal(false);
                   setEditFormData(null);
+                  setBeforeImagePreview(null);
+                  setAfterImagePreview(null);
+                  setOriginalBeforeImage(null);
+                  setOriginalAfterImage(null);
+                  setIsBeforeImageModified(false);
+                  setIsAfterImageModified(false);
                 }}
                 className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-colors"
               >
@@ -519,6 +673,132 @@ const SearchHistory = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Project Images */}
+              <div className="bg-gradient-to-br from-white to-blue-50 rounded-xl border border-blue-100 shadow-sm p-6">
+                <h3 className="text-lg font-bold text-blue-600 mb-4">รูปภาพโครงการ</h3>
+                <div className={`grid gap-6 ${
+                  editFormData?.formType === 'suggestion' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'
+                }`}>
+                  {/* Before Project Image */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">รูปก่อนจัดทำโครงการ</label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
+                      {beforeImagePreview ? (
+                        <div className="relative">
+                          <ProjectImage 
+                            src={beforeImagePreview} 
+                            alt="Before Project" 
+                            className="w-full h-32 object-cover rounded-lg mb-2"
+                            showClickHint={false}
+                            onError={(error) => {
+                              console.warn('Before image preview error:', error);
+                              handleImageRemove('beforeProjectImage');
+                            }}
+                          />
+                          <div className="flex gap-2 justify-center">
+                            <button
+                              type="button"
+                              onClick={() => document.getElementById('beforeImageInput').click()}
+                              className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
+                            >
+                              เปลี่ยนรูป
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleImageRemove('beforeProjectImage')}
+                              className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors"
+                            >
+                              ลบรูป
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <p className="text-sm text-gray-500 mb-2">คลิกเพื่ือเพิ่มรูปภาพ</p>
+                          <button
+                            type="button"
+                            onClick={() => document.getElementById('beforeImageInput').click()}
+                            className="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
+                          >
+                            เลือกรูปภาพ
+                          </button>
+                        </div>
+                      )}
+                      <input
+                        id="beforeImageInput"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload('beforeProjectImage', e.target.files[0])}
+                        className="hidden"
+                      />
+                    </div>
+                  </div>
+
+                  {/* After Project Image - Only for Genba forms */}
+                  {editFormData?.formType === 'genba' && (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">รูปหลังจัดทำโครงการ</label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
+                        {afterImagePreview ? (
+                          <div className="relative">
+                            <ProjectImage 
+                              src={afterImagePreview} 
+                              alt="After Project" 
+                              className="w-full h-32 object-cover rounded-lg mb-2"
+                              showClickHint={false}
+                              onError={(error) => {
+                                console.warn('After image preview error:', error);
+                                handleImageRemove('afterProjectImage');
+                              }}
+                            />
+                            <div className="flex gap-2 justify-center">
+                              <button
+                                type="button"
+                                onClick={() => document.getElementById('afterImageInput').click()}
+                                className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
+                              >
+                                เปลี่ยนรูป
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleImageRemove('afterProjectImage')}
+                                className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors"
+                              >
+                                ลบรูป
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <p className="text-sm text-gray-500 mb-2">คลิกเพื่ือเพิ่มรูปภาพ</p>
+                            <button
+                              type="button"
+                              onClick={() => document.getElementById('afterImageInput').click()}
+                              className="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
+                            >
+                              เลือกรูปภาพ
+                            </button>
+                          </div>
+                        )}
+                        <input
+                          id="afterImageInput"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload('afterProjectImage', e.target.files[0])}
+                          className="hidden"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -529,6 +809,12 @@ const SearchHistory = () => {
                 onClick={() => {
                   setShowEditModal(false);
                   setEditFormData(null);
+                  setBeforeImagePreview(null);
+                  setAfterImagePreview(null);
+                  setOriginalBeforeImage(null);
+                  setOriginalAfterImage(null);
+                  setIsBeforeImageModified(false);
+                  setIsAfterImageModified(false);
                 }}
                 className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-semibold"
                 disabled={isUpdating}
@@ -792,20 +1078,46 @@ const SearchHistory = () => {
                         <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                           <label className="block text-xs font-semibold text-blue-600 mb-3 uppercase tracking-wide">รูปก่อนจัดทำโครงการ</label>
                           <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300 text-center">
-                            <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <p className="text-sm text-gray-500">{formData.beforeProjectImage || 'ไม่มีรูปภาพ'}</p>
+                            {formData.beforeProjectImage ? (
+                              <ProjectImage 
+                                src={formData.beforeProjectImage}
+                                alt="รูปก่อนจัดทำโครงการ"
+                                onError={(error) => {
+                                  console.warn('Before image load error:', error);
+                                  // Error handled by ProjectImage component
+                                }}
+                              />
+                            ) : (
+                              <div>
+                                <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <p className="text-sm text-gray-500">ไม่มีรูปภาพ</p>
+                              </div>
+                            )}
                           </div>
                         </div>
                         {isGenbaForm && (
                           <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                             <label className="block text-xs font-semibold text-blue-600 mb-3 uppercase tracking-wide">รูปหลังจัดทำโครงการ</label>
                             <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300 text-center">
-                              <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                              <p className="text-sm text-gray-500">{formData.afterProjectImage || 'ไม่มีรูปภาพ'}</p>
+                              {formData.afterProjectImage ? (
+                                <ProjectImage 
+                                  src={formData.afterProjectImage}
+                                  alt="รูปหลังจัดทำโครงการ"
+                                  onError={(error) => {
+                                    console.warn('After image load error:', error);
+                                    // Error handled by ProjectImage component
+                                  }}
+                                />
+                              ) : (
+                                <div>
+                                  <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                  <p className="text-sm text-gray-500">ไม่มีรูปภาพ</p>
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}
@@ -908,6 +1220,18 @@ const SearchHistory = () => {
     }
   };
 
+  const getTypeBadge = (formType) => {
+    const baseClass = "inline-block w-20 text-center px-2 py-1 rounded-full text-xs font-medium";
+    switch (formType) {
+      case 'genba':
+        return <span className={baseClass + " bg-blue-100 text-blue-800"}>Genba</span>;
+      case 'suggestion':
+        return <span className={baseClass + " bg-purple-100 text-purple-800"}>Suggestion</span>;
+      default:
+        return <span className={baseClass + " bg-gray-100 text-gray-800"}>{formType}</span>;
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-blue-600 mb-8">SEARCH HISTORY</h1>
@@ -959,6 +1283,7 @@ const SearchHistory = () => {
         </div>
       )}
 
+
       {/* Loading State */}
       {loading && <SkeletonLoader rows={5} />}
 
@@ -986,13 +1311,14 @@ const SearchHistory = () => {
               {/* Data Table */}
               <div className="bg-white rounded-lg shadow overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[800px]">
+                  <table className="w-full min-w-[900px]">
                   <thead className="bg-blue-600 text-white">
                     <tr>
                       <th className="px-4 py-3 text-left">
                         <input type="checkbox" className="rounded" />
                       </th>
                       <th className="px-4 py-3 text-left">ชื่อโครงการ</th>
+                      <th className="px-4 py-3 text-left">ประเภท</th>
                       <th className="px-4 py-3 text-left">วันที่เริ่มการโครงการ</th>
                       <th className="px-4 py-3 text-left">แผนก</th>
                       <th className="px-4 py-3 text-left">ชื่อกลุ่ม 5ส</th>
@@ -1008,6 +1334,7 @@ const SearchHistory = () => {
                           <input type="checkbox" className="rounded" />
                         </td>
                         <td className="px-4 py-3">{item.projectName}</td>
+                        <td className="px-4 py-3">{getTypeBadge(item.formType)}</td>
                         <td className="px-4 py-3">{item.startDate}</td>
                         <td className="px-4 py-3">{item.department}</td>
                         <td className="px-4 py-3">{item.partner}</td>
@@ -1038,6 +1365,25 @@ const SearchHistory = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                               </svg>
+                            </button>
+                            {/* Delete button with conditional styling based on permissions */}
+                            <button
+                              onClick={() => handleDeleteProject(item)}
+                              disabled={isDeleting}
+                              className={`rounded-full p-2 shadow-sm transition-colors flex items-center justify-center focus:outline-none focus:ring-2 ${
+                                item.status === 'WAITING' || userRole === 'Admin'
+                                  ? 'bg-red-100 hover:bg-red-200 text-red-700 focus:ring-red-400'
+                                  : 'bg-gray-100 hover:bg-gray-200 text-gray-500 focus:ring-gray-400 cursor-not-allowed'
+                              }`}
+                              title={item.status === 'WAITING' || userRole === 'Admin' ? 'ลบโครงการ' : 'ไม่สามารถลบได้ (สถานะต้องเป็น WAITING หรือเป็น Admin)'}
+                            >
+                              {isDeleting ? (
+                                <div className="animate-spin w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full"></div>
+                              ) : (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              )}
                             </button>
                           </div>
                         </td>

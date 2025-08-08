@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { supabaseAdmin } from '../config/database';
 import { authenticateToken, AuthenticatedRequest, requireRole } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
+import { uploadProjectImage, deleteProjectImage } from '../utils/imageHandler';
 
 const router = express.Router();
 
@@ -29,7 +30,7 @@ interface TaskListItem {
   afterProjectImage?: string;
   createdDateTh: string;
   submittedDateTh: string;
-  status: 'EDIT' | 'WAITING' | 'APPROVED' | 'REJECTED';
+  status: 'EDIT' | 'WAITING' | 'APPROVED' | 'REJECTED' | 'DELETED';
   formType: 'genba' | 'suggestion' | 'best_kaizen';
   createdDate: string;
   submittedDate: string;
@@ -68,6 +69,9 @@ router.get('/', async (req: any, res: Response): Promise<void> => {
           department
         )
       `, { count: 'exact' });
+
+    // Always exclude DELETED status projects
+    query = query.neq('status', 'DELETED');
 
     // Apply filters
     if (status) {
@@ -130,8 +134,8 @@ router.get('/', async (req: any, res: Response): Promise<void> => {
       SGS_Smart: project.sgs_smart,
       SGS_Strong: project.sgs_strong,
       SGS_Green: project.sgs_green,
-      beforeProjectImage: project.before_project_image ? `data:image/jpeg;base64,${project.before_project_image}` : null,
-      afterProjectImage: project.after_project_image ? `data:image/jpeg;base64,${project.after_project_image}` : null,
+      beforeProjectImage: project.before_project_image || null,
+      afterProjectImage: project.after_project_image || null,
       createdDateTh: project.created_date_th,
       submittedDateTh: project.submitted_date_th,
       status: project.status,
@@ -217,8 +221,8 @@ router.get('/:id', async (req: any, res: Response): Promise<void> => {
       SGS_Smart: project.sgs_smart,
       SGS_Strong: project.sgs_strong,
       SGS_Green: project.sgs_green,
-      beforeProjectImage: project.before_project_image ? `data:image/jpeg;base64,${project.before_project_image}` : null,
-      afterProjectImage: project.after_project_image ? `data:image/jpeg;base64,${project.after_project_image}` : null,
+      beforeProjectImage: project.before_project_image || null,
+      afterProjectImage: project.after_project_image || null,
       createdDateTh: project.created_date_th,
       submittedDateTh: project.submitted_date_th,
       status: project.status,
@@ -290,6 +294,8 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
     }
 
     const now = new Date().toISOString();
+    
+    // First create the project without images to get the ID
     const newProject = {
       project_name: taskData.projectName,
       employee_id: taskData.employeeId,
@@ -307,8 +313,8 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
       sgs_smart: taskData.SGS_Smart || '',
       sgs_strong: taskData.SGS_Strong || '',
       sgs_green: taskData.SGS_Green || '',
-      before_project_image: taskData.beforeProjectImage ? taskData.beforeProjectImage.replace('data:image/jpeg;base64,', '') : null,
-      after_project_image: taskData.afterProjectImage ? taskData.afterProjectImage.replace('data:image/jpeg;base64,', '') : null,
+      before_project_image: null, // Will be updated after project creation
+      after_project_image: null,  // Will be updated after project creation
       created_date_th: new Date().toLocaleDateString('th-TH'),
       submitted_date_th: new Date().toLocaleDateString('th-TH'),
       status: taskData.status || 'EDIT',
@@ -335,6 +341,48 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
       throw createError(`Database error: ${error.message}`, 500);
     }
 
+    // Handle image uploads after project creation
+    let beforeImageUrl: string | null = null;
+    let afterImageUrl: string | null = null;
+
+    if (taskData.beforeProjectImage) {
+      const beforeResult = await uploadProjectImage(taskData.beforeProjectImage, project.id, 'before');
+      if (beforeResult.error) {
+        console.warn('Before image upload failed:', beforeResult.error);
+      } else {
+        beforeImageUrl = beforeResult.url;
+      }
+    }
+
+    if (taskData.afterProjectImage) {
+      const afterResult = await uploadProjectImage(taskData.afterProjectImage, project.id, 'after');
+      if (afterResult.error) {
+        console.warn('After image upload failed:', afterResult.error);
+      } else {
+        afterImageUrl = afterResult.url;
+      }
+    }
+
+    // Update project with image URLs if any were uploaded
+    if (beforeImageUrl || afterImageUrl) {
+      const updateData: any = {};
+      if (beforeImageUrl) updateData.before_project_image = beforeImageUrl;
+      if (afterImageUrl) updateData.after_project_image = afterImageUrl;
+
+      const { error: updateError } = await supabaseAdmin
+        .from('projects')
+        .update(updateData)
+        .eq('id', project.id);
+
+      if (updateError) {
+        console.warn('Failed to update project with image URLs:', updateError);
+      } else {
+        // Update local project object with new image URLs
+        project.before_project_image = beforeImageUrl || project.before_project_image;
+        project.after_project_image = afterImageUrl || project.after_project_image;
+      }
+    }
+
     const formattedProject = {
       id: project.id,
       projectName: project.project_name,
@@ -355,8 +403,8 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
       SGS_Smart: project.sgs_smart,
       SGS_Strong: project.sgs_strong,
       SGS_Green: project.sgs_green,
-      beforeProjectImage: project.before_project_image ? `data:image/jpeg;base64,${project.before_project_image}` : null,
-      afterProjectImage: project.after_project_image ? `data:image/jpeg;base64,${project.after_project_image}` : null,
+      beforeProjectImage: project.before_project_image || null,
+      afterProjectImage: project.after_project_image || null,
       createdDateTh: project.created_date_th,
       submittedDateTh: project.submitted_date_th,
       status: project.status,
@@ -438,11 +486,71 @@ router.put('/:id', async (req: any, res: Response): Promise<void> => {
     if (taskData.SGS_Smart !== undefined) updateData.sgs_smart = taskData.SGS_Smart;
     if (taskData.SGS_Strong !== undefined) updateData.sgs_strong = taskData.SGS_Strong;
     if (taskData.SGS_Green !== undefined) updateData.sgs_green = taskData.SGS_Green;
+    // Handle image uploads separately - don't update database columns yet
+    let beforeImageUrl: string | null = null;
+    let afterImageUrl: string | null = null;
+    let shouldUpdateImages = false;
+
     if (taskData.beforeProjectImage !== undefined) {
-      updateData.before_project_image = taskData.beforeProjectImage ? taskData.beforeProjectImage.replace('data:image/jpeg;base64,', '') : null;
+      if (taskData.beforeProjectImage === null) {
+        // Delete existing image if present
+        const { data: currentProject } = await supabaseAdmin
+          .from('projects')
+          .select('before_project_image')
+          .eq('id', id)
+          .single();
+        
+        if (currentProject?.before_project_image) {
+          await deleteProjectImage(currentProject.before_project_image);
+        }
+        beforeImageUrl = null;
+        shouldUpdateImages = true;
+      } else {
+        // Upload new image
+        const beforeResult = await uploadProjectImage(taskData.beforeProjectImage, parseInt(id), 'before');
+        if (beforeResult.error) {
+          console.warn('Before image upload failed:', beforeResult.error);
+        } else {
+          beforeImageUrl = beforeResult.url;
+          shouldUpdateImages = true;
+        }
+      }
     }
+
     if (taskData.afterProjectImage !== undefined) {
-      updateData.after_project_image = taskData.afterProjectImage ? taskData.afterProjectImage.replace('data:image/jpeg;base64,', '') : null;
+      if (taskData.afterProjectImage === null) {
+        // Delete existing image if present
+        const { data: currentProject } = await supabaseAdmin
+          .from('projects')
+          .select('after_project_image')
+          .eq('id', id)
+          .single();
+        
+        if (currentProject?.after_project_image) {
+          await deleteProjectImage(currentProject.after_project_image);
+        }
+        afterImageUrl = null;
+        shouldUpdateImages = true;
+      } else {
+        // Upload new image
+        const afterResult = await uploadProjectImage(taskData.afterProjectImage, parseInt(id), 'after');
+        if (afterResult.error) {
+          console.warn('After image upload failed:', afterResult.error);
+        } else {
+          afterImageUrl = afterResult.url;
+          shouldUpdateImages = true;
+        }
+      }
+    }
+
+    // Update image URLs in database if needed
+    if (shouldUpdateImages) {
+      if (taskData.beforeProjectImage !== undefined) {
+        updateData.before_project_image = beforeImageUrl;
+      }
+      if (taskData.afterProjectImage !== undefined) {
+        updateData.after_project_image = afterImageUrl;
+      }
     }
     if (taskData.status !== undefined) updateData.status = taskData.status;
     if (taskData.formType !== undefined) updateData.form_type = taskData.formType;
@@ -491,8 +599,8 @@ router.put('/:id', async (req: any, res: Response): Promise<void> => {
       SGS_Smart: project.sgs_smart,
       SGS_Strong: project.sgs_strong,
       SGS_Green: project.sgs_green,
-      beforeProjectImage: project.before_project_image ? `data:image/jpeg;base64,${project.before_project_image}` : null,
-      afterProjectImage: project.after_project_image ? `data:image/jpeg;base64,${project.after_project_image}` : null,
+      beforeProjectImage: project.before_project_image || null,
+      afterProjectImage: project.after_project_image || null,
       createdDateTh: project.created_date_th,
       submittedDateTh: project.submitted_date_th,
       status: project.status,
@@ -555,7 +663,7 @@ router.delete('/:id', async (req: any, res: Response): Promise<void> => {
 
     const { error } = await supabaseAdmin
       .from('projects')
-      .delete()
+      .update({ status: 'DELETED' })
       .eq('id', id);
 
     if (error) {
