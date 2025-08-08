@@ -30,7 +30,7 @@ interface TaskListItem {
   afterProjectImage?: string;
   createdDateTh: string;
   submittedDateTh: string;
-  status: 'EDIT' | 'WAITING' | 'APPROVED' | 'REJECTED' | 'DELETED';
+  status: 'EDIT' | 'WAITING' | 'APPROVED' | 'REJECTED' | 'DELETED' | 'BEST_KAIZEN';
   formType: 'genba' | 'suggestion' | 'best_kaizen';
   createdDate: string;
   submittedDate: string;

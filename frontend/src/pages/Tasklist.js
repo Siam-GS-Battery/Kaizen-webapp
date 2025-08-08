@@ -72,6 +72,10 @@ const Tasklist = () => {
         filtered = filtered.filter(item => 
           item.status === 'BEST_KAIZEN'
         );
+      } else if (activeFilter === 'approved') {
+        filtered = filtered.filter(item => 
+          item.status === 'APPROVED'
+        );
       }
     }
 
@@ -101,6 +105,9 @@ const Tasklist = () => {
       ).length,
       best_kaizen: allTasks.filter(item => 
         item.status === 'BEST_KAIZEN'
+      ).length,
+      approved: allTasks.filter(item => 
+        item.status === 'APPROVED'
       ).length,
     };
   };
@@ -174,6 +181,61 @@ const Tasklist = () => {
         await Swal.fire({
           title: 'เกิดข้อผิดพลาด',
           text: 'ไม่สามารถอนุมัติโครงการได้ กรุณาลองใหม่อีกครั้ง',
+          icon: 'error',
+          confirmButtonColor: '#3b82f6'
+        });
+      }
+    }
+  };
+
+  const handleBulkCancelBestKaizen = async () => {
+    if (selectedItems.length === 0) return;
+
+    // Filter only BEST_KAIZEN items
+    const bestKaizenItems = selectedItems.filter(id => {
+      const item = allTasks.find(task => task.id === id);
+      return item?.status === 'BEST_KAIZEN';
+    });
+
+    if (bestKaizenItems.length === 0) {
+      await Swal.fire({
+        title: 'ไม่พบรายการ',
+        text: 'ไม่มีโครงการที่มีสถานะ "The Best Kaizen" ในรายการที่เลือก',
+        icon: 'info',
+        confirmButtonColor: '#3b82f6'
+      });
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: 'ยกเลิก Best Kaizen',
+      text: `คุณต้องการยกเลิกสถานะ "The Best Kaizen" ของโครงการ ${bestKaizenItems.length} รายการ และเปลี่ยนกลับเป็น "อนุมัติ" ใช่หรือไม่?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#f59e0b',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'ยกเลิก Best Kaizen',
+      cancelButtonText: 'ไม่ยกเลิก'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        // Use Promise.all to update all selected BEST_KAIZEN items to APPROVED
+        await Promise.all(
+          bestKaizenItems.map(id => tasklistAPI.update(id, { status: 'APPROVED' }))
+        );
+        await Swal.fire({
+          title: 'ยกเลิกเรียบร้อย!',
+          text: `ยกเลิกสถานะ The Best Kaizen ของโครงการ ${bestKaizenItems.length} รายการเรียบร้อยแล้ว โครงการทั้งหมดได้รับสถานะ "อนุมัติ"`,
+          icon: 'success',
+          confirmButtonColor: '#3b82f6'
+        });
+        setSelectedItems([]);
+        await fetchTasks(); // Refresh data
+      } catch (error) {
+        await Swal.fire({
+          title: 'เกิดข้อผิดพลาด',
+          text: 'ไม่สามารถยกเลิกสถานะได้ กรุณาลองใหม่อีกครั้ง',
           icon: 'error',
           confirmButtonColor: '#3b82f6'
         });
@@ -280,6 +342,37 @@ const Tasklist = () => {
       
       // Navigate to edit form with the item ID
       navigate(`/edit-form/${item.id}`);
+    } else if (action === 'cancel_best_kaizen') {
+      const result = await Swal.fire({
+        title: 'ยกเลิก Best Kaizen',
+        text: `คุณต้องการยกเลิกสถานะ "The Best Kaizen" ของโครงการ "${item.projectName}" และเปลี่ยนกลับเป็น "อนุมัติ" ใช่หรือไม่?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f59e0b',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'ยกเลิก Best Kaizen',
+        cancelButtonText: 'ไม่ยกเลิก'
+      });
+
+      if (result.isConfirmed) {
+        try {
+          await tasklistAPI.update(item.id, { status: 'APPROVED' });
+          await Swal.fire({
+            title: 'ยกเลิกเรียบร้อย!',
+            text: 'ยกเลิกสถานะ The Best Kaizen เรียบร้อยแล้ว โครงการได้รับสถานะ "อนุมัติ"',
+            icon: 'success',
+            confirmButtonColor: '#3b82f6'
+          });
+          await fetchTasks(); // Refresh data
+        } catch (error) {
+          await Swal.fire({
+            title: 'เกิดข้อผิดพลาด',
+            text: 'ไม่สามารถยกเลิกสถานะได้ กรุณาลองใหม่อีกครั้ง',
+            icon: 'error',
+            confirmButtonColor: '#3b82f6'
+          });
+        }
+      }
     } else if (action === 'view') {
       await handleViewDetails(item);
     } else if (action === 'delete') {
@@ -458,15 +551,27 @@ const Tasklist = () => {
               }}
             >
               <div className="py-1">
-                <button
-                  onClick={() => {
-                    handleIndividualAction('approve', item);
-                    setIsOpen(false);
-                  }}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  อนุมัติ
-                </button>
+                {item.status === 'BEST_KAIZEN' ? (
+                  <button
+                    onClick={() => {
+                      handleIndividualAction('cancel_best_kaizen', item);
+                      setIsOpen(false);
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-gray-100"
+                  >
+                    ยกเลิก Best Kaizen
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      handleIndividualAction('approve', item);
+                      setIsOpen(false);
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    อนุมัติ
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     handleIndividualAction('view', item);
@@ -967,6 +1072,17 @@ const Tasklist = () => {
           THE BEST KAIZEN
           <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">{filterCounts.best_kaizen}</span>
         </button>
+        <button
+          onClick={() => setActiveFilter('approved')}
+          className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
+            activeFilter === 'approved'
+              ? 'border-blue-500 text-blue-600 bg-blue-50'
+              : 'border-transparent text-gray-600 hover:text-gray-800'
+          }`}
+        >
+          APPROVED
+          <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">{filterCounts.approved}</span>
+        </button>
       </div>
 
       {/* Control Bar */}
@@ -991,12 +1107,30 @@ const Tasklist = () => {
           {isManageDropdownOpen && selectedItems.length > 0 && (
             <div className="absolute left-0 mt-2 w-32 bg-white rounded-md shadow-lg border border-gray-200 z-10">
               <div className="py-1">
-                <button
-                  onClick={handleBulkApprove}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  อนุมัติ
-                </button>
+                {/* Show cancel Best Kaizen if any selected items have BEST_KAIZEN status */}
+                {selectedItems.some(id => {
+                  const item = allTasks.find(task => task.id === id);
+                  return item?.status === 'BEST_KAIZEN';
+                }) && (
+                  <button
+                    onClick={handleBulkCancelBestKaizen}
+                    className="block w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-gray-100"
+                  >
+                    ยกเลิก Best Kaizen
+                  </button>
+                )}
+                {/* Show approve only for non-BEST_KAIZEN items */}
+                {selectedItems.some(id => {
+                  const item = allTasks.find(task => task.id === id);
+                  return item?.status !== 'BEST_KAIZEN';
+                }) && (
+                  <button
+                    onClick={handleBulkApprove}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    อนุมัติ
+                  </button>
+                )}
                 <button
                   onClick={handleBulkDelete}
                   className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"

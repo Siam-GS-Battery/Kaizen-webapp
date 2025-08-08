@@ -230,13 +230,26 @@ const SearchHistory = () => {
       beforeProjectImage: item.formData.beforeProjectImage,
       afterProjectImage: item.formData.afterProjectImage
     });
-    // Set up image previews and store original values - preserve original images for display
-    setBeforeImagePreview(item.formData.beforeProjectImage);
-    setAfterImagePreview(item.formData.afterProjectImage);
-    setOriginalBeforeImage(item.formData.beforeProjectImage);
-    setOriginalAfterImage(item.formData.afterProjectImage);
+    // Enhanced image state initialization to ensure proper preservation
+    // Store original images to prevent accidental loss during edits
+    const originalBefore = item.formData.beforeProjectImage;
+    const originalAfter = item.formData.afterProjectImage;
+    
+    setBeforeImagePreview(originalBefore);
+    setAfterImagePreview(originalAfter);
+    setOriginalBeforeImage(originalBefore);
+    setOriginalAfterImage(originalAfter);
+    
+    // Initialize modification flags to false - images preserved by default
     setIsBeforeImageModified(false);
     setIsAfterImageModified(false);
+    
+    console.log('Edit modal opened with images:', {
+      hasBeforeImage: !!originalBefore,
+      hasAfterImage: !!originalAfter,
+      projectName: item.projectName
+    });
+    
     setShowEditModal(true);
   };
 
@@ -288,8 +301,9 @@ const SearchHistory = () => {
     try {
       setIsUpdating(true);
       
-      // Preserve original images if they haven't been explicitly changed
-      // This ensures that when editing only one image, the other remains unchanged
+      // Enhanced logic to preserve original images when no changes are made
+      // If image modification flag is false, use original image to maintain existing data
+      // This prevents accidental image removal when editing other fields
       const beforeImage = isBeforeImageModified 
         ? editFormData.beforeProjectImage 
         : originalBeforeImage;
@@ -297,7 +311,17 @@ const SearchHistory = () => {
         ? editFormData.afterProjectImage 
         : originalAfterImage;
 
+      // Console log for debugging image preservation logic
+      console.log('Image preservation check:', {
+        isBeforeImageModified,
+        isAfterImageModified,
+        originalBeforeExists: !!originalBeforeImage,
+        originalAfterExists: !!originalAfterImage,
+        finalBeforeImage: !!beforeImage,
+        finalAfterImage: !!afterImage
+      });
 
+      // Create update data object with only basic fields first
       const updateData = {
         projectName: editFormData.projectName,
         projectStartDate: editFormData.projectStartDate,
@@ -309,10 +333,22 @@ const SearchHistory = () => {
         improvementTopic: editFormData.improvementTopic,
         SGS_Smart: editFormData.SGS_Smart,
         SGS_Green: editFormData.SGS_Green,
-        SGS_Strong: editFormData.SGS_Strong,
-        beforeProjectImage: beforeImage,
-        afterProjectImage: afterImage
+        SGS_Strong: editFormData.SGS_Strong
       };
+
+      // Only include image fields if they have been modified
+      // This prevents overwriting existing images when editing other fields
+      if (isBeforeImageModified) {
+        updateData.beforeProjectImage = beforeImage;
+        console.log('Including beforeProjectImage in update:', !!beforeImage);
+      }
+      
+      if (isAfterImageModified) {
+        updateData.afterProjectImage = afterImage;
+        console.log('Including afterProjectImage in update:', !!afterImage);
+      }
+
+      console.log('Final updateData keys:', Object.keys(updateData));
 
       const response = await tasklistAPI.update(editFormData.id, updateData);
       
@@ -676,53 +712,70 @@ const SearchHistory = () => {
 
               {/* Project Images */}
               <div className="bg-gradient-to-br from-white to-blue-50 rounded-xl border border-blue-100 shadow-sm p-6">
-                <h3 className="text-lg font-bold text-blue-600 mb-4">รูปภาพโครงการ</h3>
+                <h3 className="text-lg font-bold text-blue-600 mb-6">รูปภาพโครงการ</h3>
                 <div className={`grid gap-6 ${
-                  editFormData?.formType === 'suggestion' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'
+                  editFormData?.formType === 'suggestion' ? 'grid-cols-1 max-w-3xl mx-auto' : 'grid-cols-1 md:grid-cols-2'
                 }`}>
                   {/* Before Project Image */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">รูปก่อนจัดทำโครงการ</label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
+                  <div className={editFormData?.formType === 'suggestion' ? 'mt-4' : ''}>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      รูปก่อนจัดทำโครงการ
+                      {/* {!isBeforeImageModified && originalBeforeImage && (
+                        <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                          รูปเดิมจะไม่ถูกแก้ไข
+                        </span>
+                      )} */}
+                    </label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
                       {beforeImagePreview ? (
                         <div className="relative">
                           <ProjectImage 
                             src={beforeImagePreview} 
                             alt="Before Project" 
-                            className="w-full h-32 object-cover rounded-lg mb-2"
+                            className="w-full rounded-lg mb-2"
                             showClickHint={false}
                             onError={(error) => {
                               console.warn('Before image preview error:', error);
                               handleImageRemove('beforeProjectImage');
                             }}
                           />
-                          <div className="flex gap-2 justify-center">
+                          <div className="flex gap-3 justify-center mt-4">
                             <button
                               type="button"
                               onClick={() => document.getElementById('beforeImageInput').click()}
-                              className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
+                              className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors font-medium"
                             >
                               เปลี่ยนรูป
                             </button>
                             <button
                               type="button"
                               onClick={() => handleImageRemove('beforeProjectImage')}
-                              className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors"
+                              className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors font-medium"
                             >
                               ลบรูป
                             </button>
                           </div>
+                          {/* {!isBeforeImageModified && originalBeforeImage && (
+                            <div className="mt-2 text-xs text-green-600">
+                              <span className="inline-flex items-center">
+                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                รูปเดิมจะไม่ถูกส่งอัปเดต
+                              </span>
+                            </div>
+                          )} */}
                         </div>
                       ) : (
                         <div>
-                          <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-16 h-16 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
-                          <p className="text-sm text-gray-500 mb-2">คลิกเพื่ือเพิ่มรูปภาพ</p>
+                          <p className="text-sm text-gray-500 mb-3">คลิกเพื่ือเพิ่มรูปภาพ</p>
                           <button
                             type="button"
                             onClick={() => document.getElementById('beforeImageInput').click()}
-                            className="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
+                            className="px-6 py-3 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors font-medium"
                           >
                             เลือกรูปภาพ
                           </button>
@@ -740,48 +793,65 @@ const SearchHistory = () => {
 
                   {/* After Project Image - Only for Genba forms */}
                   {editFormData?.formType === 'genba' && (
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">รูปหลังจัดทำโครงการ</label>
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
+                    <div className="mt-4">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        รูปหลังจัดทำโครงการ
+                        {/* {!isAfterImageModified && originalAfterImage && (
+                          <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                            รูปเดิมจะไม่ถูกแก้ไข
+                          </span>
+                        )} */}
+                      </label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
                         {afterImagePreview ? (
                           <div className="relative">
                             <ProjectImage 
                               src={afterImagePreview} 
                               alt="After Project" 
-                              className="w-full h-32 object-cover rounded-lg mb-2"
+                              className="w-full rounded-lg mb-2"
                               showClickHint={false}
                               onError={(error) => {
                                 console.warn('After image preview error:', error);
                                 handleImageRemove('afterProjectImage');
                               }}
                             />
-                            <div className="flex gap-2 justify-center">
+                            <div className="flex gap-3 justify-center mt-4">
                               <button
                                 type="button"
                                 onClick={() => document.getElementById('afterImageInput').click()}
-                                className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
+                                className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors font-medium"
                               >
                                 เปลี่ยนรูป
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleImageRemove('afterProjectImage')}
-                                className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors"
+                                className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors font-medium"
                               >
                                 ลบรูป
                               </button>
                             </div>
+                            {/* {!isAfterImageModified && originalAfterImage && (
+                              <div className="mt-2 text-xs text-green-600">
+                                <span className="inline-flex items-center">
+                                  <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                  รูปเดิมจะไม่ถูกส่งอัปเดต
+                                </span>
+                              </div>
+                            )} */}
                           </div>
                         ) : (
                           <div>
-                            <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-16 h-16 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <p className="text-sm text-gray-500 mb-2">คลิกเพื่ือเพิ่มรูปภาพ</p>
+                            <p className="text-sm text-gray-500 mb-3">คลิกเพื่ือเพิ่มรูปภาพ</p>
                             <button
                               type="button"
                               onClick={() => document.getElementById('afterImageInput').click()}
-                              className="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
+                              className="px-6 py-3 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors font-medium"
                             >
                               เลือกรูปภาพ
                             </button>
@@ -1207,17 +1277,35 @@ const SearchHistory = () => {
   );
 
   const getStatusBadge = (status) => {
-    const baseClass = "inline-block w-24 text-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium";
-    switch (status) {
-      case 'APPROVED':
-        return <span className={baseClass + " bg-green-100 text-green-800"}>APPROVED</span>;
-      case 'WAITING':
-        return <span className={baseClass + " bg-yellow-100 text-yellow-800"}>WAITING</span>;
-      case 'EDIT':
-        return <span className={baseClass + " bg-yellow-100 text-yellow-800"}>EDIT</span>;
-      default:
-        return <span className={baseClass + " bg-gray-100 text-gray-800"}>{status}</span>;
-    }
+    const getStatusStyle = () => {
+      switch (status) {
+        case 'APPROVED':
+          return 'bg-green-100 text-green-800';
+        case 'BEST_KAIZEN':
+          return 'bg-yellow-100 text-yellow-800';
+        case 'WAITING':
+          return 'bg-blue-100 text-blue-800';
+        case 'EDIT':
+          return 'bg-orange-100 text-orange-800';
+        default:
+          return 'bg-gray-100 text-gray-800';
+      }
+    };
+
+    const getStatusText = () => {
+      switch (status) {
+        case 'BEST_KAIZEN':
+          return 'BEST KAIZEN';
+        default:
+          return status;
+      }
+    };
+
+    return (
+      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full w-24 justify-center ${getStatusStyle()}`}>
+        {getStatusText()}
+      </span>
+    );
   };
 
   const getTypeBadge = (formType) => {
