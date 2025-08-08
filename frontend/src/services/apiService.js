@@ -16,6 +16,22 @@ apiService.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      // Log token info for debugging (only in development)
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const now = Math.floor(Date.now() / 1000);
+          console.log('Token info:', {
+            employeeId: payload.employeeId,
+            expiresAt: new Date(payload.exp * 1000).toLocaleString(),
+            isExpired: payload.exp < now
+          });
+        } catch (e) {
+          console.warn('Invalid token format:', e);
+        }
+      }
+    } else {
+      console.warn('No token found in localStorage');
     }
     return config;
   },
@@ -33,7 +49,12 @@ apiService.interceptors.response.use(
       switch (error.response.status) {
         case 401:
           // Handle unauthorized - just remove token
+          console.warn('401 Unauthorized - Token expired or invalid, removing from localStorage');
           localStorage.removeItem('token');
+          // Redirect to login if not already there
+          if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
+            window.location.href = '/login';
+          }
           break;
         case 403:
           // Handle forbidden

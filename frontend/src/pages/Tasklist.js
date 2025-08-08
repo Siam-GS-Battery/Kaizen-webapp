@@ -70,8 +70,7 @@ const Tasklist = () => {
         );
       } else if (activeFilter === 'best_kaizen') {
         filtered = filtered.filter(item => 
-          item.formType === 'best_kaizen' && 
-          item.status === 'APPROVED'
+          item.status === 'BEST_KAIZEN'
         );
       }
     }
@@ -101,8 +100,7 @@ const Tasklist = () => {
         (item.status === 'WAITING' || item.status === 'EDIT')
       ).length,
       best_kaizen: allTasks.filter(item => 
-        item.formType === 'best_kaizen' && 
-        item.status === 'APPROVED'
+        item.status === 'BEST_KAIZEN'
       ).length,
     };
   };
@@ -131,7 +129,8 @@ const Tasklist = () => {
   const handleBulkApprove = async () => {
     if (selectedItems.length === 0) return;
 
-    const result = await Swal.fire({
+    // First, ask if they want to approve the projects
+    const approvalResult = await Swal.fire({
       title: 'อนุมัติโครงการ',
       text: `คุณต้องการอนุมัติโครงการ ${selectedItems.length} รายการใช่หรือไม่?`,
       icon: 'question',
@@ -142,12 +141,30 @@ const Tasklist = () => {
       cancelButtonText: 'ยกเลิก'
     });
 
-    if (result.isConfirmed) {
+    if (approvalResult.isConfirmed) {
+      // Then ask if these should be "The Best Kaizen"
+      const bestKaizenResult = await Swal.fire({
+        title: 'The Best Kaizen',
+        text: `ต้องการให้โครงการทั้งหมด ${selectedItems.length} รายการ เป็น The Best Kaizen หรือไม่?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#f59e0b',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'ใช่, เป็น The Best Kaizen',
+        cancelButtonText: 'ไม่, อนุมัติปกติ'
+      });
+
+      const status = bestKaizenResult.isConfirmed ? 'BEST_KAIZEN' : 'APPROVED';
+      const statusText = bestKaizenResult.isConfirmed ? 'The Best Kaizen' : 'อนุมัติ';
+
       try {
-        await tasklistAPI.bulkApprove(selectedItems);
+        // Use Promise.all with the specific status
+        await Promise.all(
+          selectedItems.map(id => tasklistAPI.update(id, { status: status }))
+        );
         await Swal.fire({
-          title: 'อนุมัติเรียบร้อย!',
-          text: `อนุมัติโครงการ ${selectedItems.length} รายการเรียบร้อยแล้ว`,
+          title: `${statusText}เรียบร้อย!`,
+          text: `โครงการ ${selectedItems.length} รายการได้รับสถานะ ${statusText} เรียบร้อยแล้ว`,
           icon: 'success',
           confirmButtonColor: '#3b82f6'
         });
@@ -203,7 +220,8 @@ const Tasklist = () => {
   // Handle individual actions
   const handleIndividualAction = async (action, item) => {
     if (action === 'approve') {
-      const result = await Swal.fire({
+      // First, ask if they want to approve the project
+      const approvalResult = await Swal.fire({
         title: 'อนุมัติโครงการ',
         text: `คุณต้องการอนุมัติโครงการ "${item.projectName}" ใช่หรือไม่?`,
         icon: 'question',
@@ -214,12 +232,27 @@ const Tasklist = () => {
         cancelButtonText: 'ยกเลิก'
       });
 
-      if (result.isConfirmed) {
+      if (approvalResult.isConfirmed) {
+        // Then ask if this should be "The Best Kaizen"
+        const bestKaizenResult = await Swal.fire({
+          title: 'The Best Kaizen',
+          text: `ต้องการให้โครงการ "${item.projectName}" เป็น The Best Kaizen หรือไม่?`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#f59e0b',
+          cancelButtonColor: '#6b7280',
+          confirmButtonText: 'ใช่, เป็น The Best Kaizen',
+          cancelButtonText: 'ไม่, อนุมัติปกติ'
+        });
+
+        const status = bestKaizenResult.isConfirmed ? 'BEST_KAIZEN' : 'APPROVED';
+        const statusText = bestKaizenResult.isConfirmed ? 'The Best Kaizen' : 'อนุมัติ';
+
         try {
-          await tasklistAPI.update(item.id, { status: 'APPROVED' });
+          await tasklistAPI.update(item.id, { status: status });
           await Swal.fire({
-            title: 'อนุมัติเรียบร้อย!',
-            text: 'อนุมัติโครงการเรียบร้อยแล้ว',
+            title: `${statusText}เรียบร้อย!`,
+            text: `โครงการได้รับสถานะ ${statusText} เรียบร้อยแล้ว`,
             icon: 'success',
             confirmButtonColor: '#3b82f6'
           });
@@ -331,8 +364,10 @@ const Tasklist = () => {
       switch (status) {
         case 'APPROVED':
           return 'bg-green-100 text-green-800';
-        case 'WAITING':
+        case 'BEST_KAIZEN':
           return 'bg-yellow-100 text-yellow-800';
+        case 'WAITING':
+          return 'bg-blue-100 text-blue-800';
         case 'EDIT':
           return 'bg-orange-100 text-orange-800';
         default:
@@ -340,9 +375,18 @@ const Tasklist = () => {
       }
     };
 
+    const getStatusText = () => {
+      switch (status) {
+        case 'BEST_KAIZEN':
+          return 'BEST KAIZEN';
+        default:
+          return status;
+      }
+    };
+
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full w-20 justify-center ${getStatusStyle()}`}>
-        {status}
+      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full w-24 justify-center ${getStatusStyle()}`}>
+        {getStatusText()}
       </span>
     );
   };
@@ -512,8 +556,9 @@ const Tasklist = () => {
 
     const getStatusDisplay = (status) => {
       const statusMap = {
-        'WAITING': { text: 'รอดำเนินการ', color: 'bg-yellow-100 text-yellow-800' },
+        'WAITING': { text: 'รอดำเนินการ', color: 'bg-blue-100 text-blue-800' },
         'APPROVED': { text: 'อนุมัติแล้ว', color: 'bg-green-100 text-green-800' },
+        'BEST_KAIZEN': { text: 'The Best Kaizen', color: 'bg-yellow-100 text-yellow-800' },
         'EDIT': { text: 'แก้ไข', color: 'bg-orange-100 text-orange-800' },
         'DELETED': { text: 'ลบแล้ว', color: 'bg-red-100 text-red-800' }
       };
@@ -1063,11 +1108,11 @@ const Tasklist = () => {
           {/* Empty State */}
           {filteredData.length === 0 && (
             <div className="text-center py-12">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H8a2 2 0 00-2 2v7m4 0v6m0 0v6m0-12a2 2 0 100-4m0 4a2 2 0 100 4m0 0h12m-6 0a2 2 0 100-4m0 4a2 2 0 100 4m-6 0h12" />
+              <svg className="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <p className="mt-4 text-gray-600">ไม่พบข้อมูลโครงการ</p>
-              <p className="text-sm text-gray-400">ลองปรับเปลี่ยนการค้นหาหรือตัวกรองข้อมูล</p>
+              <p className="mt-4 text-gray-600 font-medium">ไม่พบข้อมูลโครงการ</p>
+              <p className="text-sm text-gray-400 mt-1">ลองปรับเปลี่ยนการค้นหาหรือตัวกรองข้อมูล</p>
             </div>
           )}
         </div>
