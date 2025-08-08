@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { employeeData } from '../data/employeeData';
 import sessionManager from '../utils/sessionManager';
 import SessionWarningModal from './SessionWarningModal';
@@ -18,6 +18,7 @@ const Header = () => {
   const [warningTime, setWarningTime] = useState(0);
   const [sessionInfo, setSessionInfo] = useState(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   // ฟังก์ชันเช็ค active
   const isActive = (path) => location.pathname === path;
@@ -45,11 +46,9 @@ const Header = () => {
     // Initial check
     checkSession();
 
-    // Set up session event handlers
-    sessionManager.setEventHandlers({
-      onExpired: () => {
-        handleSessionExpired();
-      },
+    // Set up session warning handler (expired handler is set globally in App.js)
+    const currentHandlers = {
+      onExpired: handleSessionExpired,
       onWarning: (remainingTime) => {
         setWarningTime(remainingTime);
         setShowSessionWarning(true);
@@ -58,12 +57,9 @@ const Header = () => {
         setShowSessionWarning(false);
         checkSession();
       }
-    });
+    };
 
-    // Start monitoring if session exists
-    if (sessionManager.isSessionValid()) {
-      sessionManager.startSessionMonitoring();
-    }
+    sessionManager.setEventHandlers(currentHandlers);
 
     // Set up interval to update session info
     const sessionInfoInterval = setInterval(() => {
@@ -131,9 +127,8 @@ const Header = () => {
     setShowSessionWarning(false);
     setSessionInfo(null);
     
-    // Show expiration message
-    alert('เซสชั่นหมดอายุแล้ว กรุณาเข้าสู่ระบบใหม่');
-    window.location.href = '/login';
+    // Redirect to login immediately without alert
+    navigate('/login', { replace: true });
   };
 
   // ฟังก์ชัน logout

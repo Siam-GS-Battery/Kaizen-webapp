@@ -30,6 +30,36 @@ function AppLayout() {
   const navigate = useNavigate();
   const isLoginPage = location.pathname === '/login';
 
+  // Global session monitoring effect
+  useEffect(() => {
+    // Set up global session expired handler
+    const handleGlobalSessionExpired = () => {
+      sessionManager.destroySession();
+      navigate('/login', { replace: true });
+    };
+
+    // Set global session event handlers
+    sessionManager.setEventHandlers({
+      onExpired: handleGlobalSessionExpired,
+      onWarning: (remainingTime) => {
+        // Warning will be handled by Header component
+      },
+      onExtended: () => {
+        // Extension handled by Header component
+      }
+    });
+
+    // Start monitoring if session exists and not on login page
+    if (!isLoginPage && sessionManager.isSessionValid()) {
+      sessionManager.startSessionMonitoring();
+    }
+
+    return () => {
+      // Clean up timers when component unmounts
+      sessionManager.clearTimers();
+    };
+  }, [navigate, isLoginPage]);
+
   // Session protection effect
   useEffect(() => {
     const currentPath = location.pathname;
@@ -46,9 +76,9 @@ function AppLayout() {
       const session = sessionManager.getCurrentSession();
       
       if (!session || !sessionManager.isSessionValid()) {
-        // Session invalid, redirect to login
+        // Session invalid, redirect to login immediately
         sessionManager.destroySession();
-        navigate('/login');
+        navigate('/login', { replace: true });
         return;
       }
 
@@ -70,8 +100,7 @@ function AppLayout() {
         
         if (!userRole || !requiredRoles.includes(userRole)) {
           // Insufficient permissions, redirect to home
-          alert('คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
-          navigate('/');
+          navigate('/', { replace: true });
           return;
         }
       }

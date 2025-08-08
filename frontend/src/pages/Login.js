@@ -74,8 +74,9 @@ const Login = () => {
           icon: 'success',
           title: 'เข้าสู่ระบบสำเร็จ!',
           text: `ยินดีต้อนรับ ${user.firstName} ${user.lastName} (${user.role})`,
-          confirmButtonText: 'ตกลง',
-          confirmButtonColor: '#3b82f6'
+          timer: 2000,
+          showConfirmButton: false,
+          timerProgressBar: true
         });
         
         console.log('Success alert shown, preparing to navigate...');

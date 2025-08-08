@@ -14,6 +14,7 @@ const SessionWarningModal = ({ isOpen, onExtend, onLogout, remainingTime }) => {
           const newTime = Math.max(0, prev - 1000);
           if (newTime <= 0) {
             clearInterval(interval);
+            // Call onLogout immediately when time expires
             onLogout();
           }
           return newTime;
@@ -31,8 +32,7 @@ const SessionWarningModal = ({ isOpen, onExtend, onLogout, remainingTime }) => {
       if (success) {
         onExtend();
       } else {
-        // Show error if can't extend
-        alert('ไม่สามารถขยายเวลาได้อีก กรุณาเข้าสู่ระบบใหม่');
+        // Can't extend anymore, logout immediately
         onLogout();
       }
     } catch (error) {

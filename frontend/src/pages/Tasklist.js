@@ -750,7 +750,7 @@ const Tasklist = () => {
                               <ProjectImage 
                                 src={selectedProject.beforeImagePath || selectedProject.beforeProjectImage}
                                 alt="รูปก่อนจัดทำโครงการ"
-                                className="w-full h-32 object-cover rounded-lg"
+                                className="w-full h-64 object-cover rounded-lg shadow-md"
                                 onError={(error) => {
                                   console.warn('Before image load error:', error);
                                 }}
@@ -773,7 +773,7 @@ const Tasklist = () => {
                                 <ProjectImage 
                                   src={selectedProject.afterImagePath || selectedProject.afterProjectImage}
                                   alt="รูปหลังจัดทำโครงการ"
-                                  className="w-full h-32 object-cover rounded-lg"
+                                  className="w-full h-64 object-cover rounded-lg shadow-md"
                                   onError={(error) => {
                                     console.warn('After image load error:', error);
                                   }}

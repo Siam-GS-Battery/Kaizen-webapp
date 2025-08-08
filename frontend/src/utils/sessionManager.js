@@ -199,9 +199,9 @@ class SessionManager {
 
   // Set event handlers
   setEventHandlers({ onExpired, onWarning, onExtended }) {
-    this.onSessionExpired = onExpired;
-    this.onSessionWarning = onWarning;
-    this.onSessionExtended = onExtended;
+    if (onExpired) this.onSessionExpired = onExpired;
+    if (onWarning) this.onSessionWarning = onWarning;
+    if (onExtended) this.onSessionExtended = onExtended;
   }
 
   // Track user activity
