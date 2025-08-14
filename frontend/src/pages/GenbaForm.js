@@ -11,6 +11,7 @@ const GenbaForm = () => {
     fullName: '',
     lastName: '',
     department: '',
+    position: '',
     fiveSGroupName: '',
     projectArea: '',
     projectName: '',
@@ -133,7 +134,7 @@ const GenbaForm = () => {
       const projectData = {
         projectName: formData.projectName,
         employeeId: formData.employeeId,
-        position: 'เจ้าหน้าที่',
+        position: formData.position || 'พนักงาน',
         department: formData.department,
         fiveSGroupName: formData.fiveSGroupName,
         projectArea: formData.projectArea,
@@ -228,6 +229,7 @@ const GenbaForm = () => {
           ...prev,
           fullName: `${employee.firstName} ${employee.lastName}`,
           department: employee.department,
+          position: employee.position || 'พนักงาน',
           fiveSGroupName: employee.fiveSArea,
           projectArea: employee.projectArea,
         }));

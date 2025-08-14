@@ -299,7 +299,7 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
     const newProject = {
       project_name: taskData.projectName,
       employee_id: taskData.employeeId,
-      position: taskData.position || 'เจ้าหน้าที่',
+      position: taskData.position || 'พนักงาน',
       department: taskData.department,
       five_s_group_name: taskData.fiveSGroupName,
       project_area: taskData.projectArea,
@@ -315,8 +315,21 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
       sgs_green: taskData.SGS_Green || '',
       before_project_image: null, // Will be updated after project creation
       after_project_image: null,  // Will be updated after project creation
-      created_date_th: new Date().toLocaleDateString('th-TH'),
-      submitted_date_th: new Date().toLocaleDateString('th-TH'),
+      // Convert date to YYYY-MM-DD format for database compatibility
+      created_date_th: (() => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      })(),
+      submitted_date_th: (() => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      })(),
       status: taskData.status || 'EDIT',
       form_type: taskData.formType,
       created_date: now,
@@ -470,14 +483,32 @@ router.put('/:id', async (req: any, res: Response): Promise<void> => {
       updated_at: new Date().toISOString()
     };
 
+    // Helper function to convert DD/MM/YYYY to YYYY-MM-DD
+    const convertDateFormat = (dateStr: string): string => {
+      if (!dateStr) return dateStr;
+      
+      // Check if it's already in ISO format (YYYY-MM-DD)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        return dateStr;
+      }
+      
+      // Convert DD/MM/YYYY to YYYY-MM-DD
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+        const [day, month, year] = dateStr.split('/');
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      }
+      
+      return dateStr;
+    };
+
     // Map frontend fields to database fields
     if (taskData.projectName !== undefined) updateData.project_name = taskData.projectName;
     if (taskData.position !== undefined) updateData.position = taskData.position;
     if (taskData.department !== undefined) updateData.department = taskData.department;
     if (taskData.fiveSGroupName !== undefined) updateData.five_s_group_name = taskData.fiveSGroupName;
     if (taskData.projectArea !== undefined) updateData.project_area = taskData.projectArea;
-    if (taskData.projectStartDate !== undefined) updateData.project_start_date = taskData.projectStartDate;
-    if (taskData.projectEndDate !== undefined) updateData.project_end_date = taskData.projectEndDate;
+    if (taskData.projectStartDate !== undefined) updateData.project_start_date = convertDateFormat(taskData.projectStartDate);
+    if (taskData.projectEndDate !== undefined) updateData.project_end_date = convertDateFormat(taskData.projectEndDate);
     if (taskData.problemsEncountered !== undefined) updateData.problems_encountered = taskData.problemsEncountered;
     if (taskData.solutionApproach !== undefined) updateData.solution_approach = taskData.solutionApproach;
     if (taskData.resultsAchieved !== undefined) updateData.results_achieved = taskData.resultsAchieved;
@@ -558,7 +589,12 @@ router.put('/:id', async (req: any, res: Response): Promise<void> => {
     // Update submitted date when status changes to WAITING or APPROVED
     if (taskData.status && ['WAITING', 'APPROVED'].includes(taskData.status)) {
       updateData.submitted_date = new Date().toISOString();
-      updateData.submitted_date_th = new Date().toLocaleDateString('th-TH');
+      // Convert date to YYYY-MM-DD format for database compatibility
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      updateData.submitted_date_th = `${year}-${month}-${day}`;
     }
 
     const { data: project, error } = await supabaseAdmin

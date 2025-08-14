@@ -28,6 +28,7 @@ router.get('/', async (req: any, res: Response): Promise<void> => {
         five_s_area,
         project_area,
         role,
+        position,
         created_at,
         updated_at
       `)
@@ -50,6 +51,7 @@ router.get('/', async (req: any, res: Response): Promise<void> => {
         fiveSArea: emp.five_s_area,
         projectArea: emp.project_area,
         role: emp.role,
+        position: emp.position,
         createdAt: emp.created_at,
         updatedAt: emp.updated_at
       })) || [],
@@ -92,6 +94,7 @@ router.get('/:employeeId', async (req: any, res: Response): Promise<void> => {
         five_s_area,
         project_area,
         role,
+        position,
         created_at,
         updated_at
       `)
@@ -112,6 +115,7 @@ router.get('/:employeeId', async (req: any, res: Response): Promise<void> => {
         fiveSArea: employee.five_s_area,
         projectArea: employee.project_area,
         role: employee.role,
+        position: employee.position,
         createdAt: employee.created_at,
         updatedAt: employee.updated_at
       },
@@ -153,6 +157,7 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
       fiveSArea,
       projectArea,
       role = 'User',
+      position = 'พนักงาน',
       password
     } = req.body;
 
@@ -186,6 +191,7 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
       five_s_area: fiveSArea,
       project_area: projectArea,
       role,
+      position,
       password_hash: passwordHash,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -211,6 +217,7 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
         fiveSArea: employee.five_s_area,
         projectArea: employee.project_area,
         role: employee.role,
+        position: employee.position,
         createdAt: employee.created_at,
         updatedAt: employee.updated_at
       },
@@ -252,6 +259,7 @@ router.put('/:employeeId', async (req: any, res: Response): Promise<void> => {
       fiveSArea,
       projectArea,
       role,
+      position,
       password,
       resetPassword
     } = req.body;
@@ -266,6 +274,7 @@ router.put('/:employeeId', async (req: any, res: Response): Promise<void> => {
     if (fiveSArea !== undefined) updateData.five_s_area = fiveSArea;
     if (projectArea !== undefined) updateData.project_area = projectArea;
     if (role !== undefined) updateData.role = role;
+    if (position !== undefined) updateData.position = position;
 
     // Handle password updates
     if (resetPassword === true) {
@@ -301,6 +310,7 @@ router.put('/:employeeId', async (req: any, res: Response): Promise<void> => {
         fiveSArea: employee.five_s_area,
         projectArea: employee.project_area,
         role: employee.role,
+        position: employee.position,
         createdAt: employee.created_at,
         updatedAt: employee.updated_at
       },
