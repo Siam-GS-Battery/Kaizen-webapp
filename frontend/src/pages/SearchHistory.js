@@ -201,10 +201,18 @@ const SearchHistory = () => {
 
   const handleRequestEdit = async (item) => {
     // Check if user can edit based on status and role
-    if (item.status !== 'WAITING' && userRole !== 'Admin') {
+    const canEdit = userRole === 'Admin' || 
+                   (userRole === 'Manager' && (item.status === 'WAITING' || item.status === 'APPROVED')) ||
+                   (item.status === 'WAITING' && ['Supervisor', 'User'].includes(userRole));
+    
+    if (!canEdit) {
+      const message = userRole === 'Admin' ? 'Admin สามารถแก้ไขได้ทุกสถานะ' :
+                     userRole === 'Manager' ? 'Manager สามารถแก้ไขได้เฉพาะสถานะ WAITING และ APPROVED' :
+                     'สามารถแก้ไขได้เฉพาะโครงการที่มีสถานะ WAITING เท่านั้น';
+      
       await Swal.fire({
         title: 'ไม่สามารถแก้ไขได้',
-        text: 'สามารถแก้ไขได้เฉพาะโครงการที่มีสถานะ WAITING เท่านั้น',
+        text: message,
         icon: 'warning',
         confirmButtonText: 'ตกลง',
         confirmButtonColor: '#f59e0b'

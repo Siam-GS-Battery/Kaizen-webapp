@@ -282,14 +282,14 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
       }
     }
 
-    // Verify employee exists
+    // Verify employee exists and get their role
     if (!supabaseAdmin) {
       throw createError('Database configuration error', 500);
     }
 
     const { data: employee, error: empError } = await supabaseAdmin
       .from('users')
-      .select('first_name, last_name, department')
+      .select('first_name, last_name, department, role')
       .eq('employee_id', taskData.employeeId)
       .single();
 
@@ -298,6 +298,12 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
     }
 
     const now = new Date().toISOString();
+    
+    // Auto-approve if created by Manager
+    let projectStatus = taskData.status || 'EDIT';
+    if (employee.role === 'Manager' && (taskData.formType === 'genba' || taskData.formType === 'suggestion')) {
+      projectStatus = 'APPROVED';
+    }
     
     // First create the project without images to get the ID
     const newProject = {
@@ -334,7 +340,7 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
         const day = String(now.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
       })(),
-      status: taskData.status || 'EDIT',
+      status: projectStatus,
       form_type: taskData.formType,
       created_date: now,
       submitted_date: now,
@@ -463,7 +469,7 @@ router.put('/:id', async (req: any, res: Response): Promise<void> => {
     const { id } = req.params;
     const taskData: Partial<TaskListItem> = req.body;
 
-    // Check if task exists and user has permission
+    // Check if task exists and get creator's role
     const { data: existingTask, error: fetchError } = await supabaseAdmin
       .from('projects')
       .select('employee_id, status')
@@ -474,14 +480,29 @@ router.put('/:id', async (req: any, res: Response): Promise<void> => {
       throw createError('Task not found', 404);
     }
 
-    // Temporarily bypass permission checks for frontend testing
-    // const userRole = req.user?.role;
-    // const isOwner = existingTask.employee_id === req.user?.employeeId;
-    // const canEdit = isOwner || ['Supervisor', 'Manager', 'Admin'].includes(userRole || '');
+    // Get the user who's trying to edit the task
+    const { data: editorUser, error: editorError } = await supabaseAdmin
+      .from('users')
+      .select('role')
+      .eq('employee_id', taskData.employeeId || existingTask.employee_id)
+      .single();
 
-    // if (!canEdit) {
-    //   throw createError('Insufficient permissions to edit this task', 403);
-    // }
+    if (editorError || !editorUser) {
+      // If we can't find the editor, allow the edit for now (temporary)
+      console.warn('Could not determine editor role, allowing edit');
+    } else {
+      // Check edit permissions based on status and role
+      const canEdit = editorUser.role === 'Admin' || 
+                     (editorUser.role === 'Manager' && (existingTask.status === 'WAITING' || existingTask.status === 'APPROVED')) ||
+                     (existingTask.status === 'WAITING' && ['Supervisor', 'User'].includes(editorUser.role));
+
+      if (!canEdit) {
+        const message = editorUser.role === 'Admin' ? 'Admin can edit all statuses' :
+                       editorUser.role === 'Manager' ? 'Manager can only edit WAITING and APPROVED status' :
+                       'Can only edit WAITING status projects';
+        throw createError(`Insufficient permissions: ${message}`, 403);
+      }
+    }
 
     const updateData: any = {
       updated_at: new Date().toISOString()
