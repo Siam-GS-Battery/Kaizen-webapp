@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { tasklistAPI } from '../services/apiService';
 import ProjectImage from '../components/ProjectImage';
+import EditForm from './EditForm';
 
 const Tasklist = () => {
-  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('genba');
   const [selectedItems, setSelectedItems] = useState([]);
@@ -18,6 +17,10 @@ const Tasklist = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState(''); // Department filter for Admin
+  const [isDepartmentDropdownOpen, setIsDepartmentDropdownOpen] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState(null);
 
   // Fetch data from API
   const fetchTasks = async () => {
@@ -52,30 +55,85 @@ const Tasklist = () => {
     fetchTasks();
   }, [sortOrder]);
 
+  // Close department dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isDepartmentDropdownOpen && !event.target.closest('.department-dropdown')) {
+        setIsDepartmentDropdownOpen(false);
+      }
+    };
+
+    if (isDepartmentDropdownOpen) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isDepartmentDropdownOpen]);
+
+  // Get user role from localStorage
+  const getUserRole = () => {
+    try {
+      const userDataStr = localStorage.getItem('user');
+      if (userDataStr) {
+        const userData = JSON.parse(userDataStr);
+        return userData.role;
+      }
+    } catch (error) {
+      console.error('Error getting user role:', error);
+    }
+    return null;
+  };
+
   // Filter และ search ข้อมูล
   useEffect(() => {
     let filtered = allTasks;
+    const userRole = getUserRole();
 
-    // Filter ตาม type และ status
-    if (activeFilter !== 'all') {
+    // Admin role filtering
+    if (userRole === 'Admin') {
+      // For Admin: show APPROVED and BEST_KAIZEN projects, but filter by formType according to activeFilter
       if (activeFilter === 'genba') {
         filtered = filtered.filter(item => 
-          item.formType === 'genba' && 
-          (item.status === 'WAITING' || item.status === 'EDIT')
+          item.formType === 'genba' && item.status === 'APPROVED'
         );
       } else if (activeFilter === 'suggestion') {
         filtered = filtered.filter(item => 
-          item.formType === 'suggestion' && 
-          (item.status === 'WAITING' || item.status === 'EDIT')
+          item.formType === 'suggestion' && item.status === 'APPROVED'
         );
       } else if (activeFilter === 'best_kaizen') {
         filtered = filtered.filter(item => 
           item.status === 'BEST_KAIZEN'
         );
-      } else if (activeFilter === 'approved') {
+      } else {
+        // Default: show all APPROVED and BEST_KAIZEN
         filtered = filtered.filter(item => 
-          item.status === 'APPROVED'
+          item.status === 'APPROVED' || item.status === 'BEST_KAIZEN'
         );
+      }
+    } else {
+      // Filter ตาม type และ status for non-admin users
+      if (activeFilter !== 'all') {
+        if (activeFilter === 'genba') {
+          filtered = filtered.filter(item => 
+            item.formType === 'genba' && 
+            (item.status === 'WAITING' || item.status === 'EDIT')
+          );
+        } else if (activeFilter === 'suggestion') {
+          filtered = filtered.filter(item => 
+            item.formType === 'suggestion' && 
+            (item.status === 'WAITING' || item.status === 'EDIT')
+          );
+        } else if (activeFilter === 'best_kaizen') {
+          filtered = filtered.filter(item => 
+            item.status === 'BEST_KAIZEN'
+          );
+        } else if (activeFilter === 'approved') {
+          filtered = filtered.filter(item => 
+            item.status === 'APPROVED'
+          );
+        }
       }
     }
 
@@ -89,30 +147,93 @@ const Tasklist = () => {
       );
     }
 
+    // Department filter for Admin users
+    if (getUserRole() === 'Admin' && selectedDepartment) {
+      filtered = filtered.filter(item =>
+        item.department === selectedDepartment
+      );
+    }
+
     setFilteredData(filtered);
-  }, [searchTerm, activeFilter, allTasks]);
+  }, [searchTerm, activeFilter, allTasks, selectedDepartment]);
 
   // Get filter counts based on status requirements
   const getFilterCounts = () => {
-    return {
-      genba: allTasks.filter(item => 
-        item.formType === 'genba' && 
-        (item.status === 'WAITING' || item.status === 'EDIT')
-      ).length,
-      suggestion: allTasks.filter(item => 
-        item.formType === 'suggestion' && 
-        (item.status === 'WAITING' || item.status === 'EDIT')
-      ).length,
-      best_kaizen: allTasks.filter(item => 
-        item.status === 'BEST_KAIZEN'
-      ).length,
-      approved: allTasks.filter(item => 
-        item.status === 'APPROVED'
-      ).length,
-    };
+    const userRole = getUserRole();
+    
+    if (userRole === 'Admin') {
+      // Admin sees APPROVED projects for genba/suggestion, and BEST_KAIZEN projects
+      return {
+        genba: allTasks.filter(item => 
+          item.formType === 'genba' && item.status === 'APPROVED'
+        ).length,
+        suggestion: allTasks.filter(item => 
+          item.formType === 'suggestion' && item.status === 'APPROVED'
+        ).length,
+        best_kaizen: allTasks.filter(item => 
+          item.status === 'BEST_KAIZEN'
+        ).length,
+        approved: 0, // Remove approved filter for Admin
+      };
+    } else {
+      // Non-admin users see all filter counts
+      return {
+        genba: allTasks.filter(item => 
+          item.formType === 'genba' && 
+          (item.status === 'WAITING' || item.status === 'EDIT')
+        ).length,
+        suggestion: allTasks.filter(item => 
+          item.formType === 'suggestion' && 
+          (item.status === 'WAITING' || item.status === 'EDIT')
+        ).length,
+        best_kaizen: allTasks.filter(item => 
+          item.status === 'BEST_KAIZEN'
+        ).length,
+        approved: allTasks.filter(item => 
+          item.status === 'APPROVED'
+        ).length,
+      };
+    }
   };
 
   const filterCounts = getFilterCounts();
+
+  // Get unique departments for Admin filter with counts
+  const getDepartmentCounts = () => {
+    const userRole = getUserRole();
+    if (userRole !== 'Admin') return {};
+    
+    // Count departments based on current filter
+    let tasksToCount = allTasks.filter(item => 
+      item.status === 'APPROVED' || item.status === 'BEST_KAIZEN'
+    );
+    
+    // Apply active filter
+    if (activeFilter === 'genba') {
+      tasksToCount = tasksToCount.filter(item => 
+        item.formType === 'genba' && item.status === 'APPROVED'
+      );
+    } else if (activeFilter === 'suggestion') {
+      tasksToCount = tasksToCount.filter(item => 
+        item.formType === 'suggestion' && item.status === 'APPROVED'
+      );
+    } else if (activeFilter === 'best_kaizen') {
+      tasksToCount = tasksToCount.filter(item => 
+        item.status === 'BEST_KAIZEN'
+      );
+    }
+    
+    const departmentCounts = {};
+    tasksToCount.forEach(item => {
+      const dept = item.department || 'ไม่ระบุ';
+      departmentCounts[dept] = (departmentCounts[dept] || 0) + 1;
+    });
+    
+    return departmentCounts;
+  };
+
+  const departmentCounts = getDepartmentCounts();
+  const uniqueDepartments = Object.keys(departmentCounts).sort();
 
   // Handle checkbox selection
   const handleSelectItem = (id) => {
@@ -329,19 +450,36 @@ const Tasklist = () => {
         }
       }
     } else if (action === 'edit') {
-      // Check if the item has EDIT status
-      if (item.status !== 'EDIT') {
-        await Swal.fire({
-          title: 'ไม่สามารถแก้ไขได้',
-          text: 'สามารถแก้ไขได้เฉพาะโครงการที่มีสถานะ "EDIT" เท่านั้น',
-          icon: 'warning',
-          confirmButtonColor: '#3b82f6'
-        });
-        return;
+      const userRole = getUserRole();
+      
+      // Check edit permissions based on user role and item status
+      if (userRole === 'Admin') {
+        // Admin can edit APPROVED projects
+        if (item.status !== 'APPROVED') {
+          await Swal.fire({
+            title: 'ไม่สามารถแก้ไขได้',
+            text: 'Admin สามารถแก้ไขได้เฉพาะโครงการที่มีสถานะ "APPROVED" เท่านั้น',
+            icon: 'warning',
+            confirmButtonColor: '#3b82f6'
+          });
+          return;
+        }
+      } else {
+        // Regular users can only edit projects with EDIT status
+        if (item.status !== 'EDIT') {
+          await Swal.fire({
+            title: 'ไม่สามารถแก้ไขได้',
+            text: 'สามารถแก้ไขได้เฉพาะโครงการที่มีสถานะ "EDIT" เท่านั้น',
+            icon: 'warning',
+            confirmButtonColor: '#3b82f6'
+          });
+          return;
+        }
       }
       
-      // Navigate to edit form with the item ID
-      navigate(`/edit-form/${item.id}`);
+      // Open edit modal with the item ID
+      setEditingProjectId(item.id);
+      setShowEditModal(true);
     } else if (action === 'cancel_best_kaizen') {
       const result = await Swal.fire({
         title: 'ยกเลิก Best Kaizen',
@@ -572,6 +710,20 @@ const Tasklist = () => {
                     อนุมัติ
                   </button>
                 )}
+                
+                {/* Show edit option for Admin when item is APPROVED */}
+                {getUserRole() === 'Admin' && item.status === 'APPROVED' && (
+                  <button
+                    onClick={() => {
+                      handleIndividualAction('edit', item);
+                      setIsOpen(false);
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-gray-100"
+                  >
+                    แก้ไข
+                  </button>
+                )}
+                
                 <button
                   onClick={() => {
                     handleIndividualAction('view', item);
@@ -1072,17 +1224,19 @@ const Tasklist = () => {
           THE BEST KAIZEN
           <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">{filterCounts.best_kaizen}</span>
         </button>
-        <button
-          onClick={() => setActiveFilter('approved')}
-          className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
-            activeFilter === 'approved'
-              ? 'border-blue-500 text-blue-600 bg-blue-50'
-              : 'border-transparent text-gray-600 hover:text-gray-800'
-          }`}
-        >
-          APPROVED
-          <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">{filterCounts.approved}</span>
-        </button>
+        {getUserRole() !== 'Admin' && (
+          <button
+            onClick={() => setActiveFilter('approved')}
+            className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
+              activeFilter === 'approved'
+                ? 'border-blue-500 text-blue-600 bg-blue-50'
+                : 'border-transparent text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            APPROVED
+            <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">{filterCounts.approved}</span>
+          </button>
+        )}
       </div>
 
       {/* Control Bar */}
@@ -1141,6 +1295,49 @@ const Tasklist = () => {
             </div>
           )}
         </div>
+
+        {/* Department Filter Dropdown for Admin */}
+        {getUserRole() === 'Admin' && (
+          <div className="relative department-dropdown">
+            <button
+              onClick={() => setIsDepartmentDropdownOpen(!isDepartmentDropdownOpen)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border bg-white border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              {selectedDepartment ? selectedDepartment : 'ทุกแผนก'}
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {isDepartmentDropdownOpen && (
+              <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                <div className="py-1 max-h-60 overflow-y-auto">
+                  <button
+                    onClick={() => {
+                      setSelectedDepartment('');
+                      setIsDepartmentDropdownOpen(false);
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    ทุกแผนก ({Object.values(departmentCounts).reduce((a, b) => a + b, 0)})
+                  </button>
+                  {uniqueDepartments.map((department) => (
+                    <button
+                      key={department}
+                      onClick={() => {
+                        setSelectedDepartment(department);
+                        setIsDepartmentDropdownOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      {department} ({departmentCounts[department] || 0})
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Sort button */}
         <button
@@ -1275,6 +1472,19 @@ const Tasklist = () => {
 
       {/* Project Detail Modal */}
       <ProjectDetailModal />
+
+      {/* Edit Form Modal */}
+      <EditForm
+        projectId={editingProjectId}
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingProjectId(null);
+        }}
+        onSuccess={() => {
+          fetchTasks(); // Refresh the task list
+        }}
+      />
 
       {/* Loading overlay for detail modal */}
       {loadingDetail && (

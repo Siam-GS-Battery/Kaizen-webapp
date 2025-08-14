@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from
 import Home from './pages/Home';
 import GenbaForm from './pages/GenbaForm';
 import SuggestionForm from './pages/SuggestionForm';
-import EditForm from './pages/EditForm';
 import SearchHistory from './pages/SearchHistory';
 import Tasklist from './pages/Tasklist';
 import EmployeesManagement from './pages/EmployeesManagement';
@@ -115,7 +114,6 @@ function AppLayout() {
           <Route path="/" element={<Home />} />
           <Route path="/genba-form" element={<GenbaForm />} />
           <Route path="/suggestion-form" element={<SuggestionForm />} />
-          <Route path="/edit-form/:id" element={<EditForm />} />
           <Route path="/search-history" element={<SearchHistory />} />
           <Route path="/tasklist" element={<Tasklist />} />
           <Route path="/employees-management" element={<EmployeesManagement />} />
