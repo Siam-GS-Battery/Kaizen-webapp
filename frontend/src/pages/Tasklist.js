@@ -22,6 +22,19 @@ const Tasklist = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState(null);
 
+  // Get current user data
+  const getCurrentUser = () => {
+    try {
+      const userDataStr = localStorage.getItem('user');
+      if (userDataStr) {
+        return JSON.parse(userDataStr);
+      }
+    } catch (error) {
+      console.error('Error getting current user:', error);
+    }
+    return null;
+  };
+
   // Fetch data from API
   const fetchTasks = async () => {
     try {
@@ -34,7 +47,18 @@ const Tasklist = () => {
         limit: '1000' // Get all tasks for client-side filtering
       };
       
-      const response = await tasklistAPI.getAll(params);
+      const currentUser = getCurrentUser();
+      const userRole = getUserRole();
+      
+      let response;
+      
+      // Use hierarchy endpoint for Supervisor and Manager
+      if (currentUser && (userRole === 'Supervisor' || userRole === 'Manager') && currentUser.employeeId) {
+        response = await tasklistAPI.getHierarchyTasks(currentUser.employeeId, params);
+      } else {
+        // Use regular endpoint for Admin and User
+        response = await tasklistAPI.getAll(params);
+      }
       
       if (response.data && response.data.success) {
         const tasks = response.data.data.projects || [];

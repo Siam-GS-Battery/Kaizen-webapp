@@ -16,6 +16,7 @@ const EmployeesManagement = () => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [userOptions, setUserOptions] = useState([]); // For dropdown options
 
 
 
@@ -27,8 +28,7 @@ const EmployeesManagement = () => {
     department: '',
     fiveSArea: '',
     role: 'User',
-    subordinate: '',
-    commander: '',
+    approver: '',
     password: '',
     resetPassword: false
   });
@@ -43,6 +43,7 @@ const EmployeesManagement = () => {
   // Fetch employees from API on component mount
   useEffect(() => {
     fetchEmployees();
+    fetchUserOptions();
   }, []);
 
   const fetchEmployees = async () => {
@@ -66,6 +67,19 @@ const EmployeesManagement = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch user options for dropdown
+  const fetchUserOptions = async () => {
+    try {
+      const response = await employeeAPI.getUsersForDropdown();
+      if (response.data.success) {
+        setUserOptions(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching user options:', error);
+      // Not critical error, just log it
     }
   };
 
@@ -128,8 +142,7 @@ const EmployeesManagement = () => {
       department: '',
       fiveSArea: '',
       role: 'User',
-      subordinate: '',
-      commander: '',
+      approver: '',
       password: '',
       resetPassword: false
     });
@@ -145,8 +158,7 @@ const EmployeesManagement = () => {
       department: formData.get('department'),
       fiveSArea: formData.get('fiveSArea'),
       role: formData.get('role'),
-      subordinate: formData.get('subordinate'),
-      commander: formData.get('commander'),
+      approver: formData.get('approver'),
       password: formData.get('password'),
       resetPassword: formData.get('resetPassword') === 'on'
     };
@@ -182,6 +194,11 @@ const EmployeesManagement = () => {
       // Add password if provided
       if (data.password && data.password.trim()) {
         newEmployeeData.password = data.password.trim();
+      }
+
+      // Add approver if provided
+      if (data.approver) {
+        newEmployeeData.approver = data.approver;
       }
 
       const response = await employeeAPI.create(newEmployeeData);
@@ -247,6 +264,11 @@ const EmployeesManagement = () => {
         updateData.resetPassword = true;
       } else if (data.password && data.password.trim()) {
         updateData.password = data.password.trim();
+      }
+
+      // Handle approver updates
+      if (data.approver !== undefined) {
+        updateData.approver = data.approver || null;
       }
 
       const response = await employeeAPI.update(editingEmployee.employeeId, updateData);
@@ -386,8 +408,7 @@ const EmployeesManagement = () => {
       department: employee.department,
       fiveSArea: employee.fiveSArea,
       role: employee.role,
-      subordinate: '',
-      commander: '',
+      approver: employee.approver || '',
       password: '',
       resetPassword: false
     });
@@ -564,8 +585,23 @@ const EmployeesManagement = () => {
     );
   };
 
+  // Helper function to get role-based visibility
+  const shouldShowApproverField = (role) => {
+    // All roles except Admin should have an approver
+    return role !== 'Admin';
+  };
+
   // Add/Edit Modal Component - Redesigned with better UX
   const EmployeeModal = ({ isOpen, onClose, onSave, title, isEdit = false }) => {
+    const [selectedRole, setSelectedRole] = useState(formData.role || 'User');
+    
+    // Reset selectedRole when modal opens/closes or form data changes
+    React.useEffect(() => {
+      if (isOpen) {
+        setSelectedRole(formData.role || 'User');
+      }
+    }, [isOpen, formData.role]);
+    
     if (!isOpen) return null;
 
     const handleSubmit = (e) => {
@@ -578,6 +614,16 @@ const EmployeesManagement = () => {
         onClose();
       }
     };
+
+    const handleRoleChange = (e) => {
+      const newRole = e.target.value;
+      setSelectedRole(newRole);
+      // Update formData to sync with the selected role
+      setFormData(prev => ({...prev, role: newRole}));
+    };
+
+    // Get current role - use selectedRole for both ADD and EDIT since it's synchronized with formData
+    const currentRole = selectedRole;
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" onClick={handleOverlayClick}>
@@ -696,15 +742,16 @@ const EmployeesManagement = () => {
                     ตำแหน่งงาน <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <UncontrolledSelect
+                    <select
                       name="role"
-                      defaultValue={formData.role}
+                      value={currentRole}
+                      onChange={handleRoleChange}
                       className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
                     >
                       {roles.map(role => (
                         <option key={role} value={role}>{role}</option>
                       ))}
-                    </UncontrolledSelect>
+                    </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -793,54 +840,66 @@ const EmployeesManagement = () => {
             {/* Optional Information Section */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
-                ข้อมูลเสริม <span className="text-sm text-gray-500 font-normal">(ไม่บังคับ)</span>
+                ข้อมูลการอนุมัติ <span className="text-sm text-gray-500 font-normal">(ไม่บังคับ)</span>
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Subordinate
-                  </label>
-                  <div className="relative">
-                    <UncontrolledSelect
-                      name="subordinate"
-                      defaultValue={formData.subordinate}
-                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
-                    >
-                      <option value="">-- เลือก Subordinate --</option>
-                      {/* Add subordinate options as needed */}
-                    </UncontrolledSelect>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+              <div className="grid grid-cols-1 gap-4">
+                {/* Approver field - Show for all roles except Admin */}
+                {shouldShowApproverField(currentRole) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ผู้อนุมัติ (Approver)
+                    </label>
+                    <div className="relative">
+                      <UncontrolledSelect
+                        name="approver"
+                        defaultValue={formData.approver}
+                        className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
+                      >
+                        <option value="">-- เลือกผู้อนุมัติ --</option>
+                        {userOptions.filter(user => {
+                          // Show users with higher authority than current role
+                          if (currentRole === 'User') {
+                            return ['Supervisor', 'Manager', 'Admin'].includes(user.role);
+                          } else if (currentRole === 'Supervisor') {
+                            return ['Manager', 'Admin'].includes(user.role);
+                          } else if (currentRole === 'Manager') {
+                            return user.role === 'Admin';
+                          }
+                          return false;
+                        }).map(user => (
+                          <option key={user.value} value={user.value}>
+                            {user.label} ({user.role})
+                          </option>
+                        ))}
+                      </UncontrolledSelect>
+                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
                     </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      เลือกผู้ที่จะทำหน้าที่อนุมัติงานของพนักงานคนนี้
+                    </p>
                   </div>
-                </div>
+                )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Commander
-                  </label>
-                  <div className="relative">
-                    <UncontrolledSelect
-                      name="commander"
-                      defaultValue={formData.commander}
-                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
-                    >
-                      <option value="">-- เลือก Commander --</option>
-                      {/* Add commander options as needed */}
-                    </UncontrolledSelect>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                {/* Show informational text if approver field is not shown (Admin only) */}
+                {!shouldShowApproverField(currentRole) && (
+                  <div>
+                    <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg border">
+                      <svg className="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
+                      <p className="text-sm font-medium">Admin ไม่ต้องมีผู้อนุมัติ</p>
+                      <p className="text-xs mt-1">สิทธิ์ Admin มีอำนาจสูงสุดในระบบ</p>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

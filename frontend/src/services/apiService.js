@@ -91,7 +91,10 @@ export const employeeAPI = {
   update: (employeeId, employeeData) => apiService.put(`/employees/${employeeId}`, employeeData),
   
   // Delete employee (Admin only)
-  delete: (employeeId) => apiService.delete(`/employees/${employeeId}`)
+  delete: (employeeId) => apiService.delete(`/employees/${employeeId}`),
+  
+  // Get users for dropdown
+  getUsersForDropdown: () => apiService.get('/employees/dropdown/list')
 };
 
 // Tasklist API functions
@@ -135,6 +138,21 @@ export const tasklistAPI = {
     return Promise.all(
       taskIds.map(id => apiService.put(`/tasklist/${id}`, { status: 'DELETED' }))
     );
+  },
+
+  // Get tasks filtered by hierarchy for Supervisor/Manager
+  getHierarchyTasks: (userEmployeeId, params = {}) => {
+    const queryString = new URLSearchParams();
+    
+    // Add parameters only if they have values
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryString.append(key, value);
+      }
+    });
+    
+    const url = `/tasklist/hierarchy/${userEmployeeId}${queryString.toString() ? '?' + queryString.toString() : ''}`;
+    return apiService.get(url);
   }
 };
 

@@ -66,7 +66,9 @@ router.get('/', async (req: any, res: Response): Promise<void> => {
         users!projects_employee_id_fkey (
           first_name,
           last_name,
-          department
+          department,
+          role,
+          approver
         )
       `, { count: 'exact' });
 
@@ -191,7 +193,9 @@ router.get('/:id', async (req: any, res: Response): Promise<void> => {
         users!projects_employee_id_fkey (
           first_name,
           last_name,
-          department
+          department,
+          role,
+          approver
         )
       `)
       .eq('id', id)
@@ -713,6 +717,173 @@ router.delete('/:id', async (req: any, res: Response): Promise<void> => {
 
   } catch (error) {
     console.error('Delete task error:', error);
+    
+    if (error instanceof Error && (error as any).statusCode) {
+      res.status((error as any).statusCode).json({
+        success: false,
+        error: { message: error.message, statusCode: (error as any).statusCode }
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: { message: 'Internal server error', statusCode: 500 }
+      });
+    }
+  }
+});
+
+// Get tasks filtered by hierarchy (for Supervisor/Manager viewing subordinates' tasks)
+router.get('/hierarchy/:userEmployeeId', async (req: any, res: Response): Promise<void> => {
+  try {
+    if (!supabaseAdmin) {
+      throw createError('Database configuration error', 500);
+    }
+
+    const { userEmployeeId } = req.params;
+    const {
+      page = '1',
+      limit = '10',
+      status,
+      formType,
+      department,
+      search,
+      sortBy = 'created_date',
+      sortOrder = 'desc'
+    } = req.query;
+
+    // First, get the user's role and find their subordinates
+    const { data: currentUser, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('role, employee_id')
+      .eq('employee_id', userEmployeeId)
+      .single();
+
+    if (userError || !currentUser) {
+      throw createError('User not found', 404);
+    }
+
+    let allowedEmployeeIds: string[] = [userEmployeeId]; // Always include own tasks
+
+    // If user is Supervisor, Manager, or Admin, include tasks from people they can approve
+    if (['Supervisor', 'Manager', 'Admin'].includes(currentUser.role)) {
+      const { data: approvableUsers, error: approveError } = await supabaseAdmin
+        .from('users')
+        .select('employee_id, first_name, last_name, role')
+        .eq('approver', userEmployeeId);
+
+      if (!approveError && approvableUsers) {
+        console.log(`[Hierarchy] ${currentUser.role} ${userEmployeeId} can approve for:`, approvableUsers);
+        allowedEmployeeIds = [...allowedEmployeeIds, ...approvableUsers.map(user => user.employee_id)];
+      }
+    }
+
+    console.log(`[Hierarchy] Final allowedEmployeeIds for ${userEmployeeId}:`, allowedEmployeeIds);
+
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const offset = (pageNum - 1) * limitNum;
+
+    let query = supabaseAdmin
+      .from('projects')
+      .select(`
+        *,
+        users!projects_employee_id_fkey (
+          first_name,
+          last_name,
+          department,
+          role,
+          approver
+        )
+      `, { count: 'exact' })
+      .in('employee_id', allowedEmployeeIds);
+
+    // Always exclude DELETED status projects
+    query = query.neq('status', 'DELETED');
+
+    // Apply filters
+    if (status) {
+      query = query.eq('status', status);
+    }
+    
+    if (formType) {
+      query = query.eq('form_type', formType);
+    }
+    
+    if (department) {
+      query = query.eq('department', department);
+    }
+
+    // Search functionality
+    if (search) {
+      query = query.or(`project_name.ilike.%${search}%,problems_encountered.ilike.%${search}%,solution_approach.ilike.%${search}%`);
+    }
+
+    // Sorting
+    const validSortFields = ['created_date', 'submitted_date', 'project_name', 'status'];
+    const sortField = validSortFields.includes(sortBy as string) ? sortBy as string : 'created_date';
+    const order = sortOrder === 'asc' ? 'asc' : 'desc';
+    
+    query = query.order(sortField, { ascending: order === 'asc' });
+
+    // Pagination
+    query = query.range(offset, offset + limitNum - 1);
+
+    const { data: projects, error, count } = await query;
+
+    if (error) {
+      throw createError(`Database error: ${error.message}`, 500);
+    }
+
+    const formattedProjects = projects?.map(project => ({
+      id: project.id,
+      projectName: project.project_name,
+      employeeId: project.employee_id,
+      firstName: project.users?.first_name || '',
+      lastName: project.users?.last_name || '',
+      position: project.position,
+      department: project.department,
+      fiveSGroupName: project.five_s_group_name,
+      projectArea: project.project_area,
+      projectStartDate: project.project_start_date,
+      projectEndDate: project.project_end_date,
+      problemsEncountered: project.problems_encountered,
+      solutionApproach: project.solution_approach,
+      resultsAchieved: project.results_achieved,
+      fiveSType: project.five_s_type,
+      improvementTopic: project.improvement_topic,
+      SGS_Smart: project.sgs_smart,
+      SGS_Strong: project.sgs_strong,
+      SGS_Green: project.sgs_green,
+      beforeProjectImage: project.before_project_image || null,
+      afterProjectImage: project.after_project_image || null,
+      createdDateTh: project.created_date_th,
+      submittedDateTh: project.submitted_date_th,
+      status: project.status,
+      formType: project.form_type,
+      createdDate: project.created_date,
+      submittedDate: project.submitted_date
+    })) || [];
+
+    res.json({
+      success: true,
+      data: {
+        projects: formattedProjects,
+        pagination: {
+          currentPage: pageNum,
+          totalPages: Math.ceil((count || 0) / limitNum),
+          totalItems: count || 0,
+          itemsPerPage: limitNum
+        },
+        hierarchy: {
+          userRole: currentUser.role,
+          allowedEmployeeIds: allowedEmployeeIds
+        }
+      },
+      message: 'Hierarchy tasks retrieved successfully'
+    });
+
+  } catch (error) {
+    console.error('Get hierarchy tasks error:', error);
     
     if (error instanceof Error && (error as any).statusCode) {
       res.status((error as any).statusCode).json({

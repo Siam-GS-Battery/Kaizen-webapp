@@ -29,6 +29,7 @@ router.get('/', async (req: any, res: Response): Promise<void> => {
         project_area,
         role,
         position,
+        approver,
         created_at,
         updated_at
       `)
@@ -52,6 +53,7 @@ router.get('/', async (req: any, res: Response): Promise<void> => {
         projectArea: emp.project_area,
         role: emp.role,
         position: emp.position,
+        approver: emp.approver,
         createdAt: emp.created_at,
         updatedAt: emp.updated_at
       })) || [],
@@ -95,6 +97,7 @@ router.get('/:employeeId', async (req: any, res: Response): Promise<void> => {
         project_area,
         role,
         position,
+        approver,
         created_at,
         updated_at
       `)
@@ -116,6 +119,7 @@ router.get('/:employeeId', async (req: any, res: Response): Promise<void> => {
         projectArea: employee.project_area,
         role: employee.role,
         position: employee.position,
+        approver: employee.approver,
         createdAt: employee.created_at,
         updatedAt: employee.updated_at
       },
@@ -158,7 +162,8 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
       projectArea,
       role = 'User',
       position = 'พนักงาน',
-      password
+      password,
+      approver
     } = req.body;
 
     if (!employeeId || !firstName || !lastName || !department) {
@@ -192,6 +197,7 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
       project_area: projectArea,
       role,
       position,
+      approver: approver || null,
       password_hash: passwordHash,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -218,6 +224,7 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
         projectArea: employee.project_area,
         role: employee.role,
         position: employee.position,
+        approver: employee.approver,
         createdAt: employee.created_at,
         updatedAt: employee.updated_at
       },
@@ -261,7 +268,8 @@ router.put('/:employeeId', async (req: any, res: Response): Promise<void> => {
       role,
       position,
       password,
-      resetPassword
+      resetPassword,
+      approver
     } = req.body;
 
     const updateData: any = {
@@ -275,6 +283,7 @@ router.put('/:employeeId', async (req: any, res: Response): Promise<void> => {
     if (projectArea !== undefined) updateData.project_area = projectArea;
     if (role !== undefined) updateData.role = role;
     if (position !== undefined) updateData.position = position;
+    if (approver !== undefined) updateData.approver = approver;
 
     // Handle password updates
     if (resetPassword === true) {
@@ -311,6 +320,7 @@ router.put('/:employeeId', async (req: any, res: Response): Promise<void> => {
         projectArea: employee.project_area,
         role: employee.role,
         position: employee.position,
+        approver: employee.approver,
         createdAt: employee.created_at,
         updatedAt: employee.updated_at
       },
@@ -362,6 +372,61 @@ router.delete('/:employeeId', async (req: any, res: Response): Promise<void> => 
 
   } catch (error) {
     console.error('Delete employee error:', error);
+    
+    if (error instanceof Error && (error as any).statusCode) {
+      res.status((error as any).statusCode).json({
+        success: false,
+        error: { message: error.message, statusCode: (error as any).statusCode }
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: { message: 'Internal server error', statusCode: 500 }
+      });
+    }
+  }
+});
+
+// Get users for dropdown (simple list with names)
+router.get('/dropdown/list', async (req: any, res: Response): Promise<void> => {
+  try {
+    console.log('🔍 Fetching users for dropdown...');
+    
+    if (!supabaseAdmin) {
+      console.error('❌ Supabase admin client not initialized');
+      throw createError('Database configuration error', 500);
+    }
+
+    const { data: users, error } = await supabaseAdmin
+      .from('users')
+      .select(`
+        employee_id,
+        first_name,
+        last_name,
+        role
+      `)
+      .in('role', ['Supervisor', 'Manager', 'Admin'])
+      .order('first_name');
+
+    if (error) {
+      console.error('❌ Error fetching users for dropdown:', error);
+      throw createError(`Database error: ${error.message}`, 500);
+    }
+
+    console.log('✅ Successfully fetched users for dropdown');
+
+    res.json({
+      success: true,
+      data: users?.map(user => ({
+        value: user.employee_id,
+        label: `${user.first_name} ${user.last_name} (${user.employee_id})`,
+        role: user.role
+      })) || [],
+      message: 'Users for dropdown retrieved successfully'
+    });
+
+  } catch (error) {
+    console.error('Get users dropdown error:', error);
     
     if (error instanceof Error && (error as any).statusCode) {
       res.status((error as any).statusCode).json({
