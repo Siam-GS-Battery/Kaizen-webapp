@@ -493,12 +493,27 @@ router.put('/:id', async (req: any, res: Response): Promise<void> => {
       throw createError('Task not found', 404);
     }
 
-    // Form edit permissions: Only allow editing forms in WAITING status
+    // Form edit permissions: 
+    // Admin users can edit forms in any status
+    // Manager, Supervisor and Regular users can only edit forms in WAITING status
     // Exception: If only status is being changed (Best Kaizen approval), allow for any status
     const isStatusOnlyUpdate = Object.keys(taskData).length === 1 && taskData.status !== undefined;
     
-    if (!isStatusOnlyUpdate && existingTask.status !== 'WAITING') {
-      throw createError('Can only edit forms when status is WAITING', 403);
+    // Get user role from the request body (since auth might be disabled)
+    // In production, this should come from req.user?.role after authentication
+    const userRole = req.body.userRole || req.user?.role;
+    const isAdmin = userRole === 'Admin';
+    
+    console.log('Edit permission check:', {
+      userRole,
+      isAdmin,
+      taskStatus: existingTask.status,
+      isStatusOnlyUpdate,
+      taskData: Object.keys(taskData)
+    });
+    
+    if (!isStatusOnlyUpdate && existingTask.status !== 'WAITING' && !isAdmin) {
+      throw createError(`Can only edit forms when status is WAITING. Current status: ${existingTask.status}, User role: ${userRole}`, 403);
     }
 
     const updateData: any = {

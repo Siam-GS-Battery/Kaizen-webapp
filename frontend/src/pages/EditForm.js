@@ -272,6 +272,20 @@ const EditForm = ({ projectId, isOpen, onClose, onSuccess }) => {
         finalAfterImage: !!afterImage
       });
 
+      // Get user role from localStorage
+      const getUserRole = () => {
+        try {
+          const userDataStr = localStorage.getItem('user');
+          if (userDataStr) {
+            const userData = JSON.parse(userDataStr);
+            return userData.role;
+          }
+        } catch (error) {
+          console.error('Error getting user role:', error);
+        }
+        return null;
+      };
+
       // Prepare data for API call
       const updateData = {
         employeeId: formData.employeeId,
@@ -293,6 +307,7 @@ const EditForm = ({ projectId, isOpen, onClose, onSuccess }) => {
         SGS_Smart: formData.SGS_Smart,
         SGS_Strong: formData.SGS_Strong,
         SGS_Green: formData.SGS_Green,
+        userRole: getUserRole(), // Add user role for backend permission check
       };
 
       // Only include image fields if they have been modified
@@ -354,19 +369,6 @@ const EditForm = ({ projectId, isOpen, onClose, onSuccess }) => {
     setIsBeforeImageModified(false);
     setIsAfterImageModified(false);
     onClose();
-  };
-
-  const getUserRole = () => {
-    try {
-      const userDataStr = localStorage.getItem('user');
-      if (userDataStr) {
-        const userData = JSON.parse(userDataStr);
-        return userData.role;
-      }
-    } catch (error) {
-      console.error('Error getting user role:', error);
-    }
-    return null;
   };
 
   const getStatusDisplay = (status) => {

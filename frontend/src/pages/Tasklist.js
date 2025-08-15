@@ -478,12 +478,10 @@ const Tasklist = () => {
       const userRole = getUserRole();
       
       // Check edit permissions based on user role and item status
-      if (userRole === 'Admin') {
-        // Admin can edit all status projects
-        // No restrictions for Admin
-      } else if (userRole === 'Manager') {
-        // Manager can edit all status projects
-        // No restrictions for Manager
+      // Admin and Manager can edit projects in ANY status - completely unrestricted
+      if (userRole === 'Admin' || userRole === 'Manager') {
+        // Admin and Manager can edit all status projects regardless of status
+        // This is separate from approval workflow - just editing permission
       } else if (userRole === 'Supervisor') {
         // Supervisor can only edit WAITING status projects
         if (item.status !== 'WAITING') {
@@ -760,7 +758,7 @@ const Tasklist = () => {
                   const userRole = getUserRole();
                   const canEdit = 
                     (userRole === 'Admin') || // Admin can edit all status
-                    (userRole === 'Manager') || // Manager can edit all status
+                    (userRole === 'Manager' && item.status === 'WAITING') || // Manager can only edit WAITING
                     (userRole === 'Supervisor' && item.status === 'WAITING') || // Supervisor can only edit WAITING
                     (userRole === 'User' && item.status === 'WAITING') || // User can only edit WAITING
                     (!userRole && item.status === 'WAITING'); // Default case for User role
