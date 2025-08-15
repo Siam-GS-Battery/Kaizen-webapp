@@ -201,13 +201,17 @@ const SearchHistory = () => {
 
   const handleRequestEdit = async (item) => {
     // Check if user can edit based on status and role
+    // Allow User role to edit their own forms without login when viewing search history
+    const isOwnForm = !isLoggedIn && employeeId && item.formData.employeeId === employeeId;
     const canEdit = userRole === 'Admin' || 
                    (userRole === 'Manager' && (item.status === 'WAITING' || item.status === 'APPROVED')) ||
-                   (item.status === 'WAITING' && ['Supervisor', 'User'].includes(userRole));
+                   (item.status === 'WAITING' && ['Supervisor', 'User'].includes(userRole)) ||
+                   (isOwnForm && item.status === 'WAITING');
     
     if (!canEdit) {
       const message = userRole === 'Admin' ? 'Admin สามารถแก้ไขได้ทุกสถานะ' :
                      userRole === 'Manager' ? 'Manager สามารถแก้ไขได้เฉพาะสถานะ WAITING และ APPROVED' :
+                     !isLoggedIn ? 'สามารถแก้ไขได้เฉพาะโครงการของตัวเองที่มีสถานะ WAITING เท่านั้น' :
                      'สามารถแก้ไขได้เฉพาะโครงการที่มีสถานะ WAITING เท่านั้น';
       
       await Swal.fire({
@@ -402,10 +406,14 @@ const SearchHistory = () => {
 
   const handleDeleteProject = async (item) => {
     // Check if user can delete based on status and role
-    if (item.status !== 'WAITING' && userRole !== 'Admin') {
+    // Allow User role to delete their own forms without login when viewing search history
+    const isOwnForm = !isLoggedIn && employeeId && item.formData.employeeId === employeeId;
+    const canDelete = userRole === 'Admin' || (item.status === 'WAITING' && (userRole || isOwnForm));
+    
+    if (!canDelete) {
       await Swal.fire({
         title: 'ไม่สามารถลบได้',
-        text: 'สามารถลบได้เฉพาะโครงการที่มีสถานะ WAITING เท่านั้น',
+        text: !isLoggedIn ? 'สามารถลบได้เฉพาะโครงการของตัวเองที่มีสถานะ WAITING เท่านั้น' : 'สามารถลบได้เฉพาะโครงการที่มีสถานะ WAITING เท่านั้น',
         icon: 'warning',
         confirmButtonText: 'ตกลง',
         confirmButtonColor: '#f59e0b'
@@ -516,7 +524,7 @@ const SearchHistory = () => {
 
     return (
       <div
-        className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-3 sm:p-4"
         onClick={(e) => {
           if (e.target === e.currentTarget) {
             setShowEditModal(false);
@@ -531,20 +539,20 @@ const SearchHistory = () => {
         }}
       >
         <div
-          className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+          className="bg-white rounded-xl shadow-2xl max-w-sm sm:max-w-4xl w-full max-h-[85vh] sm:max-h-[95vh] overflow-hidden flex flex-col"
           onClick={e => e.stopPropagation()}
         >
           {/* Modal Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-3 sm:p-6">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold">แก้ไขโครงการ</h2>
+                  <h2 className="text-lg sm:text-2xl font-bold">แก้ไขโครงการ</h2>
                   <p className="text-blue-100 text-sm opacity-90">ปรับปรุงข้อมูลโครงการ</p>
                 </div>
               </div>
@@ -569,350 +577,391 @@ const SearchHistory = () => {
           </div>
 
           {/* Modal Content */}
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="space-y-6">
-              {/* Project Basic Info */}
-              <div className="bg-gradient-to-br from-white to-blue-50 rounded-xl border border-blue-100 shadow-sm p-6">
-                <h3 className="text-lg font-bold text-blue-600 mb-4">ข้อมูลพื้นฐาน</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">ชื่อโครงการ</label>
-                    <input
-                      type="text"
-                      value={editFormData.projectName}
-                      onChange={(e) => handleEditFormChange('projectName', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">วันที่เริ่มโครงการ</label>
-                      <input
-                        type="date"
-                        value={editFormData.projectStartDate}
-                        onChange={(e) => handleEditFormChange('projectStartDate', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-3 sm:p-6">
+
+              {/* Step Progress Indicator */}
+              <div className="mb-6">
+                {/* Desktop Progress */}
+                <div className="hidden sm:flex items-center justify-center bg-blue-50 rounded-xl p-4">
+                  <div className="flex items-center space-x-6">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                        1
+                      </div>
+                      <span className="ml-3 text-blue-700 font-semibold">ข้อมูลพื้นฐาน</span>
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">วันที่จบโครงการ</label>
-                      <input
-                        type="date"
-                        value={editFormData.projectEndDate}
-                        onChange={(e) => handleEditFormChange('projectEndDate', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
+                    <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"></div>
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                        2
+                      </div>
+                      <span className="ml-3 text-blue-700 font-semibold">รายละเอียด</span>
+                    </div>
+                    <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"></div>
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                        3
+                      </div>
+                      <span className="ml-3 text-blue-700 font-semibold">ประเภท 5ส</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Mobile Progress */}
+                <div className="sm:hidden bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col items-center">
+                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-lg mb-1">
+                        1
+                      </div>
+                      <span className="text-blue-700 font-medium text-[10px] text-center leading-tight">ข้อมูล<br/>พื้นฐาน</span>
+                    </div>
+                    <div className="flex-1 h-1 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full mx-2"></div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-lg mb-1">
+                        2
+                      </div>
+                      <span className="text-blue-700 font-medium text-[10px] text-center leading-tight">รายละเอียด</span>
+                    </div>
+                    <div className="flex-1 h-1 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full mx-2"></div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-lg mb-1">
+                        3
+                      </div>
+                      <span className="text-blue-700 font-medium text-[10px] text-center leading-tight">ประเภท<br/>5ส</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Project Details */}
-              <div className="bg-gradient-to-br from-white to-blue-50 rounded-xl border border-blue-100 shadow-sm p-6">
-                <h3 className="text-lg font-bold text-blue-600 mb-4">รายละเอียดโครงการ</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">ปัญหาที่เจอ</label>
-                    <textarea
-                      value={editFormData.problemsEncountered}
-                      onChange={(e) => handleEditFormChange('problemsEncountered', e.target.value)}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">แนวทางแก้ไข</label>
-                    <textarea
-                      value={editFormData.solutionApproach}
-                      onChange={(e) => handleEditFormChange('solutionApproach', e.target.value)}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">ผลลัพธ์ที่ได้</label>
-                    <textarea
-                      value={editFormData.resultsAchieved}
-                      onChange={(e) => handleEditFormChange('resultsAchieved', e.target.value)}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* 5S Categories */}
-              <div className="bg-gradient-to-br from-white to-blue-50 rounded-xl border border-blue-100 shadow-sm p-6">
-                <h3 className="text-lg font-bold text-blue-600 mb-4">ประเภทของกิจกรรม 5ส</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">ส. ที่ใช้ในการปรับปรุง</label>
-                    <select
-                      value={editFormData.fiveSType}
-                      onChange={(e) => handleEditFormChange('fiveSType', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      {s5Options.map(option => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">หัวข้อที่ปรับปรุง</label>
-                    <select
-                      value={editFormData.improvementTopic}
-                      onChange={(e) => handleEditFormChange('improvementTopic', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      {improveTopics.map(option => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  {/* SGS Way */}
-                  <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-200">
-                    <label className="block text-sm font-bold text-blue-600 mb-3">ส่งเสริมอัตลักษณ์ SGS Way ด้าน</label>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <span className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">S : Smart</span>
-                        <select
-                          value={editFormData.SGS_Smart}
-                          onChange={(e) => handleEditFormChange('SGS_Smart', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        >
-                          <option value="">เลือก...</option>
-                          {sgsOptions.Smart.map(option => (
-                            <option key={option.value} value={option.value}>{option.label}</option>
-                          ))}
-                        </select>
+              <div className="space-y-6">
+                {/* Step 1: ข้อมูลพื้นฐาน */}
+                <div className="bg-gradient-to-br from-white to-blue-50 rounded-xl border border-blue-100 shadow-sm overflow-hidden">
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-3 sm:p-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                        <span className="text-sm font-bold">1</span>
                       </div>
-                      <div>
-                        <span className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">G : Green</span>
-                        <select
-                          value={editFormData.SGS_Green}
-                          onChange={(e) => handleEditFormChange('SGS_Green', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        >
-                          <option value="">เลือก...</option>
-                          {sgsOptions.Green.map(option => (
-                            <option key={option.value} value={option.value}>{option.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <span className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">S : Strong</span>
-                        <select
-                          value={editFormData.SGS_Strong}
-                          onChange={(e) => handleEditFormChange('SGS_Strong', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        >
-                          <option value="">เลือก...</option>
-                          {sgsOptions.Strong.map(option => (
-                            <option key={option.value} value={option.value}>{option.label}</option>
-                          ))}
-                        </select>
-                      </div>
+                      <h3 className="text-base sm:text-lg font-bold">ข้อมูลพื้นฐาน</h3>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* Project Images */}
-              <div className="bg-gradient-to-br from-white to-blue-50 rounded-xl border border-blue-100 shadow-sm p-6">
-                <h3 className="text-lg font-bold text-blue-600 mb-6">รูปภาพโครงการ</h3>
-                <div className={`grid gap-6 ${
-                  editFormData?.formType === 'suggestion' ? 'grid-cols-1 max-w-3xl mx-auto' : 'grid-cols-1 md:grid-cols-2'
-                }`}>
-                  {/* Before Project Image */}
-                  <div className={editFormData?.formType === 'suggestion' ? 'mt-4' : ''}>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      รูปก่อนจัดทำโครงการ
-                      {/* {!isBeforeImageModified && originalBeforeImage && (
-                        <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
-                          รูปเดิมจะไม่ถูกแก้ไข
-                        </span>
-                      )} */}
-                    </label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                      {beforeImagePreview ? (
-                        <div className="relative">
-                          <ProjectImage 
-                            src={beforeImagePreview} 
-                            alt="Before Project" 
-                            className="w-full rounded-lg mb-2"
-                            showClickHint={false}
-                            onError={(error) => {
-                              console.warn('Before image preview error:', error);
-                              handleImageRemove('beforeProjectImage');
-                            }}
-                          />
-                          <div className="flex gap-3 justify-center mt-4">
-                            <button
-                              type="button"
-                              onClick={() => document.getElementById('beforeImageInput').click()}
-                              className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors font-medium"
-                            >
-                              เปลี่ยนรูป
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleImageRemove('beforeProjectImage')}
-                              className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors font-medium"
-                            >
-                              ลบรูป
-                            </button>
-                          </div>
-                          {/* {!isBeforeImageModified && originalBeforeImage && (
-                            <div className="mt-2 text-xs text-green-600">
-                              <span className="inline-flex items-center">
-                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                </svg>
-                                รูปเดิมจะไม่ถูกส่งอัปเดต
-                              </span>
-                            </div>
-                          )} */}
-                        </div>
-                      ) : (
-                        <div>
-                          <svg className="w-16 h-16 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          <p className="text-sm text-gray-500 mb-3">คลิกเพื่ือเพิ่มรูปภาพ</p>
-                          <button
-                            type="button"
-                            onClick={() => document.getElementById('beforeImageInput').click()}
-                            className="px-6 py-3 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors font-medium"
-                          >
-                            เลือกรูปภาพ
-                          </button>
-                        </div>
-                      )}
-                      <input
-                        id="beforeImageInput"
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleImageUpload('beforeProjectImage', e.target.files[0])}
-                        className="hidden"
-                      />
-                    </div>
-                  </div>
-
-                  {/* After Project Image - Only for Genba forms */}
-                  {editFormData?.formType === 'genba' && (
-                    <div className="mt-4">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        รูปหลังจัดทำโครงการ
-                        {/* {!isAfterImageModified && originalAfterImage && (
-                          <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
-                            รูปเดิมจะไม่ถูกแก้ไข
-                          </span>
-                        )} */}
-                      </label>
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                        {afterImagePreview ? (
-                          <div className="relative">
-                            <ProjectImage 
-                              src={afterImagePreview} 
-                              alt="After Project" 
-                              className="w-full rounded-lg mb-2"
-                              showClickHint={false}
-                              onError={(error) => {
-                                console.warn('After image preview error:', error);
-                                handleImageRemove('afterProjectImage');
-                              }}
-                            />
-                            <div className="flex gap-3 justify-center mt-4">
-                              <button
-                                type="button"
-                                onClick={() => document.getElementById('afterImageInput').click()}
-                                className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors font-medium"
-                              >
-                                เปลี่ยนรูป
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleImageRemove('afterProjectImage')}
-                                className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors font-medium"
-                              >
-                                ลบรูป
-                              </button>
-                            </div>
-                            {/* {!isAfterImageModified && originalAfterImage && (
-                              <div className="mt-2 text-xs text-green-600">
-                                <span className="inline-flex items-center">
-                                  <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                  </svg>
-                                  รูปเดิมจะไม่ถูกส่งอัปเดต
-                                </span>
-                              </div>
-                            )} */}
-                          </div>
-                        ) : (
-                          <div>
-                            <svg className="w-16 h-16 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <p className="text-sm text-gray-500 mb-3">คลิกเพื่ือเพิ่มรูปภาพ</p>
-                            <button
-                              type="button"
-                              onClick={() => document.getElementById('afterImageInput').click()}
-                              className="px-6 py-3 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors font-medium"
-                            >
-                              เลือกรูปภาพ
-                            </button>
-                          </div>
-                        )}
+                  <div className="p-3 sm:p-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+                        <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">ชื่อโครงการ</label>
                         <input
-                          id="afterImageInput"
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleImageUpload('afterProjectImage', e.target.files[0])}
-                          className="hidden"
+                          type="text"
+                          value={editFormData.projectName}
+                          onChange={(e) => handleEditFormChange('projectName', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        />
+                      </div>
+                      <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+                        <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">วันที่เริ่มโครงการ</label>
+                        <input
+                          type="date"
+                          value={editFormData.projectStartDate}
+                          onChange={(e) => handleEditFormChange('projectStartDate', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        />
+                      </div>
+                      <div className="sm:col-span-2 bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+                        <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">วันที่จบโครงการ</label>
+                        <input
+                          type="date"
+                          value={editFormData.projectEndDate}
+                          onChange={(e) => handleEditFormChange('projectEndDate', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                         />
                       </div>
                     </div>
-                  )}
+                  </div>
+                </div>
+
+                {/* Step 2: รายละเอียดโครงการ */}
+                <div className="bg-gradient-to-br from-white to-blue-50 rounded-xl border border-blue-100 shadow-sm overflow-hidden">
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-3 sm:p-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                        <span className="text-sm font-bold">2</span>
+                      </div>
+                      <h3 className="text-base sm:text-lg font-bold">รายละเอียดโครงการ</h3>
+                    </div>
+                  </div>
+                  <div className="p-3 sm:p-6">
+                    <div className="space-y-4">
+                      <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+                        <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">ปัญหาที่เจอ</label>
+                        <textarea
+                          value={editFormData.problemsEncountered}
+                          onChange={(e) => handleEditFormChange('problemsEncountered', e.target.value)}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        />
+                      </div>
+                      <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+                        <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">แนวทางแก้ไข</label>
+                        <textarea
+                          value={editFormData.solutionApproach}
+                          onChange={(e) => handleEditFormChange('solutionApproach', e.target.value)}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        />
+                      </div>
+                      <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+                        <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">ผลลัพธ์ที่ได้</label>
+                        <textarea
+                          value={editFormData.resultsAchieved}
+                          onChange={(e) => handleEditFormChange('resultsAchieved', e.target.value)}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        />
+                      </div>
+
+                      {/* Images */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                          <label className="block text-xs font-semibold text-blue-600 mb-3 uppercase tracking-wide">รูปก่อนจัดทำโครงการ</label>
+                          <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300 text-center">
+                            {beforeImagePreview ? (
+                              <div className="relative">
+                                <ProjectImage 
+                                  src={beforeImagePreview} 
+                                  alt="Before Project" 
+                                  className="w-full rounded-lg mb-2"
+                                  showClickHint={false}
+                                  onError={(error) => {
+                                    console.warn('Before image preview error:', error);
+                                    handleImageRemove('beforeProjectImage');
+                                  }}
+                                />
+                                <div className="flex gap-2 justify-center mt-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => document.getElementById('beforeImageInput').click()}
+                                    className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors font-medium"
+                                  >
+                                    เปลี่ยนรูป
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleImageRemove('beforeProjectImage')}
+                                    className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors font-medium"
+                                  >
+                                    ลบรูป
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <p className="text-xs text-gray-500 mb-2">คลิกเพื่ือเพิ่มรูปภาพ</p>
+                                <button
+                                  type="button"
+                                  onClick={() => document.getElementById('beforeImageInput').click()}
+                                  className="px-4 py-2 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors font-medium"
+                                >
+                                  เลือกรูปภาพ
+                                </button>
+                              </div>
+                            )}
+                            <input
+                              id="beforeImageInput"
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleImageUpload('beforeProjectImage', e.target.files[0])}
+                              className="hidden"
+                            />
+                          </div>
+                        </div>
+                        {editFormData?.formType === 'genba' && (
+                          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                            <label className="block text-xs font-semibold text-blue-600 mb-3 uppercase tracking-wide">รูปหลังจัดทำโครงการ</label>
+                            <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300 text-center">
+                              {afterImagePreview ? (
+                                <div className="relative">
+                                  <ProjectImage 
+                                    src={afterImagePreview} 
+                                    alt="After Project" 
+                                    className="w-full rounded-lg mb-2"
+                                    showClickHint={false}
+                                    onError={(error) => {
+                                      console.warn('After image preview error:', error);
+                                      handleImageRemove('afterProjectImage');
+                                    }}
+                                  />
+                                  <div className="flex gap-2 justify-center mt-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => document.getElementById('afterImageInput').click()}
+                                      className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors font-medium"
+                                    >
+                                      เปลี่ยนรูป
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleImageRemove('afterProjectImage')}
+                                      className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors font-medium"
+                                    >
+                                      ลบรูป
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                  <p className="text-xs text-gray-500 mb-2">คลิกเพื่ือเพิ่มรูปภาพ</p>
+                                  <button
+                                    type="button"
+                                    onClick={() => document.getElementById('afterImageInput').click()}
+                                    className="px-4 py-2 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors font-medium"
+                                  >
+                                    เลือกรูปภาพ
+                                  </button>
+                                </div>
+                              )}
+                              <input
+                                id="afterImageInput"
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleImageUpload('afterProjectImage', e.target.files[0])}
+                                className="hidden"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 3: ประเภทของกิจกรรม 5ส */}
+                <div className="bg-gradient-to-br from-white to-blue-50 rounded-xl border border-blue-100 shadow-sm overflow-hidden">
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-3 sm:p-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                        <span className="text-sm font-bold">3</span>
+                      </div>
+                      <h3 className="text-base sm:text-lg font-bold">ประเภทของกิจกรรม 5ส</h3>
+                    </div>
+                  </div>
+                  <div className="p-3 sm:p-6">
+                    <div className="space-y-4">
+                      <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+                        <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">ส. ที่ใช้ในการปรับปรุง</label>
+                        <select
+                          value={editFormData.fiveSType}
+                          onChange={(e) => handleEditFormChange('fiveSType', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          {s5Options.map(option => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+                        <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">หัวข้อที่ปรับปรุง</label>
+                        <select
+                          value={editFormData.improvementTopic}
+                          onChange={(e) => handleEditFormChange('improvementTopic', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          {improveTopics.map(option => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-200">
+                        <label className="block text-sm font-bold text-blue-600 mb-3">ส่งเสริมอัตลักษณ์ SGS Way ด้าน</label>
+                        <div className="space-y-3">
+                          <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+                            <span className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">S : Smart</span>
+                            <select
+                              value={editFormData.SGS_Smart}
+                              onChange={(e) => handleEditFormChange('SGS_Smart', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                            >
+                              <option value="">เลือก...</option>
+                              {sgsOptions.Smart.map(option => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+                            <span className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">G : Green</span>
+                            <select
+                              value={editFormData.SGS_Green}
+                              onChange={(e) => handleEditFormChange('SGS_Green', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                            >
+                              <option value="">เลือก...</option>
+                              {sgsOptions.Green.map(option => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
+                            <span className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">S : Strong</span>
+                            <select
+                              value={editFormData.SGS_Strong}
+                              onChange={(e) => handleEditFormChange('SGS_Strong', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                            >
+                              <option value="">เลือก...</option>
+                              {sgsOptions.Strong.map(option => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Modal Footer */}
-          <div className="bg-gray-50 border-t border-gray-200 p-6">
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setShowEditModal(false);
-                  setEditFormData(null);
-                  setBeforeImagePreview(null);
-                  setAfterImagePreview(null);
-                  setOriginalBeforeImage(null);
-                  setOriginalAfterImage(null);
-                  setIsBeforeImageModified(false);
-                  setIsAfterImageModified(false);
-                }}
-                className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-semibold"
-                disabled={isUpdating}
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleUpdateProject}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold flex items-center gap-2"
-                disabled={isUpdating}
-              >
-                {isUpdating ? (
-                  <>
-                    <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
-                    กำลังอัปเดต...
-                  </>
-                ) : (
-                  'ยืนยันการแก้ไข'
-                )}
-              </button>
+            {/* Close Button */}
+            <div className="bg-gray-50 border-t border-gray-200 p-3 sm:p-6">
+              <div className="flex justify-center">
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditFormData(null);
+                      setBeforeImagePreview(null);
+                      setAfterImagePreview(null);
+                      setOriginalBeforeImage(null);
+                      setOriginalAfterImage(null);
+                      setIsBeforeImageModified(false);
+                      setIsAfterImageModified(false);
+                    }}
+                    className="px-6 py-2 sm:px-8 sm:py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-semibold"
+                    disabled={isUpdating}
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    onClick={handleUpdateProject}
+                    className="px-6 py-2 sm:px-8 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-semibold flex items-center gap-2"
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? (
+                      <>
+                        <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                        กำลังอัปเดต...
+                      </>
+                    ) : (
+                      'ยืนยันการแก้ไข'
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1442,11 +1491,15 @@ const SearchHistory = () => {
                             <button
                               onClick={() => handleRequestEdit(item)}
                               className={`rounded-full p-2 shadow-sm transition-colors flex items-center justify-center focus:outline-none focus:ring-2 ${
-                                item.status === 'WAITING' || userRole === 'Admin'
+                                item.status === 'WAITING' || userRole === 'Admin' || (!isLoggedIn && employeeId && item.formData.employeeId === employeeId && item.status === 'WAITING')
                                   ? 'bg-green-100 hover:bg-green-200 text-green-700 focus:ring-green-400'
                                   : 'bg-gray-100 hover:bg-gray-200 text-gray-500 focus:ring-gray-400 cursor-not-allowed'
                               }`}
-                              title={item.status === 'WAITING' || userRole === 'Admin' ? 'แก้ไขโครงการ' : 'ไม่สามารถแก้ไขได้ (สถานะต้องเป็น WAITING หรือเป็น Admin)'}
+                              title={
+                                item.status === 'WAITING' || userRole === 'Admin' || (!isLoggedIn && employeeId && item.formData.employeeId === employeeId && item.status === 'WAITING')
+                                  ? 'แก้ไขโครงการ' 
+                                  : 'ไม่สามารถแก้ไขได้ (สถานะต้องเป็น WAITING หรือเป็น Admin)'
+                              }
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12.004 20.995h7.5M16.504 3.495a2.121 2.121 0 113 3l-11 11-4 1 1-4 11-11z" />
@@ -1467,11 +1520,15 @@ const SearchHistory = () => {
                               onClick={() => handleDeleteProject(item)}
                               disabled={isDeleting}
                               className={`rounded-full p-2 shadow-sm transition-colors flex items-center justify-center focus:outline-none focus:ring-2 ${
-                                item.status === 'WAITING' || userRole === 'Admin'
+                                item.status === 'WAITING' || userRole === 'Admin' || (!isLoggedIn && employeeId && item.formData.employeeId === employeeId && item.status === 'WAITING')
                                   ? 'bg-red-100 hover:bg-red-200 text-red-700 focus:ring-red-400'
                                   : 'bg-gray-100 hover:bg-gray-200 text-gray-500 focus:ring-gray-400 cursor-not-allowed'
                               }`}
-                              title={item.status === 'WAITING' || userRole === 'Admin' ? 'ลบโครงการ' : 'ไม่สามารถลบได้ (สถานะต้องเป็น WAITING หรือเป็น Admin)'}
+                              title={
+                                item.status === 'WAITING' || userRole === 'Admin' || (!isLoggedIn && employeeId && item.formData.employeeId === employeeId && item.status === 'WAITING')
+                                  ? 'ลบโครงการ' 
+                                  : 'ไม่สามารถลบได้ (สถานะต้องเป็น WAITING หรือเป็น Admin)'
+                              }
                             >
                               {isDeleting ? (
                                 <div className="animate-spin w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full"></div>

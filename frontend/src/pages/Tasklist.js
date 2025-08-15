@@ -479,22 +479,28 @@ const Tasklist = () => {
       
       // Check edit permissions based on user role and item status
       if (userRole === 'Admin') {
-        // Admin can edit APPROVED projects
-        if (item.status !== 'APPROVED') {
+        // Admin can edit all status projects
+        // No restrictions for Admin
+      } else if (userRole === 'Manager') {
+        // Manager can edit all status projects
+        // No restrictions for Manager
+      } else if (userRole === 'Supervisor') {
+        // Supervisor can only edit WAITING status projects
+        if (item.status !== 'WAITING') {
           await Swal.fire({
             title: 'ไม่สามารถแก้ไขได้',
-            text: 'Admin สามารถแก้ไขได้เฉพาะโครงการที่มีสถานะ "APPROVED" เท่านั้น',
+            text: 'Supervisor สามารถแก้ไขได้เฉพาะโครงการที่มีสถานะ "WAITING" เท่านั้น',
             icon: 'warning',
             confirmButtonColor: '#3b82f6'
           });
           return;
         }
       } else {
-        // Regular users can only edit projects with EDIT status
-        if (item.status !== 'EDIT') {
+        // User role can only edit WAITING status projects
+        if (item.status !== 'WAITING') {
           await Swal.fire({
             title: 'ไม่สามารถแก้ไขได้',
-            text: 'สามารถแก้ไขได้เฉพาะโครงการที่มีสถานะ "EDIT" เท่านั้น',
+            text: 'User สามารถแก้ไขได้เฉพาะโครงการที่มีสถานะ "WAITING" เท่านั้น',
             icon: 'warning',
             confirmButtonColor: '#3b82f6'
           });
@@ -736,18 +742,28 @@ const Tasklist = () => {
                   </button>
                 )}
                 
-                {/* Show edit option for Admin when item is APPROVED */}
-                {getUserRole() === 'Admin' && item.status === 'APPROVED' && (
-                  <button
-                    onClick={() => {
-                      handleIndividualAction('edit', item);
-                      setIsOpen(false);
-                    }}
-                    className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-gray-100"
-                  >
-                    แก้ไข
-                  </button>
-                )}
+                {/* Show edit option based on role permissions */}
+                {(() => {
+                  const userRole = getUserRole();
+                  const canEdit = 
+                    (userRole === 'Admin') || // Admin can edit all status
+                    (userRole === 'Manager') || // Manager can edit all status
+                    (userRole === 'Supervisor' && item.status === 'WAITING') || // Supervisor can only edit WAITING
+                    (userRole === 'User' && item.status === 'WAITING') || // User can only edit WAITING
+                    (!userRole && item.status === 'WAITING'); // Default case for User role
+                  
+                  return canEdit && (
+                    <button
+                      onClick={() => {
+                        handleIndividualAction('edit', item);
+                        setIsOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-gray-100"
+                    >
+                      แก้ไข
+                    </button>
+                  );
+                })()}
                 
                 <button
                   onClick={() => {

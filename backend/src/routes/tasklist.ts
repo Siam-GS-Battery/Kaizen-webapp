@@ -468,6 +468,19 @@ router.put('/:id', async (req: any, res: Response): Promise<void> => {
 
     const { id } = req.params;
     const taskData: Partial<TaskListItem> = req.body;
+    
+    // Debug logging for image data
+    console.log('Update request for project:', id);
+    console.log('Has beforeProjectImage:', taskData.beforeProjectImage !== undefined);
+    console.log('Has afterProjectImage:', taskData.afterProjectImage !== undefined);
+    if (taskData.beforeProjectImage !== undefined && taskData.beforeProjectImage !== null) {
+      console.log('beforeProjectImage type:', typeof taskData.beforeProjectImage);
+      console.log('beforeProjectImage starts with:', taskData.beforeProjectImage.substring(0, 50));
+    }
+    if (taskData.afterProjectImage !== undefined && taskData.afterProjectImage !== null) {
+      console.log('afterProjectImage type:', typeof taskData.afterProjectImage);
+      console.log('afterProjectImage starts with:', taskData.afterProjectImage.substring(0, 50));
+    }
 
     // Check if task exists and get creator's role
     const { data: existingTask, error: fetchError } = await supabaseAdmin
@@ -480,28 +493,12 @@ router.put('/:id', async (req: any, res: Response): Promise<void> => {
       throw createError('Task not found', 404);
     }
 
-    // Get the user who's trying to edit the task
-    const { data: editorUser, error: editorError } = await supabaseAdmin
-      .from('users')
-      .select('role')
-      .eq('employee_id', taskData.employeeId || existingTask.employee_id)
-      .single();
-
-    if (editorError || !editorUser) {
-      // If we can't find the editor, allow the edit for now (temporary)
-      console.warn('Could not determine editor role, allowing edit');
-    } else {
-      // Check edit permissions based on status and role
-      const canEdit = editorUser.role === 'Admin' || 
-                     (editorUser.role === 'Manager' && (existingTask.status === 'WAITING' || existingTask.status === 'APPROVED')) ||
-                     (existingTask.status === 'WAITING' && ['Supervisor', 'User'].includes(editorUser.role));
-
-      if (!canEdit) {
-        const message = editorUser.role === 'Admin' ? 'Admin can edit all statuses' :
-                       editorUser.role === 'Manager' ? 'Manager can only edit WAITING and APPROVED status' :
-                       'Can only edit WAITING status projects';
-        throw createError(`Insufficient permissions: ${message}`, 403);
-      }
+    // Form edit permissions: Only allow editing forms in WAITING status
+    // Exception: If only status is being changed (Best Kaizen approval), allow for any status
+    const isStatusOnlyUpdate = Object.keys(taskData).length === 1 && taskData.status !== undefined;
+    
+    if (!isStatusOnlyUpdate && existingTask.status !== 'WAITING') {
+      throw createError('Can only edit forms when status is WAITING', 403);
     }
 
     const updateData: any = {
@@ -905,6 +902,100 @@ router.get('/hierarchy/:userEmployeeId', async (req: any, res: Response): Promis
 
   } catch (error) {
     console.error('Get hierarchy tasks error:', error);
+    
+    if (error instanceof Error && (error as any).statusCode) {
+      res.status((error as any).statusCode).json({
+        success: false,
+        error: { message: error.message, statusCode: (error as any).statusCode }
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: { message: 'Internal server error', statusCode: 500 }
+      });
+    }
+  }
+});
+
+// Best Kaizen approval endpoint (Supervisor+ only)
+router.patch('/:id/best-kaizen', async (req: any, res: Response): Promise<void> => {
+  try {
+    if (!supabaseAdmin) {
+      throw createError('Database configuration error', 500);
+    }
+
+    const { id } = req.params;
+    const { action, userEmployeeId } = req.body; // action: 'approve' or 'remove'
+
+    if (!action || !userEmployeeId) {
+      throw createError('Missing required fields: action and userEmployeeId', 400);
+    }
+
+    if (!['approve', 'remove'].includes(action)) {
+      throw createError('Invalid action. Must be "approve" or "remove"', 400);
+    }
+
+    // Check if task exists
+    const { data: existingTask, error: fetchError } = await supabaseAdmin
+      .from('projects')
+      .select('id, status')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existingTask) {
+      throw createError('Task not found', 404);
+    }
+
+    // Check user permissions (Supervisor+ only)
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('role')
+      .eq('employee_id', userEmployeeId)
+      .single();
+
+    if (userError || !user) {
+      throw createError('User not found', 404);
+    }
+
+    if (!['Supervisor', 'Manager', 'Admin'].includes(user.role)) {
+      throw createError('Insufficient permissions: Only Supervisor+ can approve Best Kaizen', 403);
+    }
+
+    // Determine new status based on action
+    let newStatus: string;
+    if (action === 'approve') {
+      newStatus = 'BEST_KAIZEN';
+    } else { // remove
+      // Return to previous status (assume APPROVED for now, could be enhanced)
+      newStatus = 'APPROVED';
+    }
+
+    // Update project status
+    const { data: updatedProject, error: updateError } = await supabaseAdmin
+      .from('projects')
+      .update({ 
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select('id, status')
+      .single();
+
+    if (updateError) {
+      throw createError(`Database error: ${updateError.message}`, 500);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id: updatedProject.id,
+        status: updatedProject.status
+      },
+      message: `Best Kaizen ${action === 'approve' ? 'approved' : 'removed'} successfully`
+    });
+
+  } catch (error) {
+    console.error('Best Kaizen approval error:', error);
     
     if (error instanceof Error && (error as any).statusCode) {
       res.status((error as any).statusCode).json({

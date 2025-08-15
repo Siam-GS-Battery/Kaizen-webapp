@@ -34,6 +34,10 @@ const EditForm = ({ projectId, isOpen, onClose, onSuccess }) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [beforeImagePreview, setBeforeImagePreview] = useState(null);
   const [afterImagePreview, setAfterImagePreview] = useState(null);
+  const [originalBeforeImage, setOriginalBeforeImage] = useState(null);
+  const [originalAfterImage, setOriginalAfterImage] = useState(null);
+  const [isBeforeImageModified, setIsBeforeImageModified] = useState(false);
+  const [isAfterImageModified, setIsAfterImageModified] = useState(false);
 
   const departments = [
     'HR & AD',
@@ -128,13 +132,25 @@ const EditForm = ({ projectId, isOpen, onClose, onSuccess }) => {
             SGS_Green: taskData.SGS_Green || '',
           };
 
-          // Set image previews if they exist
-          if (taskData.beforeImagePath || taskData.beforeProjectImage) {
-            setBeforeImagePreview(taskData.beforeImagePath || taskData.beforeProjectImage);
-          }
-          if (taskData.afterImagePath || taskData.afterProjectImage) {
-            setAfterImagePreview(taskData.afterImagePath || taskData.afterProjectImage);
-          }
+          // Enhanced image state initialization to ensure proper preservation
+          // Store original images to prevent accidental loss during edits
+          const originalBefore = taskData.beforeProjectImage || taskData.beforeImagePath;
+          const originalAfter = taskData.afterProjectImage || taskData.afterImagePath;
+          
+          setBeforeImagePreview(originalBefore);
+          setAfterImagePreview(originalAfter);
+          setOriginalBeforeImage(originalBefore);
+          setOriginalAfterImage(originalAfter);
+          
+          // Initialize modification flags to false - images preserved by default
+          setIsBeforeImageModified(false);
+          setIsAfterImageModified(false);
+          
+          console.log('Edit form loaded with images:', {
+            hasBeforeImage: !!originalBefore,
+            hasAfterImage: !!originalAfter,
+            projectName: taskData.projectName
+          });
 
           setOriginalFormData(taskData);
           setFormData(loadedFormData);
@@ -163,24 +179,43 @@ const EditForm = ({ projectId, isOpen, onClose, onSuccess }) => {
     if (type === 'file') {
       const file = files[0];
       if (file) {
-        setFormData(prev => ({
-          ...prev,
-          [name]: file
-        }));
-        
-        // Create preview URL
-        const previewURL = URL.createObjectURL(file);
-        if (name === 'beforeProjectImage') {
-          setBeforeImagePreview(previewURL);
-        } else if (name === 'afterProjectImage') {
-          setAfterImagePreview(previewURL);
-        }
+        // Convert file to base64 for storage
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageData = e.target.result;
+          setFormData(prev => ({
+            ...prev,
+            [name]: imageData
+          }));
+          if (name === 'beforeProjectImage') {
+            setBeforeImagePreview(imageData);
+            setIsBeforeImageModified(true);
+          } else if (name === 'afterProjectImage') {
+            setAfterImagePreview(imageData);
+            setIsAfterImageModified(true);
+          }
+        };
+        reader.readAsDataURL(file);
       }
     } else {
       setFormData(prev => ({
         ...prev,
         [name]: value
       }));
+    }
+  };
+
+  const handleImageRemove = (field) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: null
+    }));
+    if (field === 'beforeProjectImage') {
+      setBeforeImagePreview(null);
+      setIsBeforeImageModified(true);
+    } else if (field === 'afterProjectImage') {
+      setAfterImagePreview(null);
+      setIsAfterImageModified(true);
     }
   };
 
@@ -217,6 +252,26 @@ const EditForm = ({ projectId, isOpen, onClose, onSuccess }) => {
         return;
       }
 
+      // Enhanced logic to preserve original images when no changes are made
+      // If image modification flag is false, use original image to maintain existing data
+      // This prevents accidental image removal when editing other fields
+      const beforeImage = isBeforeImageModified 
+        ? formData.beforeProjectImage 
+        : originalBeforeImage;
+      const afterImage = isAfterImageModified 
+        ? formData.afterProjectImage 
+        : originalAfterImage;
+
+      // Console log for debugging image preservation logic
+      console.log('Image preservation check:', {
+        isBeforeImageModified,
+        isAfterImageModified,
+        originalBeforeExists: !!originalBeforeImage,
+        originalAfterExists: !!originalAfterImage,
+        finalBeforeImage: !!beforeImage,
+        finalAfterImage: !!afterImage
+      });
+
       // Prepare data for API call
       const updateData = {
         employeeId: formData.employeeId,
@@ -240,14 +295,19 @@ const EditForm = ({ projectId, isOpen, onClose, onSuccess }) => {
         SGS_Green: formData.SGS_Green,
       };
 
-      // If there are file uploads, handle them separately
-      // For now, we'll keep the existing image paths if no new files are uploaded
-      if (!formData.beforeProjectImage && originalFormData?.beforeImagePath) {
-        updateData.beforeImagePath = originalFormData.beforeImagePath;
+      // Only include image fields if they have been modified
+      // This prevents overwriting existing images when editing other fields
+      if (isBeforeImageModified) {
+        updateData.beforeProjectImage = beforeImage;
+        console.log('Including beforeProjectImage in update:', !!beforeImage);
       }
-      if (!formData.afterProjectImage && originalFormData?.afterImagePath) {
-        updateData.afterImagePath = originalFormData.afterImagePath;
+      
+      if (isAfterImageModified) {
+        updateData.afterProjectImage = afterImage;
+        console.log('Including afterProjectImage in update:', !!afterImage);
       }
+
+      console.log('Final updateData keys:', Object.keys(updateData));
 
       const response = await tasklistAPI.update(projectId, updateData);
       
@@ -259,6 +319,14 @@ const EditForm = ({ projectId, isOpen, onClose, onSuccess }) => {
           showConfirmButton: false,
           timer: 1500,
         });
+        // Reset image states after successful update
+        setBeforeImagePreview(null);
+        setAfterImagePreview(null);
+        setOriginalBeforeImage(null);
+        setOriginalAfterImage(null);
+        setIsBeforeImageModified(false);
+        setIsAfterImageModified(false);
+        
         onSuccess(); // Refresh data in parent component
         onClose(); // Close modal
       } else {
@@ -278,6 +346,13 @@ const EditForm = ({ projectId, isOpen, onClose, onSuccess }) => {
   };
 
   const handleCancel = () => {
+    // Reset image states when canceling
+    setBeforeImagePreview(null);
+    setAfterImagePreview(null);
+    setOriginalBeforeImage(null);
+    setOriginalAfterImage(null);
+    setIsBeforeImageModified(false);
+    setIsAfterImageModified(false);
     onClose();
   };
 
@@ -499,57 +574,117 @@ const EditForm = ({ projectId, isOpen, onClose, onSuccess }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                         <label className="block text-xs font-semibold text-blue-600 mb-3 uppercase tracking-wide">รูปก่อนจัดทำโครงการ</label>
-                        <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300 text-center">
+                        <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300 text-center min-h-[200px] flex items-center justify-center">
                           {beforeImagePreview ? (
-                            <ProjectImage
-                              src={beforeImagePreview}
-                              alt="รูปก่อนจัดทำโครงการ"
-                              className="w-full h-64 object-cover rounded-lg shadow-md"
-                            />
+                            <div className="relative w-full">
+                              <ProjectImage
+                                src={beforeImagePreview}
+                                alt="รูปก่อนจัดทำโครงการ"
+                                className="w-full h-64 object-cover rounded-lg shadow-md"
+                              />
+                              <div className="absolute top-2 right-2 flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleImageRemove('beforeProjectImage')}
+                                  className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow-lg transition-colors"
+                                  title="ลบรูปภาพ"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => document.getElementById('beforeImageInput').click()}
+                                  className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-lg transition-colors"
+                                  title="เปลี่ยนรูปภาพ"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
                           ) : (
                             <div>
-                              <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-16 h-16 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
-                              <p className="text-sm text-gray-500">ไม่มีรูปภาพ</p>
+                              <p className="text-sm text-gray-500 mb-3">คลิกเพื่อเพิ่มรูปภาพ</p>
+                              <button
+                                type="button"
+                                onClick={() => document.getElementById('beforeImageInput').click()}
+                                className="px-6 py-3 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                              >
+                                เลือกรูปภาพ
+                              </button>
                             </div>
                           )}
-                        </div>
-                        <div className="mt-3">
                           <input
+                            id="beforeImageInput"
                             type="file"
                             name="beforeProjectImage"
                             onChange={handleInputChange}
                             accept="image/*"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                            className="hidden"
                           />
                         </div>
                       </div>
                       <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                         <label className="block text-xs font-semibold text-blue-600 mb-3 uppercase tracking-wide">รูปหลังจัดทำโครงการ</label>
-                        <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300 text-center">
+                        <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300 text-center min-h-[200px] flex items-center justify-center">
                           {afterImagePreview ? (
-                            <ProjectImage
-                              src={afterImagePreview}
-                              alt="รูปหลังจัดทำโครงการ"
-                              className="w-full h-64 object-cover rounded-lg shadow-md"
-                            />
+                            <div className="relative w-full">
+                              <ProjectImage
+                                src={afterImagePreview}
+                                alt="รูปหลังจัดทำโครงการ"
+                                className="w-full h-64 object-cover rounded-lg shadow-md"
+                              />
+                              <div className="absolute top-2 right-2 flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleImageRemove('afterProjectImage')}
+                                  className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow-lg transition-colors"
+                                  title="ลบรูปภาพ"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => document.getElementById('afterImageInput').click()}
+                                  className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-lg transition-colors"
+                                  title="เปลี่ยนรูปภาพ"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
                           ) : (
                             <div>
-                              <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-16 h-16 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
-                              <p className="text-sm text-gray-500">ไม่มีรูปภาพ</p>
+                              <p className="text-sm text-gray-500 mb-3">คลิกเพื่อเพิ่มรูปภาพ</p>
+                              <button
+                                type="button"
+                                onClick={() => document.getElementById('afterImageInput').click()}
+                                className="px-6 py-3 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                              >
+                                เลือกรูปภาพ
+                              </button>
                             </div>
                           )}
-                        </div>
-                        <div className="mt-3">
                           <input
+                            id="afterImageInput"
                             type="file"
                             name="afterProjectImage"
                             onChange={handleInputChange}
                             accept="image/*"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                            className="hidden"
                           />
                         </div>
                       </div>
