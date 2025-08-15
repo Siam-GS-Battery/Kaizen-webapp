@@ -59,6 +59,19 @@ const Login = () => {
         console.log('Token:', token);
         console.log('User:', user);
         
+        // Check if user role is 'User' and block login
+        if (user.role === 'User') {
+          await Swal.fire({
+            icon: 'error',
+            title: 'ไม่สามารถเข้าสู่ระบบได้',
+            text: 'รหัสพนักงานของคุณไม่มีสิทธิ์เข้าสู่ระบบ',
+            confirmButtonText: 'ตกลง',
+            confirmButtonColor: '#ef4444'
+          });
+          setIsLoading(false);
+          return;
+        }
+        
         // Store token in localStorage
         localStorage.setItem('token', token);
         

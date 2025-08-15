@@ -59,6 +59,11 @@ function AppLayout() {
     };
   }, [navigate, isLoginPage]);
 
+  // Scroll to top effect when route changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   // Session protection effect
   useEffect(() => {
     const currentPath = location.pathname;

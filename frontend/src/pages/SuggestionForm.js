@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import ImageUpload from '../components/ImageUpload';
-import FormSkeletonLoader from '../components/FormSkeletonLoader';
 import '../CustomSwal.css';
 import '../MobileDateFix.css';
 
 const SuggestionForm = () => {
-  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -78,8 +75,38 @@ const SuggestionForm = () => {
     { value: 'Branding', label: 'Branding (ปรับปรุงคุณภาพของผลิตภัณฑ์ หรือ ส่งมอบตรงเวลา)' },
   ];
 
+  const validateInput = (value, fieldName) => {
+    if (!value || value.trim() === '') {
+      return false;
+    }
+    
+    if (value !== value.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'ข้อมูลไม่ถูกต้อง',
+        text: `${fieldName} ไม่สามารถเว้นวรรคได้ กรุณากรอกข้อมูลใหม่`,
+        confirmButtonText: 'ตกลง',
+        customClass: {
+          container: 'custom-swal-container',
+          title: 'custom-swal-title',
+          confirmButton: 'custom-swal-confirm-button',
+        }
+      });
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    if (name === 'employeeId' && value) {
+      if (!validateInput(value, 'รหัสพนักงาน')) {
+        return;
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -303,7 +330,7 @@ const SuggestionForm = () => {
       };
 
       const missingFields = Object.entries(requiredFields)
-        .filter(([key]) => !formData[key] || formData[key] === '')
+        .filter(([key]) => !formData[key] || formData[key].trim() === '')
         .map(([, label]) => label);
       
       if (missingFields.length > 0) {
@@ -353,9 +380,6 @@ const SuggestionForm = () => {
     }
   };
 
-  if (loading) {
-    return <FormSkeletonLoader />;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -435,9 +459,10 @@ const SuggestionForm = () => {
                 <div className="flex items-end">
                   <button
                     onClick={handleCheck}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                    disabled={loading}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Check
+                    {loading ? 'กำลังตรวจสอบ...' : 'Check'}
                   </button>
                 </div>
               </div>
