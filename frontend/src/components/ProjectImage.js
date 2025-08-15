@@ -3,7 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 const ProjectImage = ({ 
   src, 
   alt, 
-  className = "w-full h-48 object-cover rounded-lg shadow-sm cursor-pointer hover:opacity-75 transition-opacity",
+  className = "w-full object-cover rounded-lg shadow-sm cursor-pointer hover:opacity-75 transition-opacity",
+  height = "200px",
   showClickHint = true,
   onError,
   fallbackSrc
@@ -77,14 +78,14 @@ const ProjectImage = ({
   };
 
   const renderLoadingState = () => (
-    <div className="flex flex-col items-center justify-center h-48 bg-gray-100 rounded-lg">
+    <div className="flex flex-col items-center justify-center bg-gray-100 rounded-lg" style={{ height }}>
       <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-2"></div>
       <p className="text-sm text-gray-500">กำลังโหลดรูปภาพ...</p>
     </div>
   );
 
   const renderErrorState = () => (
-    <div className="flex flex-col items-center justify-center h-48 bg-red-50 border-2 border-dashed border-red-200 rounded-lg">
+    <div className="flex flex-col items-center justify-center bg-red-50 border-2 border-dashed border-red-200 rounded-lg" style={{ height }}>
       <svg className="w-12 h-12 text-red-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
@@ -129,6 +130,7 @@ const ProjectImage = ({
         src={currentSrc} 
         alt={alt} 
         className={className}
+        style={{ height }}
         onClick={handleClick}
         onError={handleImageError}
         crossOrigin="anonymous"

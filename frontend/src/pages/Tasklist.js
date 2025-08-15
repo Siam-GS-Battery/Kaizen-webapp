@@ -653,6 +653,19 @@ const Tasklist = () => {
     );
   };
 
+  // Type badge component - same style as Search History
+  const TypeBadge = ({ formType }) => {
+    const baseClass = "inline-block w-20 text-center px-2 py-1 rounded-full text-xs font-medium";
+    switch (formType) {
+      case 'genba':
+        return <span className={baseClass + " bg-blue-100 text-blue-800"}>GENBA</span>;
+      case 'suggestion':
+        return <span className={baseClass + " bg-purple-100 text-purple-800"}>SUGGESTION</span>;
+      default:
+        return <span className={baseClass + " bg-gray-100 text-gray-800"}>{formType}</span>;
+    }
+  };
+
   // Action dropdown component
   const ActionDropdown = ({ item, index, totalItems }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -1093,7 +1106,8 @@ const Tasklist = () => {
                               <ProjectImage 
                                 src={selectedProject.beforeImagePath || selectedProject.beforeProjectImage}
                                 alt="รูปก่อนจัดทำโครงการ"
-                                className="w-full h-64 object-cover rounded-lg shadow-md"
+                                className="w-full object-cover rounded-lg shadow-md"
+                                height="200px"
                                 onError={(error) => {
                                   console.warn('Before image load error:', error);
                                 }}
@@ -1116,7 +1130,8 @@ const Tasklist = () => {
                                 <ProjectImage 
                                   src={selectedProject.afterImagePath || selectedProject.afterProjectImage}
                                   alt="รูปหลังจัดทำโครงการ"
-                                  className="w-full h-64 object-cover rounded-lg shadow-md"
+                                  className="w-full object-cover rounded-lg shadow-md"
+                                  height="200px"
                                   onError={(error) => {
                                     console.warn('After image load error:', error);
                                   }}
@@ -1450,6 +1465,7 @@ const Tasklist = () => {
                 <th className="px-4 py-3 text-left font-semibold text-sm">ชื่อกลุ่ม 5ส</th>
                 <th className="px-4 py-3 text-left font-semibold text-sm">วันที่สร้าง</th>
                 <th className="px-4 py-3 text-left font-semibold text-sm">วันที่ส่ง</th>
+                <th className="px-4 py-3 text-left font-semibold text-sm">Type</th>
                 <th className="px-4 py-3 text-left font-semibold text-sm">สถานะ</th>
                 <th className="px-4 py-3 text-center font-semibold text-sm"></th>
               </tr>
@@ -1475,6 +1491,9 @@ const Tasklist = () => {
                   <td className="px-4 py-3 text-sm">{item.fiveSGroupName}</td>
                   <td className="px-4 py-3 text-sm">{item.createdDateTh}</td>
                   <td className="px-4 py-3 text-sm">{item.submittedDateTh}</td>
+                  <td className="px-4 py-3">
+                    <TypeBadge formType={item.formType} />
+                  </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={item.status} />
                   </td>

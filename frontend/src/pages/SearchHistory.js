@@ -729,7 +729,8 @@ const SearchHistory = () => {
                                 <ProjectImage 
                                   src={beforeImagePreview} 
                                   alt="Before Project" 
-                                  className="w-full rounded-lg mb-2"
+                                  className="w-full rounded-lg mb-2 object-cover"
+                                  height="200px"
                                   showClickHint={false}
                                   onError={(error) => {
                                     console.warn('Before image preview error:', error);
@@ -786,7 +787,8 @@ const SearchHistory = () => {
                                   <ProjectImage 
                                     src={afterImagePreview} 
                                     alt="After Project" 
-                                    className="w-full rounded-lg mb-2"
+                                    className="w-full rounded-lg mb-2 object-cover"
+                                    height="200px"
                                     showClickHint={false}
                                     onError={(error) => {
                                       console.warn('After image preview error:', error);
@@ -1209,6 +1211,8 @@ const SearchHistory = () => {
                               <ProjectImage 
                                 src={formData.beforeProjectImage}
                                 alt="รูปก่อนจัดทำโครงการ"
+                                height="200px"
+
                                 onError={(error) => {
                                   console.warn('Before image load error:', error);
                                   // Error handled by ProjectImage component
@@ -1232,6 +1236,7 @@ const SearchHistory = () => {
                                 <ProjectImage 
                                   src={formData.afterProjectImage}
                                   alt="รูปหลังจัดทำโครงการ"
+                                  height="200px"
                                   onError={(error) => {
                                     console.warn('After image load error:', error);
                                     // Error handled by ProjectImage component

@@ -110,7 +110,8 @@ const ImageUpload = ({
             <img
               src={preview}
               alt="Preview"
-              className="w-full h-48 object-cover rounded-md"
+              className="w-full h-50 object-cover rounded-md"
+              style={{ height: '200px' }}
             />
             <button
               type="button"
@@ -124,7 +125,7 @@ const ImageUpload = ({
             </div>
           </div>
         ) : (
-          <div className="text-center">
+          <div className="text-center flex flex-col items-center justify-center" style={{ height: '200px' }}>
             <svg 
               className="mx-auto h-12 w-12 text-gray-400" 
               stroke="currentColor" 

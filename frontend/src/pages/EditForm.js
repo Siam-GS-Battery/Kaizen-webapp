@@ -571,37 +571,37 @@ const EditForm = ({ projectId, isOpen, onClose, onSuccess }) => {
                     </div>
 
                     {/* Images */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                         <label className="block text-xs font-semibold text-blue-600 mb-3 uppercase tracking-wide">รูปก่อนจัดทำโครงการ</label>
-                        <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300 text-center min-h-[200px] flex items-center justify-center">
+                        <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300 text-center">
                           {beforeImagePreview ? (
-                            <div className="relative w-full">
+                            <div className="relative">
                               <ProjectImage
                                 src={beforeImagePreview}
                                 alt="รูปก่อนจัดทำโครงการ"
-                                className="w-full h-64 object-cover rounded-lg shadow-md"
+                                className="w-full rounded-lg mb-2 object-cover"
+                                height="200px"
+                                showClickHint={false}
+                                onError={(error) => {
+                                  console.warn('Before image preview error:', error);
+                                  handleImageRemove('beforeProjectImage');
+                                }}
                               />
-                              <div className="absolute top-2 right-2 flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handleImageRemove('beforeProjectImage')}
-                                  className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow-lg transition-colors"
-                                  title="ลบรูปภาพ"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                </button>
+                              <div className="flex gap-2 justify-center mt-3">
                                 <button
                                   type="button"
                                   onClick={() => document.getElementById('beforeImageInput').click()}
-                                  className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-lg transition-colors"
-                                  title="เปลี่ยนรูปภาพ"
+                                  className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors font-medium"
                                 >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
+                                  เปลี่ยนรูป
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleImageRemove('beforeProjectImage')}
+                                  className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors font-medium"
+                                >
+                                  ลบรูป
                                 </button>
                               </div>
                             </div>
@@ -632,34 +632,34 @@ const EditForm = ({ projectId, isOpen, onClose, onSuccess }) => {
                       </div>
                       <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                         <label className="block text-xs font-semibold text-blue-600 mb-3 uppercase tracking-wide">รูปหลังจัดทำโครงการ</label>
-                        <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300 text-center min-h-[200px] flex items-center justify-center">
+                        <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300 text-center">
                           {afterImagePreview ? (
-                            <div className="relative w-full">
+                            <div className="relative">
                               <ProjectImage
                                 src={afterImagePreview}
                                 alt="รูปหลังจัดทำโครงการ"
-                                className="w-full h-64 object-cover rounded-lg shadow-md"
+                                className="w-full rounded-lg mb-2 object-cover"
+                                height="200px"
+                                showClickHint={false}
+                                onError={(error) => {
+                                  console.warn('After image preview error:', error);
+                                  handleImageRemove('afterProjectImage');
+                                }}
                               />
-                              <div className="absolute top-2 right-2 flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handleImageRemove('afterProjectImage')}
-                                  className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow-lg transition-colors"
-                                  title="ลบรูปภาพ"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                </button>
+                              <div className="flex gap-2 justify-center mt-3">
                                 <button
                                   type="button"
                                   onClick={() => document.getElementById('afterImageInput').click()}
-                                  className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-lg transition-colors"
-                                  title="เปลี่ยนรูปภาพ"
+                                  className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors font-medium"
                                 >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
+                                  เปลี่ยนรูป
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleImageRemove('afterProjectImage')}
+                                  className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors font-medium"
+                                >
+                                  ลบรูป
                                 </button>
                               </div>
                             </div>
