@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import Swal from 'sweetalert2';
 import ImageUpload from '../components/ImageUpload';
+import FormSkeletonLoader from '../components/FormSkeletonLoader';
 import '../CustomSwal.css';
 import '../MobileDateFix.css';
 
 const GenbaForm = () => {
   const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     employeeId: '',
     fullName: '',
@@ -208,6 +210,7 @@ const GenbaForm = () => {
       return;
     }
 
+    setLoading(true);
     try {
       const response = await fetch(`/api/employees/${formData.employeeId}`);
       
@@ -274,6 +277,8 @@ const GenbaForm = () => {
           confirmButton: 'custom-swal-confirm-button',
         }
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -353,10 +358,14 @@ const GenbaForm = () => {
     }
   };
 
+  if (loading) {
+    return <FormSkeletonLoader />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-6 py-8 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Left Side - Steps */}
           <div className="space-y-8">

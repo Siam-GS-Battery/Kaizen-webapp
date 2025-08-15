@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import { employeeAPI } from '../services/apiService';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 // Force hot-reload cache clear
 
@@ -17,7 +18,6 @@ const EmployeesManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userOptions, setUserOptions] = useState([]); // For dropdown options
-
 
 
   // Form data for adding/editing employees
@@ -925,6 +925,15 @@ const EmployeesManagement = () => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-blue-600 mb-8">EMPLOYEES MANAGEMENT</h1>
+        <SkeletonLoader rows={10} />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

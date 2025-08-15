@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import ImageUpload from '../components/ImageUpload';
+import FormSkeletonLoader from '../components/FormSkeletonLoader';
 import '../CustomSwal.css';
 import '../MobileDateFix.css';
 
 const SuggestionForm = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     employeeId: '',
     fullName: '',
@@ -203,6 +205,7 @@ const SuggestionForm = () => {
       return;
     }
 
+    setLoading(true);
     try {
       const response = await fetch(`/api/employees/${formData.employeeId}`);
       
@@ -269,6 +272,8 @@ const SuggestionForm = () => {
           confirmButton: 'custom-swal-confirm-button',
         }
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -348,10 +353,14 @@ const SuggestionForm = () => {
     }
   };
 
+  if (loading) {
+    return <FormSkeletonLoader />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-6 py-8 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Left Side - Steps */}
           <div className="space-y-8">

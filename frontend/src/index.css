@@ -6,4 +6,5 @@
 
 body {
   font-family: 'IBM Plex Sans Thai', 'IBM Plex Sans', sans-serif;
+  scrollbar-gutter: stable;
 }

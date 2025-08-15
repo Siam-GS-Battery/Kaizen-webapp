@@ -3,6 +3,7 @@ import Swal from 'sweetalert2';
 import { tasklistAPI } from '../services/apiService';
 import ProjectImage from '../components/ProjectImage';
 import EditForm from './EditForm';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 const Tasklist = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -1189,6 +1190,15 @@ const Tasklist = () => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-blue-600 mb-8">TASK DAILY</h1>
+        <SkeletonLoader rows={10} />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
