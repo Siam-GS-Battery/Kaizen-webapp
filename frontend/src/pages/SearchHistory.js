@@ -109,7 +109,7 @@ const SearchHistory = () => {
         projectEndDate: project.projectEndDate,
         problemsEncountered: project.problemsEncountered || 'ไม่ระบุ',
         solutionApproach: project.solutionApproach || 'ไม่ระบุ',
-        standardCertification: 'ได้รับการรับรองตามมาตรฐาน', // Default value as it's not in DB
+        standardCertification: project.standardCertification || '-',
         resultsAchieved: project.resultsAchieved || 'อยู่ระหว่างการประเมินผล',
         beforeProjectImage: project.beforeProjectImage || null,
         afterProjectImage: project.afterProjectImage || null,

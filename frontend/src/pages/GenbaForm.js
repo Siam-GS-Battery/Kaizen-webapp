@@ -173,6 +173,7 @@ const GenbaForm = () => {
         projectEndDate: formData.projectEndDate,
         problemsEncountered: formData.problemsEncountered,
         solutionApproach: formData.solutionApproach,
+        standardCertification: formData.standardCertification,
         resultsAchieved: formData.resultsAchieved,
         fiveSType: formData.fiveSType,
         improvementTopic: formData.improvementTopic,

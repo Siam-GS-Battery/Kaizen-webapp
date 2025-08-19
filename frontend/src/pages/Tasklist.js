@@ -1071,7 +1071,7 @@ const Tasklist = () => {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                           <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">การรับรองมาตรฐาน</label>
-                          <p className="text-gray-900 font-medium text-sm leading-relaxed">ได้รับการรับรองตามมาตรฐาน</p>
+                          <p className="text-gray-900 font-medium text-sm leading-relaxed">{selectedProject.standardCertification || '-'}</p>
                         </div>
                         <div className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                           <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wide">ผลลัพธ์ที่ได้</label>

@@ -20,6 +20,7 @@ interface TaskListItem {
   projectEndDate: string;
   problemsEncountered: string;
   solutionApproach: string;
+  standardCertification?: string;
   resultsAchieved: string;
   fiveSType: string;
   improvementTopic: string;
@@ -130,6 +131,7 @@ router.get('/', async (req: any, res: Response): Promise<void> => {
       projectEndDate: project.project_end_date,
       problemsEncountered: project.problems_encountered,
       solutionApproach: project.solution_approach,
+      standardCertification: project.standard_certification || '-',
       resultsAchieved: project.results_achieved,
       fiveSType: project.five_s_type,
       improvementTopic: project.improvement_topic,
@@ -219,6 +221,7 @@ router.get('/:id', async (req: any, res: Response): Promise<void> => {
       projectEndDate: project.project_end_date,
       problemsEncountered: project.problems_encountered,
       solutionApproach: project.solution_approach,
+      standardCertification: project.standard_certification || '-',
       resultsAchieved: project.results_achieved,
       fiveSType: project.five_s_type,
       improvementTopic: project.improvement_topic,
@@ -317,6 +320,7 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
       project_end_date: taskData.projectEndDate,
       problems_encountered: taskData.problemsEncountered,
       solution_approach: taskData.solutionApproach,
+      standard_certification: taskData.standardCertification || '-',
       results_achieved: taskData.resultsAchieved || '',
       five_s_type: taskData.fiveSType,
       improvement_topic: taskData.improvementTopic,
@@ -420,6 +424,7 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
       projectEndDate: project.project_end_date,
       problemsEncountered: project.problems_encountered,
       solutionApproach: project.solution_approach,
+      standardCertification: project.standard_certification || '-',
       resultsAchieved: project.results_achieved,
       fiveSType: project.five_s_type,
       improvementTopic: project.improvement_topic,
@@ -666,6 +671,7 @@ router.put('/:id', async (req: any, res: Response): Promise<void> => {
       projectEndDate: project.project_end_date,
       problemsEncountered: project.problems_encountered,
       solutionApproach: project.solution_approach,
+      standardCertification: project.standard_certification || '-',
       resultsAchieved: project.results_achieved,
       fiveSType: project.five_s_type,
       improvementTopic: project.improvement_topic,
@@ -881,6 +887,7 @@ router.get('/hierarchy/:userEmployeeId', async (req: any, res: Response): Promis
       projectEndDate: project.project_end_date,
       problemsEncountered: project.problems_encountered,
       solutionApproach: project.solution_approach,
+      standardCertification: project.standard_certification || '-',
       resultsAchieved: project.results_achieved,
       fiveSType: project.five_s_type,
       improvementTopic: project.improvement_topic,
