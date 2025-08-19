@@ -6,6 +6,200 @@ import { createError } from '../middleware/errorHandler';
 
 const router = express.Router();
 
+// Get users for dropdown (simple list with names) - MUST BE BEFORE /:employeeId
+router.get('/dropdown/list', async (req: any, res: Response): Promise<void> => {
+  try {
+    console.log('🔍 Fetching users for dropdown...');
+    
+    if (!supabaseAdmin) {
+      console.error('❌ Supabase admin client not initialized');
+      throw createError('Database configuration error', 500);
+    }
+
+    const { data: users, error } = await supabaseAdmin
+      .from('users')
+      .select(`
+        employee_id,
+        first_name,
+        last_name,
+        role
+      `)
+      .in('role', ['Supervisor', 'Manager', 'Admin'])
+      .order('first_name');
+
+    if (error) {
+      console.error('❌ Error fetching users for dropdown:', error);
+      throw createError(`Database error: ${error.message}`, 500);
+    }
+
+    console.log('✅ Successfully fetched users for dropdown');
+
+    res.json({
+      success: true,
+      data: users?.map(user => ({
+        value: user.employee_id,
+        label: `${user.first_name} ${user.last_name} (${user.employee_id})`,
+        role: user.role
+      })) || [],
+      message: 'Users for dropdown retrieved successfully'
+    });
+
+  } catch (error) {
+    console.error('Get users dropdown error:', error);
+    
+    if (error instanceof Error && (error as any).statusCode) {
+      res.status((error as any).statusCode).json({
+        success: false,
+        error: { message: error.message, statusCode: (error as any).statusCode }
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: { message: 'Internal server error', statusCode: 500 }
+      });
+    }
+  }
+});
+
+// Get Kaizen team members only - MUST BE BEFORE /:employeeId
+router.get('/kaizen-team/list', async (req: any, res: Response): Promise<void> => {
+  try {
+    console.log('🔍 Fetching Kaizen team members...');
+    
+    if (!supabaseAdmin) {
+      console.error('❌ Supabase admin client not initialized');
+      throw createError('Database configuration error', 500);
+    }
+
+    const { data: kaizenTeam, error } = await supabaseAdmin
+      .from('users')
+      .select(`
+        employee_id,
+        first_name,
+        last_name,
+        department,
+        five_s_area,
+        project_area,
+        role,
+        position,
+        approver,
+        is_kaizen_team,
+        kaizen_team_assigned_date,
+        created_at,
+        updated_at
+      `)
+      .eq('is_kaizen_team', true)
+      .order('kaizen_team_assigned_date', { ascending: false });
+
+    if (error) {
+      console.error('❌ Error fetching Kaizen team members:', error);
+      throw createError(`Database error: ${error.message}`, 500);
+    }
+
+    res.json({
+      success: true,
+      data: kaizenTeam?.map(emp => ({
+        employeeId: emp.employee_id,
+        firstName: emp.first_name,
+        lastName: emp.last_name,
+        department: emp.department,
+        fiveSArea: emp.five_s_area,
+        projectArea: emp.project_area,
+        role: emp.role,
+        position: emp.position,
+        approver: emp.approver,
+        isKaizenTeam: emp.is_kaizen_team,
+        kaizenTeamAssignedDate: emp.kaizen_team_assigned_date,
+        createdAt: emp.created_at,
+        updatedAt: emp.updated_at
+      })) || [],
+      message: 'Kaizen team members retrieved successfully'
+    });
+
+  } catch (error) {
+    console.error('Get Kaizen team error:', error);
+    
+    if (error instanceof Error && (error as any).statusCode) {
+      res.status((error as any).statusCode).json({
+        success: false,
+        error: { message: error.message, statusCode: (error as any).statusCode }
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: { message: 'Internal server error', statusCode: 500 }
+      });
+    }
+  }
+});
+
+// Get non-Kaizen team employees for selection modal - MUST BE BEFORE /:employeeId
+router.get('/non-kaizen-team/list', async (req: any, res: Response): Promise<void> => {
+  try {
+    console.log('🔍 Fetching non-Kaizen team employees...');
+    
+    if (!supabaseAdmin) {
+      console.error('❌ Supabase admin client not initialized');
+      throw createError('Database configuration error', 500);
+    }
+
+    const { data: employees, error } = await supabaseAdmin
+      .from('users')
+      .select(`
+        employee_id,
+        first_name,
+        last_name,
+        department,
+        five_s_area,
+        project_area,
+        role,
+        position,
+        created_at,
+        updated_at
+      `)
+      .eq('is_kaizen_team', false)
+      .order('first_name');
+
+    if (error) {
+      console.error('❌ Error fetching non-Kaizen team employees:', error);
+      throw createError(`Database error: ${error.message}`, 500);
+    }
+
+    res.json({
+      success: true,
+      data: employees?.map(emp => ({
+        employeeId: emp.employee_id,
+        firstName: emp.first_name,
+        lastName: emp.last_name,
+        department: emp.department,
+        fiveSArea: emp.five_s_area,
+        projectArea: emp.project_area,
+        role: emp.role,
+        position: emp.position,
+        isKaizenTeam: false,
+        createdAt: emp.created_at,
+        updatedAt: emp.updated_at
+      })) || [],
+      message: 'Non-Kaizen team employees retrieved successfully'
+    });
+
+  } catch (error) {
+    console.error('Get non-Kaizen team employees error:', error);
+    
+    if (error instanceof Error && (error as any).statusCode) {
+      res.status((error as any).statusCode).json({
+        success: false,
+        error: { message: error.message, statusCode: (error as any).statusCode }
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: { message: 'Internal server error', statusCode: 500 }
+      });
+    }
+  }
+});
+
 // Get all employees (temporarily disabled authentication for frontend testing)
 router.get('/', async (req: any, res: Response): Promise<void> => {
   try {
@@ -30,6 +224,8 @@ router.get('/', async (req: any, res: Response): Promise<void> => {
         role,
         position,
         approver,
+        is_kaizen_team,
+        kaizen_team_assigned_date,
         created_at,
         updated_at
       `)
@@ -54,6 +250,8 @@ router.get('/', async (req: any, res: Response): Promise<void> => {
         role: emp.role,
         position: emp.position,
         approver: emp.approver,
+        isKaizenTeam: emp.is_kaizen_team || false,
+        kaizenTeamAssignedDate: emp.kaizen_team_assigned_date,
         createdAt: emp.created_at,
         updatedAt: emp.updated_at
       })) || [],
@@ -98,6 +296,8 @@ router.get('/:employeeId', async (req: any, res: Response): Promise<void> => {
         role,
         position,
         approver,
+        is_kaizen_team,
+        kaizen_team_assigned_date,
         created_at,
         updated_at
       `)
@@ -120,6 +320,8 @@ router.get('/:employeeId', async (req: any, res: Response): Promise<void> => {
         role: employee.role,
         position: employee.position,
         approver: employee.approver,
+        isKaizenTeam: employee.is_kaizen_team || false,
+        kaizenTeamAssignedDate: employee.kaizen_team_assigned_date,
         createdAt: employee.created_at,
         updatedAt: employee.updated_at
       },
@@ -321,6 +523,8 @@ router.put('/:employeeId', async (req: any, res: Response): Promise<void> => {
         role: employee.role,
         position: employee.position,
         approver: employee.approver,
+        isKaizenTeam: employee.is_kaizen_team || false,
+        kaizenTeamAssignedDate: employee.kaizen_team_assigned_date,
         createdAt: employee.created_at,
         updatedAt: employee.updated_at
       },
@@ -387,46 +591,135 @@ router.delete('/:employeeId', async (req: any, res: Response): Promise<void> => 
   }
 });
 
-// Get users for dropdown (simple list with names)
-router.get('/dropdown/list', async (req: any, res: Response): Promise<void> => {
+// Add employee to Kaizen team
+router.post('/:employeeId/kaizen-team', async (req: any, res: Response): Promise<void> => {
   try {
-    console.log('🔍 Fetching users for dropdown...');
-    
+    console.log('🔍 Adding employee to Kaizen team...');
+
     if (!supabaseAdmin) {
       console.error('❌ Supabase admin client not initialized');
       throw createError('Database configuration error', 500);
     }
 
-    const { data: users, error } = await supabaseAdmin
+    const { employeeId } = req.params;
+
+    // Check if employee exists
+    const { data: existingEmployee, error: checkError } = await supabaseAdmin
       .from('users')
-      .select(`
-        employee_id,
-        first_name,
-        last_name,
-        role
-      `)
-      .in('role', ['Supervisor', 'Manager', 'Admin'])
-      .order('first_name');
+      .select('employee_id, is_kaizen_team')
+      .eq('employee_id', employeeId)
+      .single();
+
+    if (checkError || !existingEmployee) {
+      throw createError('Employee not found', 404);
+    }
+
+    if (existingEmployee.is_kaizen_team) {
+      throw createError('Employee is already a Kaizen team member', 409);
+    }
+
+    // Add to Kaizen team
+    const { data: updatedEmployee, error } = await supabaseAdmin
+      .from('users')
+      .update({
+        is_kaizen_team: true,
+        kaizen_team_assigned_date: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('employee_id', employeeId)
+      .select()
+      .single();
 
     if (error) {
-      console.error('❌ Error fetching users for dropdown:', error);
       throw createError(`Database error: ${error.message}`, 500);
     }
 
-    console.log('✅ Successfully fetched users for dropdown');
-
     res.json({
       success: true,
-      data: users?.map(user => ({
-        value: user.employee_id,
-        label: `${user.first_name} ${user.last_name} (${user.employee_id})`,
-        role: user.role
-      })) || [],
-      message: 'Users for dropdown retrieved successfully'
+      data: {
+        employeeId: updatedEmployee.employee_id,
+        firstName: updatedEmployee.first_name,
+        lastName: updatedEmployee.last_name,
+        isKaizenTeam: updatedEmployee.is_kaizen_team,
+        kaizenTeamAssignedDate: updatedEmployee.kaizen_team_assigned_date
+      },
+      message: 'Employee added to Kaizen team successfully'
     });
 
   } catch (error) {
-    console.error('Get users dropdown error:', error);
+    console.error('Add to Kaizen team error:', error);
+    
+    if (error instanceof Error && (error as any).statusCode) {
+      res.status((error as any).statusCode).json({
+        success: false,
+        error: { message: error.message, statusCode: (error as any).statusCode }
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: { message: 'Internal server error', statusCode: 500 }
+      });
+    }
+  }
+});
+
+// Remove employee from Kaizen team
+router.delete('/:employeeId/kaizen-team', async (req: any, res: Response): Promise<void> => {
+  try {
+    console.log('🔍 Removing employee from Kaizen team...');
+
+    if (!supabaseAdmin) {
+      console.error('❌ Supabase admin client not initialized');
+      throw createError('Database configuration error', 500);
+    }
+
+    const { employeeId } = req.params;
+
+    // Check if employee exists
+    const { data: existingEmployee, error: checkError } = await supabaseAdmin
+      .from('users')
+      .select('employee_id, is_kaizen_team')
+      .eq('employee_id', employeeId)
+      .single();
+
+    if (checkError || !existingEmployee) {
+      throw createError('Employee not found', 404);
+    }
+
+    if (!existingEmployee.is_kaizen_team) {
+      throw createError('Employee is not a Kaizen team member', 409);
+    }
+
+    // Remove from Kaizen team
+    const { data: updatedEmployee, error } = await supabaseAdmin
+      .from('users')
+      .update({
+        is_kaizen_team: false,
+        kaizen_team_assigned_date: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('employee_id', employeeId)
+      .select()
+      .single();
+
+    if (error) {
+      throw createError(`Database error: ${error.message}`, 500);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        employeeId: updatedEmployee.employee_id,
+        firstName: updatedEmployee.first_name,
+        lastName: updatedEmployee.last_name,
+        isKaizenTeam: updatedEmployee.is_kaizen_team,
+        kaizenTeamAssignedDate: updatedEmployee.kaizen_team_assigned_date
+      },
+      message: 'Employee removed from Kaizen team successfully'
+    });
+
+  } catch (error) {
+    console.error('Remove from Kaizen team error:', error);
     
     if (error instanceof Error && (error as any).statusCode) {
       res.status((error as any).statusCode).json({

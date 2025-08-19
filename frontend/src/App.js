@@ -5,6 +5,7 @@ import GenbaForm from './pages/GenbaForm';
 import SuggestionForm from './pages/SuggestionForm';
 import SearchHistory from './pages/SearchHistory';
 import Tasklist from './pages/Tasklist';
+import KaizenTasklist from './pages/KaizenTasklist';
 import EmployeesManagement from './pages/EmployeesManagement';
 import AdminTeamSettings from './pages/AdminTeamSettings';
 import Report from './pages/Report';
@@ -14,14 +15,15 @@ import Footer from './components/Footer';
 import sessionManager from './utils/sessionManager';
 
 // Protected routes that require authentication
-const protectedRoutes = ['/tasklist', '/employees-management', '/admin-team-settings', '/report'];
+const protectedRoutes = ['/tasklist', '/kaizen-tasklist', '/employees-management', '/admin-team-settings', '/report'];
 
-// Routes that require specific roles
+// Routes that require specific roles or Kaizen team access
 const roleProtectedRoutes = {
   '/tasklist': ['Supervisor', 'Manager', 'Admin'],
-  '/employees-management': ['Admin'],
-  '/admin-team-settings': ['Admin'],  
-  '/report': ['Admin']
+  '/kaizen-tasklist': ['KaizenTeam'],
+  '/employees-management': ['Admin', 'KaizenTeam'],
+  '/admin-team-settings': ['Admin', 'KaizenTeam'],  
+  '/report': ['Admin', 'KaizenTeam']
 };
 
 function AppLayout() {
@@ -89,20 +91,31 @@ function AppLayout() {
       // Check role-based access
       const requiredRoles = roleProtectedRoutes[currentPath];
       if (requiredRoles) {
-        // Get user role from localStorage
+        // Get user data from localStorage
         const userDataStr = localStorage.getItem('user');
         let userRole = null;
+        let isKaizenTeam = false;
         
         if (userDataStr) {
           try {
             const userData = JSON.parse(userDataStr);
             userRole = userData.role;
+            isKaizenTeam = userData.isKaizenTeam || false;
           } catch (error) {
             console.error('Error parsing user data:', error);
           }
         }
         
-        if (!userRole || !requiredRoles.includes(userRole)) {
+        // Check access permissions
+        let hasAccess = false;
+        
+        if (userRole && requiredRoles.includes(userRole)) {
+          hasAccess = true;
+        } else if (isKaizenTeam && requiredRoles.includes('KaizenTeam')) {
+          hasAccess = true;
+        }
+        
+        if (!hasAccess) {
           // Insufficient permissions, redirect to home
           navigate('/', { replace: true });
           return;
@@ -121,6 +134,7 @@ function AppLayout() {
           <Route path="/suggestion-form" element={<SuggestionForm />} />
           <Route path="/search-history" element={<SearchHistory />} />
           <Route path="/tasklist" element={<Tasklist />} />
+          <Route path="/kaizen-tasklist" element={<KaizenTasklist />} />
           <Route path="/employees-management" element={<EmployeesManagement />} />
           <Route path="/admin-team-settings" element={<AdminTeamSettings />} />
           <Route path="/report" element={<Report />} />

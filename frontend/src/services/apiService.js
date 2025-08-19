@@ -94,7 +94,13 @@ export const employeeAPI = {
   delete: (employeeId) => apiService.delete(`/employees/${employeeId}`),
   
   // Get users for dropdown
-  getUsersForDropdown: () => apiService.get('/employees/dropdown/list')
+  getUsersForDropdown: () => apiService.get('/employees/dropdown/list'),
+  
+  // Kaizen Team Management
+  getKaizenTeam: () => apiService.get('/employees/kaizen-team/list'),
+  getNonKaizenTeam: () => apiService.get('/employees/non-kaizen-team/list'),
+  addToKaizenTeam: (employeeId) => apiService.post(`/employees/${employeeId}/kaizen-team`),
+  removeFromKaizenTeam: (employeeId) => apiService.delete(`/employees/${employeeId}/kaizen-team`)
 };
 
 // Tasklist API functions

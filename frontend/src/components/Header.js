@@ -14,6 +14,7 @@ const Header = () => {
   const [userRole, setUserRole] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isKaizenTeam, setIsKaizenTeam] = useState(false);
   const [showSessionWarning, setShowSessionWarning] = useState(false);
   const [warningTime, setWarningTime] = useState(0);
   const [sessionInfo, setSessionInfo] = useState(null);
@@ -28,16 +29,33 @@ const Header = () => {
     const checkSession = () => {
       const session = sessionManager.getCurrentSession();
       if (session && sessionManager.isSessionValid()) {
-        const employee = employeeData.find(emp => emp.employeeId === session.employeeId);
-        if (employee) {
-          setUserRole(employee.role);
-          setCurrentUser(employee);
-          setIsLoggedIn(true);
-          setSessionInfo(sessionManager.getSessionInfo());
+        // Get user data from localStorage (updated from API)
+        const userDataStr = localStorage.getItem('user');
+        if (userDataStr) {
+          try {
+            const userData = JSON.parse(userDataStr);
+            setUserRole(userData.role);
+            setCurrentUser(userData);
+            setIsKaizenTeam(userData.isKaizenTeam || false);
+            setIsLoggedIn(true);
+            setSessionInfo(sessionManager.getSessionInfo());
+          } catch (error) {
+            console.error('Error parsing user data:', error);
+            // Fallback to static data if needed
+            const employee = employeeData.find(emp => emp.employeeId === session.employeeId);
+            if (employee) {
+              setUserRole(employee.role);
+              setCurrentUser(employee);
+              setIsKaizenTeam(false);
+              setIsLoggedIn(true);
+              setSessionInfo(sessionManager.getSessionInfo());
+            }
+          }
         }
       } else {
         setUserRole(null);
         setCurrentUser(null);
+        setIsKaizenTeam(false);
         setIsLoggedIn(false);
         setSessionInfo(null);
       }
@@ -92,19 +110,28 @@ const Header = () => {
 
   // เมนูสำหรับ Operations ตามสิทธิ์
   const getOperationsMenuItems = () => {
-    if (userRole === 'Supervisor' || userRole === 'Manager') {
-      return [
-        { name: 'Tasklist', href: '/tasklist' }
-      ];
-    } else if (userRole === 'Admin') {
-      return [
-        { name: 'Tasklist', href: '/tasklist' },
-        { name: 'Employees Management', href: '/employees-management' },
-        { name: 'Admin Team Settings', href: '/admin-team-settings' },
-        { name: 'Report Page', href: '/report' }
-      ];
+    const menuItems = [];
+    
+    // Tasklist for Supervisor, Manager, Admin
+    if (userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin') {
+      menuItems.push({ name: 'Tasklist', href: '/tasklist' });
     }
-    return [];
+    
+    // Tasklist (Kaizen team) for KaizenTeam members only
+    if (isKaizenTeam) {
+      menuItems.push({ name: 'Tasklist (Kaizen team)', href: '/kaizen-tasklist' });
+    }
+    
+    // Admin pages for Admin role OR Kaizen team members
+    if (userRole === 'Admin' || isKaizenTeam) {
+      menuItems.push(
+        { name: 'Employees Management', href: '/employees-management' },
+        { name: 'Kaizen Team Settings', href: '/admin-team-settings' },
+        { name: 'Report Page', href: '/report' }
+      );
+    }
+    
+    return menuItems;
   };
 
   // เมนูสำหรับ Create Form ตามสิทธิ์
@@ -123,6 +150,7 @@ const Header = () => {
     sessionManager.destroySession();
     setUserRole(null);
     setCurrentUser(null);
+    setIsKaizenTeam(false);
     setIsLoggedIn(false);
     setShowSessionWarning(false);
     setSessionInfo(null);
@@ -136,6 +164,7 @@ const Header = () => {
     sessionManager.destroySession();
     setUserRole(null);
     setCurrentUser(null);
+    setIsKaizenTeam(false);
     setIsLoggedIn(false);
     setIsUserMenuOpen(false);
     setShowSessionWarning(false);
@@ -221,8 +250,8 @@ const Header = () => {
               </div>
             )}
 
-            {/* Operations Dropdown - แสดงเฉพาะ Supervisor, Manager และ Admin */}
-            {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin') && (
+            {/* Operations Dropdown - แสดงเฉพาะ Supervisor, Manager, Admin และ KaizenTeam */}
+            {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin' || isKaizenTeam) && (
               <div className="relative">
                 <button
                   onClick={(e) => {
@@ -390,7 +419,7 @@ const Header = () => {
                     </div>
                     
                                          {/* Menu Items for Tablet */}
-                     {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin') && (
+                     {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin' || isKaizenTeam) && (
                       <>
                         <div className="px-4 py-2 border-b border-gray-100">
                           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">CREATE FORM</div>
@@ -510,8 +539,8 @@ const Header = () => {
                 </div>
               )}
 
-              {/* Operations Section for Mobile - แสดงเฉพาะ Supervisor, Manager และ Admin */}
-              {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin') && (
+              {/* Operations Section for Mobile - แสดงเฉพาะ Supervisor, Manager, Admin และ KaizenTeam */}
+              {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin' || isKaizenTeam) && (
                 <div className="space-y-2">
                   <button
                     onClick={() => {

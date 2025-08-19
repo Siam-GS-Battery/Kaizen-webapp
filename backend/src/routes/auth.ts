@@ -87,7 +87,9 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
           department: user.department,
           role: user.role,
           fiveSArea: user.five_s_area,
-          projectArea: user.project_area
+          projectArea: user.project_area,
+          isKaizenTeam: user.is_kaizen_team || false,
+          kaizenTeamAssignedDate: user.kaizen_team_assigned_date
         },
         sessionId: session?.id || null
       },

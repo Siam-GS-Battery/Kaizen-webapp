@@ -11,8 +11,9 @@ const AdminTeamSettings = () => {
   const [selectedItems, setSelectedItems] = useState([]);
   const [isManageDropdownOpen, setIsManageDropdownOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingAdmin, setEditingAdmin] = useState(null);
+  const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
+  const [availableEmployees, setAvailableEmployees] = useState([]);
+  const [selectedEmployeesForAdd, setSelectedEmployeesForAdd] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,23 +49,19 @@ const AdminTeamSettings = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await employeeAPI.getAll();
+      const response = await employeeAPI.getKaizenTeam();
       if (response.data.success) {
-        // Filter to show only Admin team members (Admin, Manager, Supervisor)
-        const adminTeamMembers = response.data.data.filter(emp => 
-          emp.role === 'Admin' || emp.role === 'Manager' || emp.role === 'Supervisor'
-        );
-        setAdmins(adminTeamMembers);
+        setAdmins(response.data.data);
       } else {
-        throw new Error('Failed to fetch admin team members');
+        throw new Error('Failed to fetch Kaizen team members');
       }
     } catch (error) {
-      console.error('Error fetching admin team members:', error);
-      setError('Failed to load admin team members. Please try again.');
+      console.error('Error fetching Kaizen team members:', error);
+      setError('Failed to load Kaizen team members. Please try again.');
       await Swal.fire({
         icon: 'error',
         title: 'เกิดข้อผิดพลาด',
-        text: 'ไม่สามารถโหลดข้อมูลผู้จัดการทีมได้ กรุณาลองใหม่อีกครั้ง',
+        text: 'ไม่สามารถโหลดข้อมูลทีม Kaizen ได้ กรุณาลองใหม่อีกครั้ง',
         confirmButtonColor: '#3b82f6'
       });
     } finally {
@@ -213,93 +210,37 @@ const AdminTeamSettings = () => {
     }
   };
 
-  // Handle edit admin team member
-  const handleEditAdmin = async (formElement) => {
-    const data = getFormData(formElement);
-    
-    if (!data.firstName || !data.lastName || !data.department || !data.fiveSArea) {
-      await Swal.fire({
-        icon: 'warning',
-        title: 'ข้อมูลไม่ครบถ้วน',
-        text: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน',
-        confirmButtonColor: '#3b82f6'
-      });
-      return;
-    }
 
-    try {
-      const updateData = {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        department: data.department,
-        fiveSArea: data.fiveSArea,
-        projectArea: data.department, // Using department as project area
-        role: data.role
-      };
-
-      const response = await employeeAPI.update(editingAdmin.employeeId, updateData);
-      
-      if (response.data.success) {
-        // Refresh the admin team list
-        await fetchAdmins();
-        setIsEditModalOpen(false);
-        setEditingAdmin(null);
-        resetFormData();
-
-        await Swal.fire({
-          icon: 'success',
-          title: 'แก้ไขข้อมูลสำเร็จ',
-          text: 'แก้ไขข้อมูลผู้จัดการทีมเรียบร้อยแล้ว',
-          confirmButtonColor: '#3b82f6'
-        });
-      }
-    } catch (error) {
-      console.error('Error updating admin team member:', error);
-      let errorMessage = 'เกิดข้อผิดพลาดในการแก้ไขข้อมูลผู้จัดการทีม';
-      
-      if (error.response?.data?.error?.message) {
-        errorMessage = error.response.data.error.message;
-      }
-      
-      await Swal.fire({
-        icon: 'error',
-        title: 'เกิดข้อผิดพลาด',
-        text: errorMessage,
-        confirmButtonColor: '#3b82f6'
-      });
-    }
-  };
-
-  // Handle delete individual admin team member
+  // Handle remove individual member from Kaizen team
   const handleDeleteAdmin = async (admin) => {
     const result = await Swal.fire({
-      title: 'ลบผู้จัดการทีม',
-      text: `คุณต้องการลบ ${admin.firstName} ${admin.lastName} ใช่หรือไม่?`,
+      title: 'นำออกจากทีม Kaizen',
+      text: `คุณต้องการนำ ${admin.firstName} ${admin.lastName} ออกจากทีม Kaizen ใช่หรือไม่? \n(ผู้ใช้จะกลับไปมีสิทธิ์ตามเดิมโดยไม่ลบข้อมูลออกจากระบบ)`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#6b7280',
-      confirmButtonText: 'ลบ',
+      confirmButtonText: 'นำออกจากทีม',
       cancelButtonText: 'ยกเลิก'
     });
 
     if (result.isConfirmed) {
       try {
-        const response = await employeeAPI.delete(admin.employeeId);
+        const response = await employeeAPI.removeFromKaizenTeam(admin.employeeId);
         
         if (response.data.success) {
-          // Refresh the admin team list
+          // Refresh the Kaizen team list
           await fetchAdmins();
           await Swal.fire({
-            title: 'ลบเรียบร้อย!',
-            text: 'ลบข้อมูลผู้จัดการทีมเรียบร้อยแล้ว',
+            title: 'นำออกเรียบร้อย!',
+            text: 'นำสมาชิกออกจากทีม Kaizen เรียบร้อยแล้ว ผู้ใช้จะกลับไปมีสิทธิ์ตามเดิม',
             icon: 'success',
             confirmButtonColor: '#3b82f6'
           });
         }
       } catch (error) {
-        console.error('Error deleting admin team member:', error);
-        let errorMessage = 'เกิดข้อผิดพลาดในการลบผู้จัดการทีม';
+        console.error('Error removing member from Kaizen team:', error);
+        let errorMessage = 'เกิดข้อผิดพลาดในการนำสมาชิกออกจากทีม Kaizen';
         
         if (error.response?.data?.error?.message) {
           errorMessage = error.response.data.error.message;
@@ -315,46 +256,46 @@ const AdminTeamSettings = () => {
     }
   };
 
-  // Handle bulk delete
+  // Handle bulk remove from Kaizen team
   const handleBulkDelete = async () => {
     if (selectedItems.length === 0) return;
 
     const result = await Swal.fire({
-      title: 'ลบผู้จัดการทีม',
-      text: `คุณต้องการลบผู้จัดการทีม ${selectedItems.length} คนใช่หรือไม่?`,
+      title: 'นำออกจากทีม Kaizen',
+      text: `คุณต้องการนำสมาชิกทีม Kaizen ${selectedItems.length} คนออกจากทีมใช่หรือไม่? \n(ผู้ใช้จะกลับไปมีสิทธิ์ตามเดิมโดยไม่ลบข้อมูลออกจากระบบ)`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#6b7280',
-      confirmButtonText: 'ลบ',
+      confirmButtonText: 'นำออกจากทีม',
       cancelButtonText: 'ยกเลิก'
     });
 
     if (result.isConfirmed) {
       try {
-        // Delete admin team members one by one
-        const deletePromises = selectedItems.map(employeeId => 
-          employeeAPI.delete(employeeId)
+        // Remove members from Kaizen team one by one
+        const removePromises = selectedItems.map(employeeId => 
+          employeeAPI.removeFromKaizenTeam(employeeId)
         );
         
-        await Promise.all(deletePromises);
+        await Promise.all(removePromises);
         
-        // Refresh the admin team list
+        // Refresh the Kaizen team list
         await fetchAdmins();
         setSelectedItems([]);
         
         await Swal.fire({
-          title: 'ลบเรียบร้อย!',
-          text: `ลบข้อมูลผู้จัดการทีม ${selectedItems.length} คนเรียบร้อยแล้ว`,
+          title: 'นำออกเรียบร้อย!',
+          text: `นำสมาชิกออกจากทีม Kaizen ${selectedItems.length} คนเรียบร้อยแล้ว ผู้ใช้จะกลับไปมีสิทธิ์ตามเดิม`,
           icon: 'success',
           confirmButtonColor: '#3b82f6'
         });
       } catch (error) {
-        console.error('Error bulk deleting admin team members:', error);
+        console.error('Error bulk removing members from Kaizen team:', error);
         await Swal.fire({
           icon: 'error',
           title: 'เกิดข้อผิดพลาด',
-          text: 'เกิดข้อผิดพลาดในการลบผู้จัดการทีมบางคน กรุณาลองใหม่อีกครั้ง',
+          text: 'เกิดข้อผิดพลาดในการนำสมาชิกออกจากทีม Kaizen กรุณาลองใหม่อีกครั้ง',
           confirmButtonColor: '#3b82f6'
         });
         // Refresh the list to show current state
@@ -364,21 +305,6 @@ const AdminTeamSettings = () => {
     }
   };
 
-  // Open edit modal with useCallback
-  const openEditModal = React.useCallback((admin) => {
-    setEditingAdmin(admin);
-    setFormData({
-      employeeId: admin.employeeId,
-      firstName: admin.firstName,
-      lastName: admin.lastName,
-      department: admin.department,
-      fiveSArea: admin.fiveSArea,
-      role: admin.role,
-      subordinate: '',
-      commander: ''
-    });
-    setIsEditModalOpen(true);
-  }, []);
 
   // Modal close handlers 
   const handleAddModalClose = () => {
@@ -386,20 +312,70 @@ const AdminTeamSettings = () => {
     resetFormData();
   };
 
-  const handleEditModalClose = () => {
-    setIsEditModalOpen(false);
-    setEditingAdmin(null);
-    resetFormData();
+
+  // Add button handler - show selection modal instead
+  const handleAddButtonClick = async () => {
+    try {
+      const response = await employeeAPI.getNonKaizenTeam();
+      if (response.data.success) {
+        setAvailableEmployees(response.data.data);
+        setSelectedEmployeesForAdd([]);
+        setIsSelectionModalOpen(true);
+      }
+    } catch (error) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: 'ไม่สามารถโหลดรายชื่อพนักงานได้',
+        confirmButtonColor: '#3b82f6'
+      });
+    }
   };
 
-  // Add button handler
-  const handleAddButtonClick = () => {
-    resetFormData();
-    setIsAddModalOpen(true);
+  // Handle adding selected employees to Kaizen team
+  const handleAddSelectedEmployees = async () => {
+    if (selectedEmployeesForAdd.length === 0) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'กรุณาเลือกพนักงาน',
+        text: 'กรุณาเลือกพนักงานที่ต้องการเพิ่มเข้าทีม Kaizen',
+        confirmButtonColor: '#3b82f6'
+      });
+      return;
+    }
+
+    try {
+      // Add employees to Kaizen team one by one
+      const addPromises = selectedEmployeesForAdd.map(employeeId => 
+        employeeAPI.addToKaizenTeam(employeeId)
+      );
+      
+      await Promise.all(addPromises);
+      
+      // Refresh the Kaizen team list
+      await fetchAdmins();
+      setIsSelectionModalOpen(false);
+      setSelectedEmployeesForAdd([]);
+      
+      await Swal.fire({
+        icon: 'success',
+        title: 'เพิ่มสมาชิกทีม Kaizen สำเร็จ',
+        text: `เพิ่มสมาชิกทีม Kaizen ${selectedEmployeesForAdd.length} คนเรียบร้อยแล้ว`,
+        confirmButtonColor: '#3b82f6'
+      });
+    } catch (error) {
+      console.error('Error adding employees to Kaizen team:', error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: 'เกิดข้อผิดพลาดในการเพิ่มสมาชิกทีม Kaizen กรุณาลองใหม่อีกครั้ง',
+        confirmButtonColor: '#3b82f6'
+      });
+    }
   };
 
-  // Role badge component
-  const RoleBadge = ({ role }) => {
+  // Role badge component with Kaizen Team indicator
+  const RoleBadge = ({ role, isKaizenTeam }) => {
     const getRoleStyle = () => {
       switch (role) {
         case 'Admin':
@@ -414,9 +390,16 @@ const AdminTeamSettings = () => {
     };
 
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full w-24 justify-center ${getRoleStyle()}`}>
-        {role ? role.toUpperCase() : 'N/A'}
-      </span>
+      <div className="flex flex-col gap-1">
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full w-24 justify-center ${getRoleStyle()}`}>
+          {role ? role.toUpperCase() : 'N/A'}
+        </span>
+        {isKaizenTeam && (
+          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full w-24 justify-center bg-green-100 text-green-800">
+            KAIZEN
+          </span>
+        )}
+      </div>
     );
   };
 
@@ -424,21 +407,12 @@ const AdminTeamSettings = () => {
   const ActionDropdown = ({ admin }) => {
     return (
       <div className="relative action-dropdown">
-        {/* Edit and Delete buttons */}
+        {/* Remove from Kaizen Team button only */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => openEditModal(admin)}
-            className="text-yellow-500 hover:text-yellow-600 bg-yellow-50 hover:bg-yellow-100 transition-colors p-2 rounded-lg"
-            title="แก้ไข"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-            </svg>
-          </button>
           <button
             onClick={() => handleDeleteAdmin(admin)}
             className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 transition-colors p-2 rounded-lg"
-            title="ลบ"
+            title="นำออกจากทีม Kaizen"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -477,6 +451,163 @@ const AdminTeamSettings = () => {
       >
         {children}
       </select>
+    );
+  };
+
+  // Employee Selection Modal Component
+  const EmployeeSelectionModal = ({ isOpen, onClose, employees, selectedEmployees, onSelectionChange, onConfirm }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedDept, setSelectedDept] = useState('ALL');
+
+    const filteredEmployees = employees.filter(emp => {
+      const matchesSearch = emp.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           emp.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           emp.employeeId.includes(searchTerm);
+      const matchesDept = selectedDept === 'ALL' || emp.department === selectedDept;
+      return matchesSearch && matchesDept;
+    });
+
+    const handleEmployeeSelect = (employeeId) => {
+      if (selectedEmployees.includes(employeeId)) {
+        onSelectionChange(selectedEmployees.filter(id => id !== employeeId));
+      } else {
+        onSelectionChange([...selectedEmployees, employeeId]);
+      }
+    };
+
+    const handleSelectAll = () => {
+      if (selectedEmployees.length === filteredEmployees.length) {
+        onSelectionChange([]);
+      } else {
+        onSelectionChange(filteredEmployees.map(emp => emp.employeeId));
+      }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+          {/* Modal Header */}
+          <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold">เลือกสมาชิกทีม Kaizen</h2>
+                <p className="text-green-100 text-sm mt-1">เลือกพนักงานที่ต้องการเพิ่มเข้าทีม Kaizen</p>
+              </div>
+              <button onClick={onClose} className="text-white hover:text-red-200 transition-colors p-2 rounded-full hover:bg-black hover:bg-opacity-20">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Body */}
+          <div className="p-6">
+            {/* Search and Filter */}
+            <div className="flex gap-4 mb-6">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  placeholder="ค้นหาพนักงาน..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+              <select
+                value={selectedDept}
+                onChange={(e) => setSelectedDept(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              >
+                <option value="ALL">ทุกแผนก</option>
+                {departments.map(dept => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Selection Header */}
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
+                  onChange={handleSelectAll}
+                  className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                />
+                <span className="text-sm font-medium">เลือกทั้งหมด ({filteredEmployees.length} คน)</span>
+              </div>
+              <span className="text-sm text-gray-600">เลือกแล้ว: {selectedEmployees.length} คน</span>
+            </div>
+
+            {/* Employee List */}
+            <div className="max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
+              {filteredEmployees.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <p>ไม่พบพนักงานที่ตรงกับเงื่อนไขการค้นหา</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {filteredEmployees.map((employee) => (
+                    <div
+                      key={employee.employeeId}
+                      className="p-4 hover:bg-gray-50 cursor-pointer"
+                      onClick={() => handleEmployeeSelect(employee.employeeId)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedEmployees.includes(employee.employeeId)}
+                          onChange={() => handleEmployeeSelect(employee.employeeId)}
+                          className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3">
+                            <span className="font-medium text-gray-900">
+                              {employee.firstName} {employee.lastName}
+                            </span>
+                            <span className="text-sm text-gray-500">({employee.employeeId})</span>
+                            <span className={`px-2 py-1 text-xs rounded-full ${{
+                              'Admin': 'bg-red-100 text-red-800',
+                              'Manager': 'bg-purple-100 text-purple-800', 
+                              'Supervisor': 'bg-orange-100 text-orange-800',
+                              'User': 'bg-blue-100 text-blue-800'
+                            }[employee.role] || 'bg-gray-100 text-gray-800'}`}>
+                              {employee.position || employee.role}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-600 mt-1">
+                            {employee.department} • {employee.fiveSArea}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Modal Footer */}
+          <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              ยกเลิก
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={selectedEmployees.length === 0}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              เพิ่มสมาชิก ({selectedEmployees.length})
+            </button>
+          </div>
+        </div>
+      </div>
     );
   };
 
@@ -744,7 +875,7 @@ const AdminTeamSettings = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
-      <h1 className="text-3xl font-bold text-blue-600 mb-8">ADMIN TEAM SETTINGS</h1>
+      <h1 className="text-3xl font-bold text-blue-600 mb-8">KAIZEN TEAM SETTINGS</h1>
 
       {/* Search Bar and Add Button */}
       <div className="flex gap-2 mb-6">
@@ -834,7 +965,7 @@ const AdminTeamSettings = () => {
                   onClick={handleBulkDelete}
                   className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                 >
-                  ลบ
+                  นำออกจากทีม
                 </button>
               </div>
             </div>
@@ -894,7 +1025,7 @@ const AdminTeamSettings = () => {
                 <th className="px-4 py-3 text-left font-semibold text-sm min-w-[100px]">แผนก</th>
                 <th className="px-4 py-3 text-left font-semibold text-sm min-w-[150px]">ชื่อกลุ่ม 5ส</th>
                 <th className="px-4 py-3 text-left font-semibold text-sm min-w-[140px]">สิทธิ์การเข้าถึง</th>
-                <th className="px-4 py-3 text-center font-semibold text-sm min-w-[100px]"></th>
+                <th className="px-4 py-3 text-center font-semibold text-sm min-w-[100px]">การจัดการ</th>
               </tr>
             </thead>
             <tbody className="relative">
@@ -914,11 +1045,11 @@ const AdminTeamSettings = () => {
                     {admin.employeeId}
                   </td>
                   <td className="px-4 py-3 text-sm min-w-[180px]">{admin.firstName} {admin.lastName}</td>
-                  <td className="px-4 py-3 text-sm min-w-[120px]">{admin.role}</td>
+                  <td className="px-4 py-3 text-sm min-w-[120px]">{admin.position || admin.role}</td>
                   <td className="px-4 py-3 text-sm min-w-[100px]">{admin.department}</td>
                   <td className="px-4 py-3 text-sm min-w-[150px]">{admin.fiveSArea}</td>
                   <td className="px-4 py-3 min-w-[140px]">
-                    <RoleBadge role={admin.role} />
+                    <RoleBadge role={admin.role} isKaizenTeam={admin.isKaizenTeam} />
                   </td>
                   <td className="px-4 py-3 text-center min-w-[100px]">
                     <ActionDropdown admin={admin} />
@@ -959,13 +1090,15 @@ const AdminTeamSettings = () => {
         title="ADD ADMIN TEAM MEMBER"
       />
 
-      {/* Edit Admin Modal */}
-      <AdminModal
-        isOpen={isEditModalOpen}
-        onClose={handleEditModalClose}
-        onSave={handleEditAdmin}
-        title="EDIT ADMIN TEAM MEMBER"
-        isEdit={true}
+
+      {/* Employee Selection Modal */}
+      <EmployeeSelectionModal
+        isOpen={isSelectionModalOpen}
+        onClose={() => setIsSelectionModalOpen(false)}
+        employees={availableEmployees}
+        selectedEmployees={selectedEmployeesForAdd}
+        onSelectionChange={setSelectedEmployeesForAdd}
+        onConfirm={handleAddSelectedEmployees}
       />
     </div>
   );
