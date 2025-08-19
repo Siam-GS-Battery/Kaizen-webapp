@@ -801,7 +801,7 @@ router.get('/hierarchy/:userEmployeeId', async (req: any, res: Response): Promis
       throw createError('User not found', 404);
     }
 
-    let allowedEmployeeIds: string[] = [userEmployeeId]; // Always include own tasks
+    let allowedEmployeeIds: string[] = [];
 
     // If user is Supervisor, Manager, or Admin, include tasks from people they can approve
     if (['Supervisor', 'Manager', 'Admin'].includes(currentUser.role)) {
@@ -812,8 +812,30 @@ router.get('/hierarchy/:userEmployeeId', async (req: any, res: Response): Promis
 
       if (!approveError && approvableUsers) {
         console.log(`[Hierarchy] ${currentUser.role} ${userEmployeeId} can approve for:`, approvableUsers);
-        allowedEmployeeIds = [...allowedEmployeeIds, ...approvableUsers.map(user => user.employee_id)];
+        // Only include subordinates' employee IDs, not the supervisor's own ID
+        allowedEmployeeIds = approvableUsers.map(user => user.employee_id);
+        console.log(`[Hierarchy] Mapped allowedEmployeeIds (should NOT include ${userEmployeeId}):`, allowedEmployeeIds);
       }
+    }
+    
+    // If no subordinates found, return empty array to avoid showing any tasks
+    if (allowedEmployeeIds.length === 0) {
+      console.log(`[Hierarchy] No subordinates found for ${userEmployeeId}`);
+      // Return empty result set
+      res.json({
+        success: true,
+        data: {
+          projects: [],
+          pagination: {
+            currentPage: parseInt(page as string),
+            totalPages: 0,
+            totalItems: 0,
+            itemsPerPage: parseInt(limit as string)
+          }
+        },
+        message: 'No subordinate tasks found'
+      });
+      return;
     }
 
     console.log(`[Hierarchy] Final allowedEmployeeIds for ${userEmployeeId}:`, allowedEmployeeIds);
