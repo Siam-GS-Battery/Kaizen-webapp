@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
-import { employeeData } from '../data/employeeData';
+import { employeeAPI } from '../services/apiService';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 // Force hot-reload cache clear
 
@@ -14,6 +15,8 @@ const AdminTeamSettings = () => {
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [filteredData, setFilteredData] = useState([]);
   const [admins, setAdmins] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
 
 
@@ -36,11 +39,39 @@ const AdminTeamSettings = () => {
   const roles = ['Admin', 'Manager', 'Supervisor'];
   const fiveSAreas = ['5ส ณ บางปูใหม่', '5ส ณ โรงงาน A', '5ส ณ โรงงาน B', '5ส ณ คลังสินค้า', 'กลุ่มวางแผนการผลิต'];
 
-  // Filter data to show only Admin team members
+  // Fetch admin team members from API on component mount
   useEffect(() => {
-    const adminTeamMembers = employeeData.filter(emp => emp.role === 'Admin' || emp.role === 'Manager' || emp.role === 'Supervisor');
-    setAdmins(adminTeamMembers);
+    fetchAdmins();
   }, []);
+
+  const fetchAdmins = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await employeeAPI.getAll();
+      if (response.data.success) {
+        // Filter to show only Admin team members (Admin, Manager, Supervisor)
+        const adminTeamMembers = response.data.data.filter(emp => 
+          emp.role === 'Admin' || emp.role === 'Manager' || emp.role === 'Supervisor'
+        );
+        setAdmins(adminTeamMembers);
+      } else {
+        throw new Error('Failed to fetch admin team members');
+      }
+    } catch (error) {
+      console.error('Error fetching admin team members:', error);
+      setError('Failed to load admin team members. Please try again.');
+      await Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: 'ไม่สามารถโหลดข้อมูลผู้จัดการทีมได้ กรุณาลองใหม่อีกครั้ง',
+        confirmButtonColor: '#3b82f6'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   // Filter and search data
   useEffect(() => {
@@ -137,44 +168,56 @@ const AdminTeamSettings = () => {
       return;
     }
 
-    // Check if employee ID already exists
-    if (admins.find(emp => emp.employeeId === data.employeeId)) {
+    try {
+      const newAdminData = {
+        employeeId: data.employeeId,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        department: data.department,
+        fiveSArea: data.fiveSArea,
+        projectArea: data.department, // Using department as project area for simplicity
+        role: data.role
+      };
+
+      const response = await employeeAPI.create(newAdminData);
+      
+      if (response.data.success) {
+        // Refresh the admin team list
+        await fetchAdmins();
+        setIsAddModalOpen(false);
+        resetFormData();
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'เพิ่มผู้จัดการทีมสำเร็จ',
+          text: 'เพิ่มข้อมูลผู้จัดการทีมเรียบร้อยแล้ว',
+          confirmButtonColor: '#3b82f6'
+        });
+      }
+    } catch (error) {
+      console.error('Error adding admin team member:', error);
+      let errorMessage = 'เกิดข้อผิดพลาดในการเพิ่มผู้จัดการทีม';
+      
+      if (error.response?.status === 409) {
+        errorMessage = 'รหัสพนักงานนี้มีอยู่ในระบบแล้ว';
+      } else if (error.response?.data?.error?.message) {
+        errorMessage = error.response.data.error.message;
+      }
+      
       await Swal.fire({
         icon: 'error',
-        title: 'รหัสพนักงานซ้ำ',
-        text: 'รหัสพนักงานนี้มีอยู่ในระบบแล้ว',
+        title: 'เกิดข้อผิดพลาด',
+        text: errorMessage,
         confirmButtonColor: '#3b82f6'
       });
-      return;
     }
-
-    const newAdmin = {
-      employeeId: data.employeeId,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      department: data.department,
-      fiveSArea: data.fiveSArea,
-      projectArea: data.department, // Using department as project area for simplicity
-      role: data.role
-    };
-
-    setAdmins(prev => [...prev, newAdmin]);
-    setIsAddModalOpen(false);
-    resetFormData();
-
-    await Swal.fire({
-      icon: 'success',
-      title: 'เพิ่มผู้จัดการทีมสำเร็จ',
-      text: 'เพิ่มข้อมูลผู้จัดการทีมเรียบร้อยแล้ว',
-      confirmButtonColor: '#3b82f6'
-    });
   };
 
   // Handle edit admin team member
   const handleEditAdmin = async (formElement) => {
     const data = getFormData(formElement);
     
-    if (!data.employeeId || !data.firstName || !data.lastName || !data.department || !data.fiveSArea) {
+    if (!data.firstName || !data.lastName || !data.department || !data.fiveSArea) {
       await Swal.fire({
         icon: 'warning',
         title: 'ข้อมูลไม่ครบถ้วน',
@@ -184,28 +227,47 @@ const AdminTeamSettings = () => {
       return;
     }
 
-    const updatedAdmin = {
-      ...editingAdmin,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      department: data.department,
-      fiveSArea: data.fiveSArea,
-      role: data.role
-    };
+    try {
+      const updateData = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        department: data.department,
+        fiveSArea: data.fiveSArea,
+        projectArea: data.department, // Using department as project area
+        role: data.role
+      };
 
-    setAdmins(prev => prev.map(emp => 
-      emp.employeeId === editingAdmin.employeeId ? updatedAdmin : emp
-    ));
-    setIsEditModalOpen(false);
-    setEditingAdmin(null);
-    resetFormData();
+      const response = await employeeAPI.update(editingAdmin.employeeId, updateData);
+      
+      if (response.data.success) {
+        // Refresh the admin team list
+        await fetchAdmins();
+        setIsEditModalOpen(false);
+        setEditingAdmin(null);
+        resetFormData();
 
-    await Swal.fire({
-      icon: 'success',
-      title: 'แก้ไขข้อมูลสำเร็จ',
-      text: 'แก้ไขข้อมูลผู้จัดการทีมเรียบร้อยแล้ว',
-      confirmButtonColor: '#3b82f6'
-    });
+        await Swal.fire({
+          icon: 'success',
+          title: 'แก้ไขข้อมูลสำเร็จ',
+          text: 'แก้ไขข้อมูลผู้จัดการทีมเรียบร้อยแล้ว',
+          confirmButtonColor: '#3b82f6'
+        });
+      }
+    } catch (error) {
+      console.error('Error updating admin team member:', error);
+      let errorMessage = 'เกิดข้อผิดพลาดในการแก้ไขข้อมูลผู้จัดการทีม';
+      
+      if (error.response?.data?.error?.message) {
+        errorMessage = error.response.data.error.message;
+      }
+      
+      await Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: errorMessage,
+        confirmButtonColor: '#3b82f6'
+      });
+    }
   };
 
   // Handle delete individual admin team member
@@ -222,13 +284,34 @@ const AdminTeamSettings = () => {
     });
 
     if (result.isConfirmed) {
-      setAdmins(prev => prev.filter(emp => emp.employeeId !== admin.employeeId));
-      await Swal.fire({
-        title: 'ลบเรียบร้อย!',
-        text: 'ลบข้อมูลผู้จัดการทีมเรียบร้อยแล้ว',
-        icon: 'success',
-        confirmButtonColor: '#3b82f6'
-      });
+      try {
+        const response = await employeeAPI.delete(admin.employeeId);
+        
+        if (response.data.success) {
+          // Refresh the admin team list
+          await fetchAdmins();
+          await Swal.fire({
+            title: 'ลบเรียบร้อย!',
+            text: 'ลบข้อมูลผู้จัดการทีมเรียบร้อยแล้ว',
+            icon: 'success',
+            confirmButtonColor: '#3b82f6'
+          });
+        }
+      } catch (error) {
+        console.error('Error deleting admin team member:', error);
+        let errorMessage = 'เกิดข้อผิดพลาดในการลบผู้จัดการทีม';
+        
+        if (error.response?.data?.error?.message) {
+          errorMessage = error.response.data.error.message;
+        }
+        
+        await Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: errorMessage,
+          confirmButtonColor: '#3b82f6'
+        });
+      }
     }
   };
 
@@ -248,14 +331,36 @@ const AdminTeamSettings = () => {
     });
 
     if (result.isConfirmed) {
-      setAdmins(prev => prev.filter(emp => !selectedItems.includes(emp.employeeId)));
-      setSelectedItems([]);
-      await Swal.fire({
-        title: 'ลบเรียบร้อย!',
-        text: `ลบข้อมูลผู้จัดการทีม ${selectedItems.length} คนเรียบร้อยแล้ว`,
-        icon: 'success',
-        confirmButtonColor: '#3b82f6'
-      });
+      try {
+        // Delete admin team members one by one
+        const deletePromises = selectedItems.map(employeeId => 
+          employeeAPI.delete(employeeId)
+        );
+        
+        await Promise.all(deletePromises);
+        
+        // Refresh the admin team list
+        await fetchAdmins();
+        setSelectedItems([]);
+        
+        await Swal.fire({
+          title: 'ลบเรียบร้อย!',
+          text: `ลบข้อมูลผู้จัดการทีม ${selectedItems.length} คนเรียบร้อยแล้ว`,
+          icon: 'success',
+          confirmButtonColor: '#3b82f6'
+        });
+      } catch (error) {
+        console.error('Error bulk deleting admin team members:', error);
+        await Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: 'เกิดข้อผิดพลาดในการลบผู้จัดการทีมบางคน กรุณาลองใหม่อีกครั้ง',
+          confirmButtonColor: '#3b82f6'
+        });
+        // Refresh the list to show current state
+        await fetchAdmins();
+        setSelectedItems([]);
+      }
     }
   };
 
@@ -627,6 +732,15 @@ const AdminTeamSettings = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-blue-600 mb-8">ADMIN TEAM SETTINGS</h1>
+        <SkeletonLoader rows={10} />
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -728,8 +842,35 @@ const AdminTeamSettings = () => {
         </div>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
+          <p className="text-gray-600">กำลังโหลดข้อมูลผู้จัดการทีม...</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <div className="text-red-500 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={fetchAdmins}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            ลองใหม่อีกครั้ง
+          </button>
+        </div>
+      )}
+
       {/* Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden relative">
+      {!loading && !error && (
+        <div className="bg-white rounded-lg shadow overflow-hidden relative">
         <div className="overflow-x-auto relative">
           {/* Sticky Column Shadow Overlay */}
           <div className="absolute top-0 left-[192px] bottom-0 w-4 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.1), rgba(0,0,0,0))' }}></div>
@@ -807,7 +948,8 @@ const AdminTeamSettings = () => {
             </button>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Add Admin Modal */}
       <AdminModal
