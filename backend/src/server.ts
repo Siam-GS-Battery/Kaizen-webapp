@@ -17,6 +17,7 @@ import authRoutes from './routes/auth';
 import tasklistRoutes from './routes/tasklist';
 import employeeRoutes from './routes/employee';
 import uploadRoutes from './routes/upload';
+import reportsRoutes from './routes/reports';
 
 dotenv.config();
 
@@ -89,6 +90,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/tasklist', tasklistRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/reports', reportsRoutes);
 
 // API info
 app.get('/api', (_req, res) => {
@@ -116,7 +118,9 @@ app.get('/api', (_req, res) => {
       'POST /api/upload/multiple - Upload multiple project images',
       'GET /api/upload/project/:projectId/images - Get project images',
       'DELETE /api/upload/project/:projectId/image/:imageType - Delete project image',
-      'GET /api/upload/stats - Get storage statistics (Admin)'
+      'GET /api/upload/stats - Get storage statistics (Admin)',
+      'GET /api/reports/monthly - Get monthly reports data',
+      'GET /api/reports/yearly - Get yearly summary'
     ]
   });
 });
