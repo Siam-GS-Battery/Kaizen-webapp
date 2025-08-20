@@ -22,6 +22,10 @@ const Tasklist = () => {
   const [isDepartmentDropdownOpen, setIsDepartmentDropdownOpen] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState(null);
+  
+  // Date filter states
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
 
   // Get current user data
   const getCurrentUser = () => {
@@ -180,7 +184,7 @@ const Tasklist = () => {
     }
 
     setFilteredData(filtered);
-  }, [searchTerm, activeFilter, allTasks, selectedDepartment]);
+  }, [searchTerm, activeFilter, allTasks, selectedDepartment, selectedMonth]);
 
   // Get filter counts based on status requirements
   const getFilterCounts = () => {
@@ -1304,6 +1308,62 @@ const Tasklist = () => {
 
       {/* Control Bar */}
       <div className="flex flex-wrap items-center gap-4 mb-6">
+        {/* Month Picker */}
+        <div className="relative month-picker-dropdown">
+          <button
+            onClick={() => setIsMonthPickerOpen(!isMonthPickerOpen)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border bg-white border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            {selectedMonth.toLocaleDateString('th-TH', { year: 'numeric', month: 'long' })}
+          </button>
+          
+          {isMonthPickerOpen && (
+            <div className="absolute left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 z-20 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1))}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <span className="font-semibold">
+                  {selectedMonth.toLocaleDateString('th-TH', { year: 'numeric', month: 'long' })}
+                </span>
+                <button
+                  onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1))}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setSelectedMonth(new Date());
+                    setIsMonthPickerOpen(false);
+                  }}
+                  className="flex-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  เดือนปัจจุบัน
+                </button>
+                <button
+                  onClick={() => setIsMonthPickerOpen(false)}
+                  className="flex-1 px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                >
+                  ปิด
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        
         {/* Left side - Manage dropdown */}
         <div className="relative">
           <button

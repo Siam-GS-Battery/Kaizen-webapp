@@ -22,6 +22,10 @@ const KaizenTasklist = () => {
   const [isDepartmentDropdownOpen, setIsDepartmentDropdownOpen] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState(null);
+  
+  // Date filter states
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
 
   // Get current user data
   const getCurrentUser = () => {
@@ -70,26 +74,58 @@ const KaizenTasklist = () => {
     fetchTasks();
   }, [sortOrder]);
 
-  // Close department dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (isDepartmentDropdownOpen && !event.target.closest('.department-dropdown')) {
         setIsDepartmentDropdownOpen(false);
       }
+      if (isMonthPickerOpen && !event.target.closest('.month-picker-dropdown')) {
+        setIsMonthPickerOpen(false);
+      }
     };
 
-    if (isDepartmentDropdownOpen) {
+    if (isDepartmentDropdownOpen || isMonthPickerOpen) {
       document.addEventListener('click', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('click', handleClickOutside);
     };
-  }, [isDepartmentDropdownOpen]);
+  }, [isDepartmentDropdownOpen, isMonthPickerOpen]);
+
+  // Helper function to check if date is within selected month or 30 days from creation
+  const isWithinDateRange = (item) => {
+    if (!item.createdDate) return false;
+    
+    const createdDate = new Date(item.createdDate);
+    const now = new Date();
+    const selectedYear = selectedMonth.getFullYear();
+    const selectedMonthNum = selectedMonth.getMonth();
+    
+    // Check if project is within selected month
+    const itemYear = createdDate.getFullYear();
+    const itemMonth = createdDate.getMonth();
+    
+    if (itemYear === selectedYear && itemMonth === selectedMonthNum) {
+      return true;
+    }
+    
+    // Also show projects created within last 30 days of selected month
+    const monthStart = new Date(selectedYear, selectedMonthNum, 1);
+    const monthEnd = new Date(selectedYear, selectedMonthNum + 1, 0, 23, 59, 59);
+    const thirtyDaysAfterCreation = new Date(createdDate.getTime() + (30 * 24 * 60 * 60 * 1000));
+    
+    // Check if the 30-day period overlaps with selected month
+    return thirtyDaysAfterCreation >= monthStart && createdDate <= monthEnd;
+  };
 
   // Filter และ search ข้อมูล - KaizenTeam filtering (like Admin)
   useEffect(() => {
     let filtered = allTasks;
+    
+    // Apply date filter first
+    filtered = filtered.filter(item => isWithinDateRange(item));
 
     // KaizenTeam role filtering (same as Admin)
     if (activeFilter === 'genba') {
@@ -129,7 +165,7 @@ const KaizenTasklist = () => {
     }
 
     setFilteredData(filtered);
-  }, [searchTerm, activeFilter, allTasks, selectedDepartment]);
+  }, [searchTerm, activeFilter, allTasks, selectedDepartment, selectedMonth]);
 
   // Get filter counts - KaizenTeam sees APPROVED projects for genba/suggestion, and BEST_KAIZEN projects
   const getFilterCounts = () => {
@@ -1169,6 +1205,62 @@ const KaizenTasklist = () => {
 
       {/* Control Bar */}
       <div className="flex flex-wrap items-center gap-4 mb-6">
+        {/* Month Picker */}
+        <div className="relative month-picker-dropdown">
+          <button
+            onClick={() => setIsMonthPickerOpen(!isMonthPickerOpen)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border bg-white border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            {selectedMonth.toLocaleDateString('th-TH', { year: 'numeric', month: 'long' })}
+          </button>
+          
+          {isMonthPickerOpen && (
+            <div className="absolute left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 z-20 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1))}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <span className="font-semibold">
+                  {selectedMonth.toLocaleDateString('th-TH', { year: 'numeric', month: 'long' })}
+                </span>
+                <button
+                  onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1))}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setSelectedMonth(new Date());
+                    setIsMonthPickerOpen(false);
+                  }}
+                  className="flex-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  เดือนปัจจุบัน
+                </button>
+                <button
+                  onClick={() => setIsMonthPickerOpen(false)}
+                  className="flex-1 px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                >
+                  ปิด
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        
         {/* Left side - Manage dropdown */}
         <div className="relative">
           <button
