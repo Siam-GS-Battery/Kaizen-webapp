@@ -718,6 +718,13 @@ const KaizenTasklist = () => {
     );
   };
 
+  // Helper function to truncate text
+  const truncateText = (text, maxLength = 20) => {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
+
   // Helper functions for modal
   const getS5Label = (value) => {
     const s5Options = [
@@ -1435,7 +1442,7 @@ const KaizenTasklist = () => {
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <span className="font-medium text-sm">{item.projectName}</span>
+                    <span className="font-medium text-sm" title={item.projectName}>{truncateText(item.projectName, 20)}</span>
                   </td>
                   <td className="px-4 py-3 text-sm">{item.employeeId}</td>
                   <td className="px-4 py-3 text-sm">{item.firstName} {item.lastName}</td>

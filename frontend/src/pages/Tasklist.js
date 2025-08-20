@@ -657,7 +657,7 @@ const Tasklist = () => {
 
   // Type badge component - same style as Search History
   const TypeBadge = ({ formType }) => {
-    const baseClass = "inline-block w-20 text-center px-2 py-1 rounded-full text-xs font-medium";
+    const baseClass = "inline-block w-24 text-center px-2 py-1 rounded-full text-xs font-medium";
     switch (formType) {
       case 'genba':
         return <span className={baseClass + " bg-blue-100 text-blue-800"}>GENBA</span>;
@@ -804,6 +804,13 @@ const Tasklist = () => {
         )}
       </div>
     );
+  };
+
+  // Helper function to truncate text
+  const truncateText = (text, maxLength = 20) => {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
   };
 
   // Helper functions for modal
@@ -1540,7 +1547,7 @@ const Tasklist = () => {
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <span className="font-medium text-sm">{item.projectName}</span>
+                    <span className="font-medium text-sm" title={item.projectName}>{truncateText(item.projectName, 20)}</span>
                   </td>
                   <td className="px-4 py-3 text-sm">{item.employeeId}</td>
                   <td className="px-4 py-3 text-sm">{item.firstName} {item.lastName}</td>

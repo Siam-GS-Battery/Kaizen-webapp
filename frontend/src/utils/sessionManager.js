@@ -160,13 +160,28 @@ class SessionManager {
       
       // Set warning timer
       if (remainingTime <= SESSION_CONFIG.WARNING_TIME && remainingTime > 0) {
-        if (this.onSessionWarning) {
-          this.onSessionWarning(remainingTime);
+        if (!this.warningTimer) {
+          // Only set warning timer if not already set
+          const warningDelay = Math.max(0, remainingTime - SESSION_CONFIG.WARNING_TIME);
+          if (warningDelay === 0) {
+            // Already in warning period
+            if (this.onSessionWarning) {
+              this.onSessionWarning(remainingTime);
+            }
+          } else {
+            // Set timer to trigger when entering warning period
+            this.warningTimer = setTimeout(() => {
+              if (this.onSessionWarning) {
+                const currentRemainingTime = this.getRemainingTime();
+                this.onSessionWarning(currentRemainingTime);
+              }
+            }, warningDelay);
+          }
         }
       }
 
       // Set expiration timer
-      if (remainingTime > 0) {
+      if (remainingTime > 0 && !this.expirationTimer) {
         this.expirationTimer = setTimeout(() => {
           this.handleSessionExpired();
         }, remainingTime);

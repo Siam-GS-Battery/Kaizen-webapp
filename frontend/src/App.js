@@ -55,9 +55,9 @@ function AppLayout() {
       sessionManager.startSessionMonitoring();
     }
 
+    // Don't clear timers on unmount - let sessionManager handle its own lifecycle
     return () => {
-      // Clean up timers when component unmounts
-      sessionManager.clearTimers();
+      // Component cleanup - timers managed by sessionManager
     };
   }, [navigate, isLoginPage]);
 

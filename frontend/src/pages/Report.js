@@ -272,6 +272,13 @@ const Report = () => {
     }
   };
 
+  // Helper function to truncate text
+  const truncateText = (text, maxLength = 20) => {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
+
   // Helper functions for modal
   const getS5Label = (value) => {
     const s5Options = [
@@ -702,7 +709,7 @@ const Report = () => {
                 <tbody>
                   {projectData.genbaProjects.map((project, index) => (
                     <tr key={project.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                      <td className="px-4 py-3">{project.projectName}</td>
+                      <td className="px-4 py-3" title={project.projectName}>{truncateText(project.projectName, 20)}</td>
                       <td className="px-4 py-3">{project.employeeId}</td>
                       <td className="px-4 py-3">{project.fullName}</td>
                       <td className="px-4 py-3">{project.position}</td>
@@ -765,7 +772,7 @@ const Report = () => {
                 <tbody>
                   {projectData.suggestionProjects.map((project, index) => (
                     <tr key={project.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                      <td className="px-4 py-3">{project.projectName}</td>
+                      <td className="px-4 py-3" title={project.projectName}>{truncateText(project.projectName, 20)}</td>
                       <td className="px-4 py-3">{project.employeeId}</td>
                       <td className="px-4 py-3">{project.fullName}</td>
                       <td className="px-4 py-3">{project.position}</td>
@@ -828,7 +835,7 @@ const Report = () => {
                 <tbody>
                   {projectData.bestKaizenProjects.map((project, index) => (
                     <tr key={project.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                      <td className="px-4 py-3 font-medium">{project.projectName}</td>
+                      <td className="px-4 py-3 font-medium" title={project.projectName}>{truncateText(project.projectName, 20)}</td>
                       <td className="px-4 py-3">{project.employeeId}</td>
                       <td className="px-4 py-3">{project.fullName}</td>
                       <td className="px-4 py-3">{project.position}</td>

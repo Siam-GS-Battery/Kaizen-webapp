@@ -1483,7 +1483,11 @@ const SearchHistory = () => {
                         <td className="px-4 py-3">
                           <input type="checkbox" className="rounded" />
                         </td>
-                        <td className="px-4 py-3">{item.projectName}</td>
+                        <td className="px-4 py-3" title={item.projectName}>
+                          {item.projectName.length > 30 
+                            ? `${item.projectName.substring(0, 30)}...` 
+                            : item.projectName}
+                        </td>
                         <td className="px-4 py-3">{getTypeBadge(item.formType)}</td>
                         <td className="px-4 py-3">{item.startDate}</td>
                         <td className="px-4 py-3">{item.department}</td>
