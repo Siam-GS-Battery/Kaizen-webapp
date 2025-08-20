@@ -192,6 +192,21 @@ export const reportsAPI = {
     
     const url = `/reports/yearly${queryString.toString() ? '?' + queryString.toString() : ''}`;
     return apiService.get(url);
+  },
+  
+  // Get project data by month and type
+  getProjectData: (params = {}) => {
+    const queryString = new URLSearchParams();
+    
+    // Add parameters only if they have values
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryString.append(key, value);
+      }
+    });
+    
+    const url = `/reports/projects${queryString.toString() ? '?' + queryString.toString() : ''}`;
+    return apiService.get(url);
   }
 };
 

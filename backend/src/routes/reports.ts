@@ -238,4 +238,114 @@ router.get('/yearly', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+// Get project data by month and type
+router.get('/projects', async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!supabaseAdmin) {
+      throw createError('Database configuration error', 500);
+    }
+
+    const { year = new Date().getFullYear(), month = new Date().getMonth() + 1, department } = req.query;
+
+    // Convert month name to number if it's a string
+    let monthNum: string;
+    if (typeof month === 'string') {
+      const monthNames = [
+        'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+        'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'
+      ];
+      const monthIndex = monthNames.indexOf(month.toUpperCase());
+      monthNum = monthIndex !== -1 ? (monthIndex + 1).toString().padStart(2, '0') : month.padStart(2, '0');
+    } else {
+      monthNum = month.toString().padStart(2, '0');
+    }
+
+    const startDate = `${year}-${monthNum}-01`;
+    
+    // Calculate the last day of the month properly
+    const monthIndex = parseInt(monthNum) - 1;
+    const lastDayOfMonth = new Date(parseInt(year as string), monthIndex + 1, 0).getDate();
+    const endDate = `${year}-${monthNum}-${lastDayOfMonth.toString().padStart(2, '0')}`;
+
+    // Get all projects for the specified month with user data
+    let query = supabaseAdmin
+      .from('projects')
+      .select(`
+        id,
+        project_name,
+        employee_id,
+        department,
+        form_type,
+        status,
+        created_date,
+        submitted_date,
+        users!inner(
+          first_name,
+          last_name,
+          position,
+          five_s_area
+        )
+      `)
+      .gte('submitted_date', startDate)
+      .lte('submitted_date', endDate)
+      .in('status', ['APPROVED', 'WAITING', 'BEST_KAIZEN', 'EDIT']);
+
+    // Add department filter if specified
+    if (department && department !== 'ALL') {
+      query = query.eq('department', department);
+    }
+
+    const { data: projects, error: projectsError } = await query.order('submitted_date', { ascending: false });
+
+    if (projectsError) {
+      throw createError(`Database error: ${projectsError.message}`, 500);
+    }
+
+    // Separate projects by type
+    const genbaProjects = projects?.filter(p => p.form_type === 'genba') || [];
+    const suggestionProjects = projects?.filter(p => p.form_type === 'suggestion') || [];
+    const bestKaizenProjects = projects?.filter(p => p.status === 'BEST_KAIZEN') || [];
+
+    // Transform data to match frontend expectations
+    const transformProject = (project: any) => ({
+      id: project.id,
+      projectName: project.project_name,
+      employeeId: project.employee_id,
+      fullName: `${project.users.first_name} ${project.users.last_name}`,
+      position: project.users.position,
+      department: project.department,
+      group5s: project.users.five_s_area,
+      createdDate: project.created_date,
+      submittedDate: project.submitted_date,
+      formType: project.form_type,
+      status: project.status
+    });
+
+    res.json({
+      success: true,
+      data: {
+        genbaProjects: genbaProjects.map(transformProject),
+        suggestionProjects: suggestionProjects.map(transformProject),
+        bestKaizenProjects: bestKaizenProjects.map(transformProject)
+      },
+      message: 'Project data retrieved successfully'
+    });
+
+  } catch (error) {
+    console.error('Get project data error:', error);
+    
+    if (error instanceof Error && (error as any).statusCode) {
+      res.status((error as any).statusCode).json({
+        success: false,
+        error: { message: error.message, statusCode: (error as any).statusCode }
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: { message: 'Internal server error', statusCode: 500 }
+      });
+    }
+  }
+});
+
 export default router;
