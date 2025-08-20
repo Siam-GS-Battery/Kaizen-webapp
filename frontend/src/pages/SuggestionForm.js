@@ -205,6 +205,12 @@ const SuggestionForm = () => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        
+        // Handle specific limit exceeded errors
+        if (errorData.error?.type === 'SUGGESTION_YEARLY_LIMIT_EXCEEDED') {
+          throw new Error(errorData.error.message);
+        }
+        
         throw new Error(errorData.error?.message || 'Failed to submit form');
       }
 
@@ -349,24 +355,41 @@ const SuggestionForm = () => {
           }
         });
       } else {
-        Swal.fire({
-          icon: 'success',
-          title: 'บันทึกสำเร็จ!',
-          showConfirmButton: false,
-          timer: 1500,
-          customClass: {
-            container: 'custom-swal-container',
-            title: 'custom-swal-title',
-            icon: 'custom-swal-icon',
-          }
-        });
-
-        // Submit form data to backend with image compression
-        await submitFormData();
-        
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 1500);
+        try {
+          // Submit form data to backend with image compression
+          await submitFormData();
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'บันทึกสำเร็จ!',
+            showConfirmButton: false,
+            timer: 1500,
+            customClass: {
+              container: 'custom-swal-container',
+              title: 'custom-swal-title',
+              icon: 'custom-swal-icon',
+            }
+          });
+          
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1500);
+        } catch (error) {
+          console.error('Form submission error:', error);
+          
+          // Show error alert and prevent form submission
+          Swal.fire({
+            icon: 'error',
+            title: 'ไม่สามารถส่งฟอร์มได้',
+            text: error.message,
+            confirmButtonText: 'ตกลง',
+            customClass: {
+              container: 'custom-swal-container',
+              title: 'custom-swal-title',
+              confirmButton: 'custom-swal-confirm-button',
+            }
+          });
+        }
       }
     }
   };

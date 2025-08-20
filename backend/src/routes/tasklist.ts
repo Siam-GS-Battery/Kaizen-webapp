@@ -261,6 +261,79 @@ router.get('/:id', async (req: any, res: Response): Promise<void> => {
   }
 });
 
+// Helper function to check Genba form monthly limit (1 per month)
+const checkGenbaMonthlyLimit = async (employeeId: string): Promise<{ canSubmit: boolean; message?: string }> => {
+  if (!supabaseAdmin) {
+    throw createError('Database configuration error', 500);
+  }
+  
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  
+  // Get start and end of current month
+  const monthStart = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`;
+  const monthEnd = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${new Date(currentYear, currentMonth, 0).getDate()}`;
+  
+  const { data: existingGenbaForms, error } = await supabaseAdmin
+    .from('projects')
+    .select('id')
+    .eq('employee_id', employeeId)
+    .eq('form_type', 'genba')
+    .gte('submitted_date', monthStart)
+    .lte('submitted_date', monthEnd)
+    .neq('status', 'DELETED');
+    
+  if (error) {
+    throw createError(`Database error checking Genba limit: ${error.message}`, 500);
+  }
+  
+  if (existingGenbaForms && existingGenbaForms.length >= 1) {
+    return {
+      canSubmit: false,
+      message: `ผู้ใช้งานได้ทำการส่งฟอร์ม Genba ประจำเดือน ${currentMonth}/${currentYear} เรียบร้อยแล้ว (จำกัด 1 รายการต่อเดือน)`
+    };
+  }
+  
+  return { canSubmit: true };
+};
+
+// Helper function to check Suggestion form yearly limit (2 per year)
+const checkSuggestionYearlyLimit = async (employeeId: string): Promise<{ canSubmit: boolean; message?: string }> => {
+  if (!supabaseAdmin) {
+    throw createError('Database configuration error', 500);
+  }
+  
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  
+  // Get start and end of current year
+  const yearStart = `${currentYear}-01-01`;
+  const yearEnd = `${currentYear}-12-31`;
+  
+  const { data: existingSuggestionForms, error } = await supabaseAdmin
+    .from('projects')
+    .select('id')
+    .eq('employee_id', employeeId)
+    .eq('form_type', 'suggestion')
+    .gte('submitted_date', yearStart)
+    .lte('submitted_date', yearEnd)
+    .neq('status', 'DELETED');
+    
+  if (error) {
+    throw createError(`Database error checking Suggestion limit: ${error.message}`, 500);
+  }
+  
+  if (existingSuggestionForms && existingSuggestionForms.length >= 2) {
+    return {
+      canSubmit: false,
+      message: `ผู้ใช้งานได้ทำการส่งฟอร์ม Suggestion ประจำปี ${currentYear} ครบแล้ว (จำกัด 2 รายการต่อปี)`
+    };
+  }
+  
+  return { canSubmit: true };
+};
+
 // Create new task (temporarily disabled authentication for frontend testing)
 router.post('/', async (req: any, res: Response): Promise<void> => {
   try {
@@ -298,6 +371,35 @@ router.post('/', async (req: any, res: Response): Promise<void> => {
 
     if (empError || !employee) {
       throw createError('Employee not found', 404);
+    }
+
+    // Check submission limits based on form type
+    if (taskData.formType === 'genba') {
+      const genbaCheck = await checkGenbaMonthlyLimit(taskData.employeeId);
+      if (!genbaCheck.canSubmit) {
+        res.status(400).json({
+          success: false,
+          error: { 
+            message: genbaCheck.message, 
+            statusCode: 400,
+            type: 'GENBA_MONTHLY_LIMIT_EXCEEDED'
+          }
+        });
+        return;
+      }
+    } else if (taskData.formType === 'suggestion') {
+      const suggestionCheck = await checkSuggestionYearlyLimit(taskData.employeeId);
+      if (!suggestionCheck.canSubmit) {
+        res.status(400).json({
+          success: false,
+          error: { 
+            message: suggestionCheck.message, 
+            statusCode: 400,
+            type: 'SUGGESTION_YEARLY_LIMIT_EXCEEDED'
+          }
+        });
+        return;
+      }
     }
 
     const now = new Date().toISOString();
