@@ -3,7 +3,7 @@
 /* Ensure date inputs display properly on mobile devices */
 input[type="date"] {
   position: relative;
-  /* Remove default browser styling */
+  /* Preserve some browser styling for better functionality */
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
@@ -15,14 +15,14 @@ input[type="date"] {
   font-size: 16px; /* Prevents zoom on iOS */
   
   /* Better padding for mobile */
-  padding: 12px 16px;
+  padding: 12px 40px 12px 16px; /* More padding on right for calendar icon */
   
   /* Make calendar icon visible */
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3e%3cpath fill-rule='evenodd' d='M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z' clip-rule='evenodd'/%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23666'%3e%3cpath fill-rule='evenodd' d='M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z' clip-rule='evenodd'/%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: right 12px center;
   background-size: 20px;
-  padding-right: 40px;
+  cursor: pointer;
 }
 
 /* For WebKit browsers (Safari, Chrome on iOS) */
@@ -34,9 +34,12 @@ input[type="date"]::-webkit-datetime-edit {
 
 input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 0;
+  position: absolute;
+  right: 12px;
   width: 20px;
   height: 20px;
   cursor: pointer;
+  z-index: 1;
 }
 
 /* For Firefox */
@@ -52,11 +55,29 @@ input[type="date"]:focus {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+/* Enhanced click area for better accessibility */
+input[type="date"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
 /* Mobile responsive adjustments */
 @media (max-width: 640px) {
   input[type="date"] {
     font-size: 16px; /* Important: prevents zoom on iOS */
-    padding: 14px 16px;
+    padding: 14px 40px 14px 16px;
     min-height: 48px; /* Better touch target */
+  }
+  
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    right: 16px;
+    width: 24px;
+    height: 24px;
   }
 }

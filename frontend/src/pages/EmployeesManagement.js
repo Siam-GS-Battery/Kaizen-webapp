@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
-import { employeeData } from '../data/employeeData';
+import { employeeAPI } from '../services/apiService';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 // Force hot-reload cache clear
 
@@ -12,9 +13,15 @@ const EmployeesManagement = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
-  const [filteredData, setFilteredData] = useState(employeeData);
-  const [employees, setEmployees] = useState(employeeData);
-
+  const [filteredData, setFilteredData] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [userOptions, setUserOptions] = useState([]); // For dropdown options
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
 
   // Form data for adding/editing employees
@@ -25,8 +32,9 @@ const EmployeesManagement = () => {
     department: '',
     fiveSArea: '',
     role: 'User',
-    subordinate: '',
-    commander: ''
+    approver: '',
+    password: '',
+    resetPassword: false
   });
 
 
@@ -35,6 +43,49 @@ const EmployeesManagement = () => {
   const departments = ['IT & DM', 'HR & AD', 'AF', 'PC', 'PD', 'QA', 'SD', 'TD', 'Admin'];
   const roles = ['User', 'Supervisor', 'Manager', 'Admin'];
   const fiveSAreas = ['5ส ณ บางปูใหม่', '5ส ณ โรงงาน A', '5ส ณ โรงงาน B', '5ส ณ คลังสินค้า', 'กลุ่มวางแผนการผลิต'];
+
+  // Fetch employees from API on component mount
+  useEffect(() => {
+    fetchEmployees();
+    fetchUserOptions();
+  }, []);
+
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await employeeAPI.getAll();
+      if (response.data.success) {
+        setEmployees(response.data.data);
+      } else {
+        throw new Error('Failed to fetch employees');
+      }
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      setError('Failed to load employees. Please try again.');
+      await Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: 'ไม่สามารถโหลดข้อมูลพนักงานได้ กรุณาลองใหม่อีกครั้ง',
+        confirmButtonColor: '#3b82f6'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch user options for dropdown
+  const fetchUserOptions = async () => {
+    try {
+      const response = await employeeAPI.getUsersForDropdown();
+      if (response.data.success) {
+        setUserOptions(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching user options:', error);
+      // Not critical error, just log it
+    }
+  };
 
   // Filter and search data
   useEffect(() => {
@@ -55,6 +106,7 @@ const EmployeesManagement = () => {
     }
 
     setFilteredData(filtered);
+    setCurrentPage(1); // Reset to first page when filter changes
   }, [searchTerm, selectedDepartment, employees]);
 
   // Get department counts
@@ -68,6 +120,33 @@ const EmployeesManagement = () => {
 
   const departmentCounts = getDepartmentCounts();
 
+  // Calculate pagination
+  const totalItems = filteredData.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentData = filteredData.slice(startIndex, endIndex);
+
+  // Pagination handlers
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    setSelectedItems([]); // Clear selections when changing pages
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+      setSelectedItems([]);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+      setSelectedItems([]);
+    }
+  };
+
   // Handle checkbox selection
   const handleSelectItem = (employeeId) => {
     setSelectedItems(prev =>
@@ -77,10 +156,10 @@ const EmployeesManagement = () => {
     );
   };
 
-  // Handle select all
+  // Handle select all (only current page)
   const handleSelectAll = (checked) => {
     if (checked) {
-      setSelectedItems(filteredData.map(emp => emp.employeeId));
+      setSelectedItems(currentData.map(emp => emp.employeeId));
     } else {
       setSelectedItems([]);
     }
@@ -95,8 +174,9 @@ const EmployeesManagement = () => {
       department: '',
       fiveSArea: '',
       role: 'User',
-      subordinate: '',
-      commander: ''
+      approver: '',
+      password: '',
+      resetPassword: false
     });
   };
 
@@ -110,8 +190,9 @@ const EmployeesManagement = () => {
       department: formData.get('department'),
       fiveSArea: formData.get('fiveSArea'),
       role: formData.get('role'),
-      subordinate: formData.get('subordinate'),
-      commander: formData.get('commander')
+      approver: formData.get('approver'),
+      password: formData.get('password'),
+      resetPassword: formData.get('resetPassword') === 'on'
     };
   };
 
@@ -131,44 +212,66 @@ const EmployeesManagement = () => {
       return;
     }
 
-    // Check if employee ID already exists
-    if (employees.find(emp => emp.employeeId === data.employeeId)) {
+    try {
+      const newEmployeeData = {
+        employeeId: data.employeeId,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        department: data.department,
+        fiveSArea: data.fiveSArea,
+        projectArea: data.department, // Using department as project area for simplicity
+        role: data.role
+      };
+
+      // Add password if provided
+      if (data.password && data.password.trim()) {
+        newEmployeeData.password = data.password.trim();
+      }
+
+      // Add approver if provided
+      if (data.approver) {
+        newEmployeeData.approver = data.approver;
+      }
+
+      const response = await employeeAPI.create(newEmployeeData);
+      
+      if (response.data.success) {
+        // Refresh the employee list
+        await fetchEmployees();
+        setIsAddModalOpen(false);
+        resetFormData();
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'เพิ่มพนักงานสำเร็จ',
+          text: 'เพิ่มข้อมูลพนักงานเรียบร้อยแล้ว',
+          confirmButtonColor: '#3b82f6'
+        });
+      }
+    } catch (error) {
+      console.error('Error adding employee:', error);
+      let errorMessage = 'เกิดข้อผิดพลาดในการเพิ่มพนักงาน';
+      
+      if (error.response?.status === 409) {
+        errorMessage = 'รหัสพนักงานนี้มีอยู่ในระบบแล้ว';
+      } else if (error.response?.data?.error?.message) {
+        errorMessage = error.response.data.error.message;
+      }
+      
       await Swal.fire({
         icon: 'error',
-        title: 'รหัสพนักงานซ้ำ',
-        text: 'รหัสพนักงานนี้มีอยู่ในระบบแล้ว',
+        title: 'เกิดข้อผิดพลาด',
+        text: errorMessage,
         confirmButtonColor: '#3b82f6'
       });
-      return;
     }
-
-    const newEmployee = {
-      employeeId: data.employeeId,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      department: data.department,
-      fiveSArea: data.fiveSArea,
-      projectArea: data.department, // Using department as project area for simplicity
-      role: data.role
-    };
-
-    setEmployees(prev => [...prev, newEmployee]);
-    setIsAddModalOpen(false);
-    resetFormData();
-
-    await Swal.fire({
-      icon: 'success',
-      title: 'เพิ่มพนักงานสำเร็จ',
-      text: 'เพิ่มข้อมูลพนักงานเรียบร้อยแล้ว',
-      confirmButtonColor: '#3b82f6'
-    });
   };
 
   // Handle edit employee
   const handleEditEmployee = async (formElement) => {
     const data = getFormData(formElement);
     
-    if (!data.employeeId || !data.firstName || !data.lastName || !data.department || !data.fiveSArea) {
+    if (!data.firstName || !data.lastName || !data.department || !data.fiveSArea) {
       await Swal.fire({
         icon: 'warning',
         title: 'ข้อมูลไม่ครบถ้วน',
@@ -178,28 +281,59 @@ const EmployeesManagement = () => {
       return;
     }
 
-    const updatedEmployee = {
-      ...editingEmployee,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      department: data.department,
-      fiveSArea: data.fiveSArea,
-      role: data.role
-    };
+    try {
+      const updateData = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        department: data.department,
+        fiveSArea: data.fiveSArea,
+        projectArea: data.department, // Using department as project area
+        role: data.role
+      };
 
-    setEmployees(prev => prev.map(emp => 
-      emp.employeeId === editingEmployee.employeeId ? updatedEmployee : emp
-    ));
-    setIsEditModalOpen(false);
-    setEditingEmployee(null);
-    resetFormData();
+      // Handle password updates
+      if (data.resetPassword) {
+        updateData.resetPassword = true;
+      } else if (data.password && data.password.trim()) {
+        updateData.password = data.password.trim();
+      }
 
-    await Swal.fire({
-      icon: 'success',
-      title: 'แก้ไขข้อมูลสำเร็จ',
-      text: 'แก้ไขข้อมูลพนักงานเรียบร้อยแล้ว',
-      confirmButtonColor: '#3b82f6'
-    });
+      // Handle approver updates
+      if (data.approver !== undefined) {
+        updateData.approver = data.approver || null;
+      }
+
+      const response = await employeeAPI.update(editingEmployee.employeeId, updateData);
+      
+      if (response.data.success) {
+        // Refresh the employee list
+        await fetchEmployees();
+        setIsEditModalOpen(false);
+        setEditingEmployee(null);
+        resetFormData();
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'แก้ไขข้อมูลสำเร็จ',
+          text: 'แก้ไขข้อมูลพนักงานเรียบร้อยแล้ว',
+          confirmButtonColor: '#3b82f6'
+        });
+      }
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      let errorMessage = 'เกิดข้อผิดพลาดในการแก้ไขข้อมูลพนักงาน';
+      
+      if (error.response?.data?.error?.message) {
+        errorMessage = error.response.data.error.message;
+      }
+      
+      await Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: errorMessage,
+        confirmButtonColor: '#3b82f6'
+      });
+    }
   };
 
   // Handle delete individual employee
@@ -216,13 +350,34 @@ const EmployeesManagement = () => {
     });
 
     if (result.isConfirmed) {
-      setEmployees(prev => prev.filter(emp => emp.employeeId !== employee.employeeId));
-      await Swal.fire({
-        title: 'ลบเรียบร้อย!',
-        text: 'ลบข้อมูลพนักงานเรียบร้อยแล้ว',
-        icon: 'success',
-        confirmButtonColor: '#3b82f6'
-      });
+      try {
+        const response = await employeeAPI.delete(employee.employeeId);
+        
+        if (response.data.success) {
+          // Refresh the employee list
+          await fetchEmployees();
+          await Swal.fire({
+            title: 'ลบเรียบร้อย!',
+            text: 'ลบข้อมูลพนักงานเรียบร้อยแล้ว',
+            icon: 'success',
+            confirmButtonColor: '#3b82f6'
+          });
+        }
+      } catch (error) {
+        console.error('Error deleting employee:', error);
+        let errorMessage = 'เกิดข้อผิดพลาดในการลบพนักงาน';
+        
+        if (error.response?.data?.error?.message) {
+          errorMessage = error.response.data.error.message;
+        }
+        
+        await Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: errorMessage,
+          confirmButtonColor: '#3b82f6'
+        });
+      }
     }
   };
 
@@ -242,14 +397,36 @@ const EmployeesManagement = () => {
     });
 
     if (result.isConfirmed) {
-      setEmployees(prev => prev.filter(emp => !selectedItems.includes(emp.employeeId)));
-      setSelectedItems([]);
-      await Swal.fire({
-        title: 'ลบเรียบร้อย!',
-        text: `ลบข้อมูลพนักงาน ${selectedItems.length} คนเรียบร้อยแล้ว`,
-        icon: 'success',
-        confirmButtonColor: '#3b82f6'
-      });
+      try {
+        // Delete employees one by one
+        const deletePromises = selectedItems.map(employeeId => 
+          employeeAPI.delete(employeeId)
+        );
+        
+        await Promise.all(deletePromises);
+        
+        // Refresh the employee list
+        await fetchEmployees();
+        setSelectedItems([]);
+        
+        await Swal.fire({
+          title: 'ลบเรียบร้อย!',
+          text: `ลบข้อมูลพนักงาน ${selectedItems.length} คนเรียบร้อยแล้ว`,
+          icon: 'success',
+          confirmButtonColor: '#3b82f6'
+        });
+      } catch (error) {
+        console.error('Error bulk deleting employees:', error);
+        await Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: 'เกิดข้อผิดพลาดในการลบพนักงานบางคน กรุณาลองใหม่อีกครั้ง',
+          confirmButtonColor: '#3b82f6'
+        });
+        // Refresh the list to show current state
+        await fetchEmployees();
+        setSelectedItems([]);
+      }
     }
   };
 
@@ -263,8 +440,9 @@ const EmployeesManagement = () => {
       department: employee.department,
       fiveSArea: employee.fiveSArea,
       role: employee.role,
-      subordinate: '',
-      commander: ''
+      approver: employee.approver || '',
+      password: '',
+      resetPassword: false
     });
     setIsEditModalOpen(true);
   }, []);
@@ -305,7 +483,7 @@ const EmployeesManagement = () => {
 
     return (
       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full w-24 justify-center ${getRoleStyle()}`}>
-        {role.toUpperCase()}
+        {role ? role.toUpperCase() : 'N/A'}
       </span>
     );
   };
@@ -353,7 +531,7 @@ const EmployeesManagement = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => openEditModal(employee)}
-            className="text-orange-500 hover:text-orange-700 transition-colors p-1"
+            className="text-yellow-500 hover:text-yellow-600 bg-yellow-50 hover:bg-yellow-100 transition-colors p-2 rounded-lg"
             title="แก้ไข"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -362,7 +540,7 @@ const EmployeesManagement = () => {
           </button>
           <button
             onClick={() => handleDeleteEmployee(employee)}
-            className="text-red-500 hover:text-red-700 transition-colors p-1"
+            className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 transition-colors p-2 rounded-lg"
             title="ลบ"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -439,8 +617,23 @@ const EmployeesManagement = () => {
     );
   };
 
+  // Helper function to get role-based visibility
+  const shouldShowApproverField = (role) => {
+    // All roles except Admin should have an approver
+    return role !== 'Admin';
+  };
+
   // Add/Edit Modal Component - Redesigned with better UX
   const EmployeeModal = ({ isOpen, onClose, onSave, title, isEdit = false }) => {
+    const [selectedRole, setSelectedRole] = useState(formData.role || 'User');
+    
+    // Reset selectedRole when modal opens/closes or form data changes
+    React.useEffect(() => {
+      if (isOpen) {
+        setSelectedRole(formData.role || 'User');
+      }
+    }, [isOpen, formData.role]);
+    
     if (!isOpen) return null;
 
     const handleSubmit = (e) => {
@@ -448,8 +641,24 @@ const EmployeesManagement = () => {
       onSave(e.target);
     };
 
+    const handleOverlayClick = (e) => {
+      if (e.target === e.currentTarget) {
+        onClose();
+      }
+    };
+
+    const handleRoleChange = (e) => {
+      const newRole = e.target.value;
+      setSelectedRole(newRole);
+      // Update formData to sync with the selected role
+      setFormData(prev => ({...prev, role: newRole}));
+    };
+
+    // Get current role - use selectedRole for both ADD and EDIT since it's synchronized with formData
+    const currentRole = selectedRole;
+
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" onClick={handleOverlayClick}>
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           <form onSubmit={handleSubmit}>
           {/* Modal Header - Improved Design */}
@@ -542,30 +751,45 @@ const EmployeesManagement = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     แผนก <span className="text-red-500">*</span>
                   </label>
-                  <UncontrolledSelect
-                    name="department"
-                    defaultValue={formData.department}
-                    className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
-                  >
-                    <option value="">-- เลือกแผนก --</option>
-                    {departments.map(dept => (
-                      <option key={dept} value={dept}>{dept}</option>
-                    ))}
-                  </UncontrolledSelect>
+                  <div className="relative">
+                    <UncontrolledSelect
+                      name="department"
+                      defaultValue={formData.department}
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
+                    >
+                      <option value="">-- เลือกแผนก --</option>
+                      {departments.map(dept => (
+                        <option key={dept} value={dept}>{dept}</option>
+                      ))}
+                    </UncontrolledSelect>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     ตำแหน่งงาน <span className="text-red-500">*</span>
                   </label>
-                  <UncontrolledSelect
-                    name="role"
-                    defaultValue={formData.role}
-                    className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
-                  >
-                    {roles.map(role => (
-                      <option key={role} value={role}>{role}</option>
-                    ))}
-                  </UncontrolledSelect>
+                  <div className="relative">
+                    <select
+                      name="role"
+                      value={currentRole}
+                      onChange={handleRoleChange}
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
+                    >
+                      {roles.map(role => (
+                        <option key={role} value={role}>{role}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -574,56 +798,140 @@ const EmployeesManagement = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   ชื่อกลุ่ม 5ส <span className="text-red-500">*</span>
                 </label>
-                <UncontrolledSelect
-                  name="fiveSArea"
-                  defaultValue={formData.fiveSArea}
-                  className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
-                >
-                  <option value="">-- เลือกกลุ่ม 5ส --</option>
-                  {fiveSAreas.map(area => (
-                    <option key={area} value={area}>{area}</option>
-                  ))}
-                </UncontrolledSelect>
+                <div className="relative">
+                  <UncontrolledSelect
+                    name="fiveSArea"
+                    defaultValue={formData.fiveSArea}
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
+                  >
+                    <option value="">-- เลือกกลุ่ม 5ส --</option>
+                    {fiveSAreas.map(area => (
+                      <option key={area} value={area}>{area}</option>
+                    ))}
+                  </UncontrolledSelect>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Security Section */}
+            <div className="border-b border-gray-200 pb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+                ความปลอดภัย
+              </h3>
+
+              {isEdit && (
+                <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="resetPassword"
+                      id="resetPassword"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3"
+                    />
+                    <label htmlFor="resetPassword" className="text-sm font-medium text-yellow-800 cursor-pointer">
+                      รีเซ็ตรหัสผ่าน (ลบรหัสผ่านออกจากระบบ)
+                    </label>
+                  </div>
+                  <p className="text-xs text-yellow-600 mt-1 ml-6">
+                    เมื่อเลือกตัวเลือกนี้ รหัสผ่านของพนักงานจะถูกลบออกจากระบบ
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {isEdit ? 'รหัสผ่านใหม่' : 'รหัสผ่าน'} 
+                    <span className="text-gray-500 font-normal">(ไม่บังคับ)</span>
+                  </label>
+                  <UncontrolledInput
+                    name="password"
+                    type="password"
+                    defaultValue=""
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder={isEdit ? "กรอกรหัสผ่านใหม่หากต้องการเปลี่ยน" : "กรอกรหัสผ่าน"}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {isEdit 
+                      ? "หากไม่ต้องการเปลี่ยนรหัสผ่าน ให้เว้นว่างไว้" 
+                      : "หากไม่กรอกรหัสผ่าน พนักงานจะสามารถเข้าสู่ระบบได้โดยไม่ต้องใช้รหัสผ่าน"
+                    }
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* Optional Information Section */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
-                ข้อมูลเสริม <span className="text-sm text-gray-500 font-normal">(ไม่บังคับ)</span>
+                ข้อมูลการอนุมัติ <span className="text-sm text-gray-500 font-normal">(ไม่บังคับ)</span>
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Subordinate
-                  </label>
-                  <UncontrolledSelect
-                    name="subordinate"
-                    defaultValue={formData.subordinate}
-                    className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
-                  >
-                    <option value="">-- เลือก Subordinate --</option>
-                    {/* Add subordinate options as needed */}
-                  </UncontrolledSelect>
-                </div>
+              <div className="grid grid-cols-1 gap-4">
+                {/* Approver field - Show for all roles except Admin */}
+                {shouldShowApproverField(currentRole) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ผู้อนุมัติ (Approver)
+                    </label>
+                    <div className="relative">
+                      <UncontrolledSelect
+                        name="approver"
+                        defaultValue={formData.approver}
+                        className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
+                      >
+                        <option value="">-- เลือกผู้อนุมัติ --</option>
+                        {userOptions.filter(user => {
+                          // Show users with higher authority than current role
+                          if (currentRole === 'User') {
+                            return ['Supervisor', 'Manager', 'Admin'].includes(user.role);
+                          } else if (currentRole === 'Supervisor') {
+                            return ['Manager', 'Admin'].includes(user.role);
+                          } else if (currentRole === 'Manager') {
+                            return user.role === 'Admin';
+                          }
+                          return false;
+                        }).map(user => (
+                          <option key={user.value} value={user.value}>
+                            {user.label} ({user.role})
+                          </option>
+                        ))}
+                      </UncontrolledSelect>
+                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      เลือกผู้ที่จะทำหน้าที่อนุมัติงานของพนักงานคนนี้
+                    </p>
+                  </div>
+                )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Commander
-                  </label>
-                  <UncontrolledSelect
-                    name="commander"
-                    defaultValue={formData.commander}
-                    className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
-                  >
-                    <option value="">-- เลือก Commander --</option>
-                    {/* Add commander options as needed */}
-                  </UncontrolledSelect>
-                </div>
+                {/* Show informational text if approver field is not shown (Admin only) */}
+                {!shouldShowApproverField(currentRole) && (
+                  <div>
+                    <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg border">
+                      <svg className="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <p className="text-sm font-medium">Admin ไม่ต้องมีผู้อนุมัติ</p>
+                      <p className="text-xs mt-1">สิทธิ์ Admin มีอำนาจสูงสุดในระบบ</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -649,6 +957,15 @@ const EmployeesManagement = () => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-blue-600 mb-8">EMPLOYEES MANAGEMENT</h1>
+        <SkeletonLoader rows={10} />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -692,7 +1009,7 @@ const EmployeesManagement = () => {
           }`}
         >
           ALL
-          <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">{filteredData.length}</span>
+          <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">{totalItems}</span>
         </button>
 
         {/* Sort by Department Dropdown */}
@@ -751,22 +1068,49 @@ const EmployeesManagement = () => {
         </div>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
+          <p className="text-gray-600">กำลังโหลดข้อมูลพนักงาน...</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <div className="text-red-500 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={fetchEmployees}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            ลองใหม่อีกครั้ง
+          </button>
+        </div>
+      )}
+
       {/* Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden relative">
-        <div className="overflow-x-auto relative">
+      {!loading && !error && (
+        <div className="bg-white rounded-lg shadow overflow-hidden relative">
+          <div className="overflow-x-auto relative">
           {/* Sticky Column Shadow Overlay */}
           <div className="absolute top-0 left-[192px] bottom-0 w-4 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.1), rgba(0,0,0,0))' }}></div>
           
           <table className="w-full min-w-[1000px] text-sm relative">
             <thead className="bg-blue-600 text-white">
               <tr>
-                <th className="sticky left-0 z-20 bg-blue-600 px-6 py-3 text-left text-sm whitespace-nowrap">
-                  <div className="flex items-center h-full">
+                <th className="sticky left-0 z-20 bg-blue-600 px-4 py-3 text-left text-sm whitespace-nowrap">
+                  <div className="flex items-center h-full pl-2">
                     <input
                       type="checkbox"
-                      checked={selectedItems.length === filteredData.length && filteredData.length > 0}
+                      checked={selectedItems.length === currentData.length && currentData.length > 0}
                       onChange={(e) => handleSelectAll(e.target.checked)}
-                      className="rounded"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </div>
                 </th>
@@ -776,19 +1120,19 @@ const EmployeesManagement = () => {
                 <th className="px-4 py-3 text-left font-semibold text-sm min-w-[100px]">แผนก</th>
                 <th className="px-4 py-3 text-left font-semibold text-sm min-w-[150px]">ชื่อกลุ่ม 5ส</th>
                 <th className="px-4 py-3 text-left font-semibold text-sm min-w-[140px]">สิทธิ์การเข้าถึง</th>
-                <th className="px-4 py-3 text-center font-semibold text-sm min-w-[100px]">Action</th>
+                <th className="px-4 py-3 text-center font-semibold text-sm min-w-[100px]"></th>
               </tr>
             </thead>
             <tbody className="relative">
-              {filteredData.map((employee, index) => (
+              {currentData.map((employee, index) => (
                 <tr key={employee.employeeId} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                   <td className="sticky left-0 z-20 px-4 py-3 whitespace-nowrap" style={{ backgroundColor: index % 2 === 0 ? '#f9fafb' : '#ffffff' }}>
-                    <div className="flex items-center h-full">
+                    <div className="flex items-center h-full pl-2">
                       <input
                         type="checkbox"
                         checked={selectedItems.includes(employee.employeeId)}
                         onChange={() => handleSelectItem(employee.employeeId)}
-                        className="rounded"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                     </div>
                   </td>
@@ -803,7 +1147,7 @@ const EmployeesManagement = () => {
                     <RoleBadge role={employee.role} />
                   </td>
                   <td className="px-4 py-3 text-center min-w-[100px]">
-                    <ActionDropdown employee={employee} index={index} totalItems={filteredData.length} />
+                    <ActionDropdown employee={employee} index={index} totalItems={currentData.length} />
                   </td>
                 </tr>
               ))}
@@ -814,23 +1158,62 @@ const EmployeesManagement = () => {
         {/* Pagination */}
         <div className="px-4 py-3 bg-white border-t border-gray-200 flex items-center justify-between">
           <div className="text-sm text-gray-500">
-            แสดงหน้า 1 to 1 of {filteredData.length} รายการ
+            แสดง {startIndex + 1} ถึง {Math.min(endIndex, totalItems)} จาก {totalItems} รายการ
           </div>
           <div className="flex items-center space-x-2">
-            <button className="px-3 py-1 text-gray-500 hover:text-gray-700 disabled:opacity-50" disabled>
+            <button 
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              className="px-3 py-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <button className="px-3 py-1 bg-blue-600 text-white rounded">1</button>
-            <button className="px-3 py-1 text-gray-500 hover:text-gray-700 disabled:opacity-50" disabled>
+            
+            {/* Page numbers */}
+            {(() => {
+              const pageNumbers = [];
+              const maxVisiblePages = 5;
+              let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+              let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+              
+              // Adjust start page if we're near the end
+              if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+              }
+              
+              for (let i = startPage; i <= endPage; i++) {
+                pageNumbers.push(
+                  <button
+                    key={i}
+                    onClick={() => handlePageChange(i)}
+                    className={`px-3 py-1 rounded ${
+                      i === currentPage
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {i}
+                  </button>
+                );
+              }
+              return pageNumbers;
+            })()}
+            
+            <button 
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Add Employee Modal */}
       <EmployeeModal

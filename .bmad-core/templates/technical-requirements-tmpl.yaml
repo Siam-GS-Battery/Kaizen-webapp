@@ -1,0 +1,204 @@
+title: "Technical Requirements Document"
+description: "Comprehensive technical requirements specification for software systems"
+version: "1.0"
+output_file: "technical-requirements.md"
+
+sections:
+  - name: "document_header"
+    title: "Document Information"
+    elicit: false
+    instruction: |
+      Create document header with:
+      - Document title and version
+      - Project name and description
+      - Creation date and last updated
+      - Document owner and stakeholders
+      - Purpose and scope of this technical requirements document
+
+  - name: "executive_summary"
+    title: "Executive Summary"
+    elicit: true
+    instruction: |
+      Provide a high-level overview of:
+      - Project objectives and business goals
+      - Key technical challenges and solutions
+      - High-level architecture approach
+      - Critical technical decisions and rationale
+      - Timeline and resource requirements summary
+
+  - name: "system_overview"
+    title: "System Overview"
+    elicit: true
+    instruction: |
+      Define the overall system:
+      - System purpose and primary functions
+      - Key users and stakeholders
+      - System boundaries and interfaces
+      - High-level architecture diagram
+      - Technology stack overview
+
+  - name: "functional_requirements"
+    title: "Functional Requirements"
+    elicit: true
+    instruction: |
+      Detail what the system must do:
+      - Core features and capabilities
+      - User stories and use cases
+      - Business logic requirements
+      - Data processing requirements
+      - Integration requirements with external systems
+
+  - name: "non_functional_requirements"
+    title: "Non-Functional Requirements"
+    elicit: true
+    instruction: |
+      Specify system quality attributes:
+      - Performance requirements (response time, throughput, capacity)
+      - Scalability requirements
+      - Availability and reliability requirements
+      - Security requirements
+      - Usability and accessibility requirements
+      - Maintainability and supportability requirements
+
+  - name: "technical_architecture"
+    title: "Technical Architecture"
+    elicit: true
+    instruction: |
+      Define the technical architecture:
+      - System architecture patterns and principles
+      - Component architecture and interactions
+      - Data architecture and flow
+      - Technology stack details
+      - Infrastructure requirements
+      - Deployment architecture
+
+  - name: "data_requirements"
+    title: "Data Requirements"
+    elicit: true
+    instruction: |
+      Specify data-related requirements:
+      - Data models and entities
+      - Data storage requirements
+      - Data backup and recovery requirements
+      - Data migration requirements
+      - Data security and privacy requirements
+      - Data retention policies
+
+  - name: "integration_requirements"
+    title: "Integration Requirements"
+    elicit: true
+    instruction: |
+      Define integration needs:
+      - External system integrations
+      - API requirements and specifications
+      - Data exchange formats and protocols
+      - Authentication and authorization requirements
+      - Error handling and retry mechanisms
+      - Monitoring and logging requirements
+
+  - name: "security_requirements"
+    title: "Security Requirements"
+    elicit: true
+    instruction: |
+      Specify security measures:
+      - Authentication and authorization mechanisms
+      - Data encryption requirements
+      - Network security requirements
+      - Vulnerability management
+      - Compliance requirements
+      - Security monitoring and incident response
+
+  - name: "infrastructure_requirements"
+    title: "Infrastructure Requirements"
+    elicit: true
+    instruction: |
+      Define infrastructure needs:
+      - Hardware requirements
+      - Cloud/hosting requirements
+      - Network requirements
+      - Development and testing environments
+      - CI/CD pipeline requirements
+      - Monitoring and alerting infrastructure
+
+  - name: "development_requirements"
+    title: "Development Requirements"
+    elicit: true
+    instruction: |
+      Specify development standards:
+      - Development methodology and processes
+      - Code quality standards and tools
+      - Testing requirements and strategies
+      - Documentation requirements
+      - Version control and branching strategy
+      - Review and approval processes
+
+  - name: "deployment_requirements"
+    title: "Deployment Requirements"
+    elicit: true
+    instruction: |
+      Define deployment specifications:
+      - Deployment environments (dev, staging, production)
+      - Deployment process and automation
+      - Configuration management
+      - Environment-specific requirements
+      - Rollback procedures
+      - Go-live criteria and procedures
+
+  - name: "maintenance_requirements"
+    title: "Maintenance & Support Requirements"
+    elicit: true
+    instruction: |
+      Specify ongoing support needs:
+      - Maintenance procedures and schedules
+      - Support model and SLAs
+      - Training requirements for support staff
+      - Documentation and knowledge transfer
+      - Bug fixing and enhancement procedures
+      - End-of-life considerations
+
+  - name: "constraints_assumptions"
+    title: "Constraints & Assumptions"
+    elicit: true
+    instruction: |
+      Document limitations and assumptions:
+      - Technical constraints and limitations
+      - Budget and resource constraints
+      - Timeline constraints
+      - Regulatory and compliance constraints
+      - Key assumptions made during planning
+      - Dependencies on external factors
+
+  - name: "risks_mitigation"
+    title: "Risks & Mitigation"
+    elicit: true
+    instruction: |
+      Identify and address risks:
+      - Technical risks and challenges
+      - Project risks and dependencies
+      - Mitigation strategies for each risk
+      - Contingency plans
+      - Risk monitoring and review procedures
+
+  - name: "acceptance_criteria"
+    title: "Acceptance Criteria"
+    elicit: true
+    instruction: |
+      Define success criteria:
+      - Functional acceptance criteria
+      - Performance acceptance criteria
+      - Security acceptance criteria
+      - User acceptance criteria
+      - Testing and validation procedures
+      - Sign-off requirements
+
+  - name: "appendices"
+    title: "Appendices"
+    elicit: false
+    instruction: |
+      Include supporting materials:
+      - Glossary of terms
+      - References and related documents
+      - Technical specifications
+      - Sample data formats
+      - Configuration examples
+      - Contact information and escalation procedures

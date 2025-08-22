@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import ImageUpload from '../components/ImageUpload';
 import '../CustomSwal.css';
 import '../MobileDateFix.css';
-import { employeeData } from '../data/employeeData';
 
 const SuggestionForm = () => {
-  const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     employeeId: '',
     fullName: '',
     lastName: '',
     department: '',
+    position: '',
     fiveSGroupName: '',
     projectArea: '',
     projectName: '',
@@ -23,6 +23,7 @@ const SuggestionForm = () => {
     standardCertification: '',
     resultsAchieved: '',
     beforeProjectImage: null,
+    beforeProjectImageFile: null,
     fiveSType: '',
     improvementTopic: '',
     SGS_Smart: '',
@@ -74,46 +75,16 @@ const SuggestionForm = () => {
     { value: 'Branding', label: 'Branding (ปรับปรุงคุณภาพของผลิตภัณฑ์ หรือ ส่งมอบตรงเวลา)' },
   ];
 
-  const handleInputChange = (e) => {
-    const { name, value, type, files } = e.target;
-    if (type === 'file') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: files[0]
-      }));
-    } else {
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const validateInput = (value, fieldName) => {
+    if (!value || value.trim() === '') {
+      return false;
     }
-  };
-
-  const handleCheck = () => {
-    const employee = employeeData.find(emp => emp.employeeId === formData.employeeId);
-
-    if (employee) {
-      setFormData(prev => ({
-        ...prev,
-        fullName: `${employee.firstName} ${employee.lastName}`,
-        department: employee.department,
-        fiveSGroupName: employee.fiveSArea,
-        projectArea: employee.projectArea,
-      }));
+    
+    if (value !== value.trim()) {
       Swal.fire({
-        icon: 'success',
-        title: 'พบข้อมูลพนักงาน',
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 2000,
-        timerProgressBar: true,
-      });
-    } else {
-      Swal.fire({
-        icon: 'error',
-        title: 'ไม่พบข้อมูล',
-        text: 'ไม่พบรหัสพนักงานนี้ในระบบ',
+        icon: 'warning',
+        title: 'ข้อมูลไม่ถูกต้อง',
+        text: `${fieldName} ไม่สามารถเว้นวรรคได้ กรุณากรอกข้อมูลใหม่`,
         confirmButtonText: 'ตกลง',
         customClass: {
           container: 'custom-swal-container',
@@ -121,10 +92,226 @@ const SuggestionForm = () => {
           confirmButton: 'custom-swal-confirm-button',
         }
       });
+      return false;
+    }
+    
+    return true;
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    if (name === 'employeeId' && value) {
+      if (!validateInput(value, 'รหัสพนักงาน')) {
+        return;
+      }
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleImageSelect = (imageType, file, base64) => {
+    setFormData(prev => ({
+      ...prev,
+      [`${imageType}ProjectImage`]: base64,
+      [`${imageType}ProjectImageFile`]: file
+    }));
+  };
+
+  // Image compression utility
+  const compressImage = (file, quality = 0.8, maxWidth = 1024, maxHeight = 768) => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // Calculate new dimensions
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) { width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw and compress image
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedBase64);
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+
+  // Form submission function
+  const submitFormData = async () => {
+    try {
+      const projectData = {
+        projectName: formData.projectName,
+        employeeId: formData.employeeId,
+        position: formData.position || 'พนักงาน',
+        department: formData.department,
+        fiveSGroupName: formData.fiveSGroupName,
+        projectArea: formData.projectArea,
+        projectStartDate: formData.projectStartDate,
+        projectEndDate: formData.projectEndDate,
+        problemsEncountered: formData.problemsEncountered,
+        solutionApproach: formData.solutionApproach,
+        standardCertification: formData.standardCertification,
+        resultsAchieved: formData.resultsAchieved,
+        fiveSType: formData.fiveSType,
+        improvementTopic: formData.improvementTopic,
+        SGS_Smart: formData.SGS_Smart,
+        SGS_Strong: formData.SGS_Strong,
+        SGS_Green: formData.SGS_Green,
+        status: 'WAITING',
+        formType: 'suggestion'
+      };
+
+      // Set image (only before image for suggestion form)
+      projectData.beforeProjectImage = formData.beforeProjectImage;
+      
+      // Compress image if present
+      if (formData.beforeProjectImageFile) {
+        projectData.beforeProjectImage = await compressImage(formData.beforeProjectImageFile, 0.7, 800, 600);
+      }
+
+      const response = await fetch('/api/tasklist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(projectData)
+      });
+
+      // Check content type before parsing JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Backend server ไม่ทำงาน หรือไม่ได้ตั้งค่าอย่างถูกต้อง');
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        
+        // Handle specific limit exceeded errors
+        if (errorData.error?.type === 'SUGGESTION_YEARLY_LIMIT_EXCEEDED') {
+          throw new Error(errorData.error.message);
+        }
+        
+        throw new Error(errorData.error?.message || 'Failed to submit form');
+      }
+
+      const result = await response.json();
+      console.log('Form submitted successfully:', result);
+      
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      throw error;
     }
   };
 
-  const handleNext = () => {
+  const handleCheck = async () => {
+    if (!formData.employeeId.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'กรุณากรอกรหัสพนักงาน',
+        text: 'กรุณากรอกรหัสพนักงานก่อนกด Check',
+        confirmButtonText: 'ตกลง',
+        customClass: {
+          container: 'custom-swal-container',
+          title: 'custom-swal-title',
+          confirmButton: 'custom-swal-confirm-button',
+        }
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/employees/${formData.employeeId}`);
+      
+      // Check if response is ok and content type is JSON
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server returned non-JSON response. Backend may not be running on port 3001.');
+      }
+      
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        const employee = data.data;
+        setFormData(prev => ({
+          ...prev,
+          fullName: `${employee.firstName} ${employee.lastName}`,
+          department: employee.department,
+          position: employee.position || 'พนักงาน',
+          fiveSGroupName: employee.fiveSArea,
+          projectArea: employee.projectArea,
+        }));
+        Swal.fire({
+          icon: 'success',
+          title: 'พบข้อมูลพนักงาน',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2000,
+          timerProgressBar: true,
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'ไม่พบข้อมูล',
+          text: 'ไม่พบรหัสพนักงานนี้ในระบบ',
+          confirmButtonText: 'ตกลง',
+          customClass: {
+            container: 'custom-swal-container',
+            title: 'custom-swal-title',
+            confirmButton: 'custom-swal-confirm-button',
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching employee data:', error);
+      
+      let errorMessage = 'ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้';
+      if (error.message.includes('non-JSON response')) {
+        errorMessage = 'Backend server ไม่ทำงาน กรุณาเริ่ม backend server ก่อน (npm run dev ในโฟลเดอร์ backend)';
+      }
+      
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: errorMessage,
+        confirmButtonText: 'ตกลง',
+        customClass: {
+          container: 'custom-swal-container',
+          title: 'custom-swal-title',
+          confirmButton: 'custom-swal-confirm-button',
+        }
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNext = async () => {
     if (step === 1) {
       setStep(2);
     } else if (step === 2) {
@@ -142,7 +329,6 @@ const SuggestionForm = () => {
         problemsEncountered: 'ปัญหาที่เจอ',
         solutionApproach: 'แนวทางแก้ไข',
         resultsAchieved: 'ผลลัพธ์ที่ได้',
-        beforeProjectImage: 'รูปก่อนจัดทำโครงการ',
         fiveSType: 'ส. ที่ใช้ในการปรับปรุง',
         improvementTopic: 'หัวข้อที่ปรับปรุง',
         SGS_Smart: 'S : Smart',
@@ -151,7 +337,7 @@ const SuggestionForm = () => {
       };
 
       const missingFields = Object.entries(requiredFields)
-        .filter(([key]) => !formData[key] || formData[key] === '')
+        .filter(([key]) => !formData[key] || formData[key].trim() === '')
         .map(([, label]) => label);
       
       if (missingFields.length > 0) {
@@ -169,22 +355,41 @@ const SuggestionForm = () => {
           }
         });
       } else {
-        Swal.fire({
-          icon: 'success',
-          title: 'บันทึกสำเร็จ!',
-          showConfirmButton: false,
-          timer: 1500,
-          customClass: {
-            container: 'custom-swal-container',
-            title: 'custom-swal-title',
-            icon: 'custom-swal-icon',
-          }
-        });
-        console.log('Form data submitted:', formData);
-        // Here you would typically send the data to a server
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 1500);
+        try {
+          // Submit form data to backend with image compression
+          await submitFormData();
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'บันทึกสำเร็จ!',
+            showConfirmButton: false,
+            timer: 1500,
+            customClass: {
+              container: 'custom-swal-container',
+              title: 'custom-swal-title',
+              icon: 'custom-swal-icon',
+            }
+          });
+          
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1500);
+        } catch (error) {
+          console.error('Form submission error:', error);
+          
+          // Show error alert and prevent form submission
+          Swal.fire({
+            icon: 'error',
+            title: 'ไม่สามารถส่งฟอร์มได้',
+            text: error.message,
+            confirmButtonText: 'ตกลง',
+            customClass: {
+              container: 'custom-swal-container',
+              title: 'custom-swal-title',
+              confirmButton: 'custom-swal-confirm-button',
+            }
+          });
+        }
       }
     }
   };
@@ -199,10 +404,11 @@ const SuggestionForm = () => {
     }
   };
 
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-6 py-8 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Left Side - Steps */}
           <div className="space-y-8">
@@ -277,9 +483,10 @@ const SuggestionForm = () => {
                 <div className="flex items-end">
                   <button
                     onClick={handleCheck}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                    disabled={loading}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Check
+                    {loading ? 'กำลังตรวจสอบ...' : 'Check'}
                   </button>
                 </div>
               </div>
@@ -368,33 +575,37 @@ const SuggestionForm = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">วันที่เริ่มทำโครงการ</label>
-                      <input
-                        type="date"
-                        name="projectStartDate"
-                        value={formData.projectStartDate}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
-                        style={{
-                          minHeight: '44px',
-                          WebkitAppearance: 'none',
-                          MozAppearance: 'textfield'
-                        }}
-                      />
+                      <div className="relative">
+                        <input
+                          type="date"
+                          name="projectStartDate"
+                          value={formData.projectStartDate}
+                          onChange={handleInputChange}
+                          onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                          className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base cursor-pointer"
+                          style={{
+                            minHeight: '44px',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">วันที่จบโครงการ</label>
-                      <input
-                        type="date"
-                        name="projectEndDate"
-                        value={formData.projectEndDate}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
-                        style={{
-                          minHeight: '44px',
-                          WebkitAppearance: 'none',
-                          MozAppearance: 'textfield'
-                        }}
-                      />
+                      <div className="relative">
+                        <input
+                          type="date"
+                          name="projectEndDate"
+                          value={formData.projectEndDate}
+                          onChange={handleInputChange}
+                          onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                          className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base cursor-pointer"
+                          style={{
+                            minHeight: '44px',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -441,26 +652,28 @@ const SuggestionForm = () => {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">รูปก่อนจัดทำโครงการ</label>
-                      <div className="border-2 border-dashed border-gray-400 rounded-md p-4 flex flex-col items-center justify-center">
-                        <input
-                          type="file"
-                          name="beforeProjectImage"
-                          accept="image/jpeg,image/png"
-                          onChange={handleInputChange}
-                          className="hidden"
-                          id="beforeImg"
-                        />
-                        <label htmlFor="beforeImg" className="cursor-pointer flex flex-col items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4a1 1 0 011-1h8a1 1 0 011 1v12m-4 4h-4a1 1 0 01-1-1v-4h6v4a1 1 0 01-1 1z" /></svg>
-                          <span className="text-gray-500 text-sm">Choose a file or drag & drop it here<br/>JPEG, PNG formats, up to 5 MB</span>
-                          <span className="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-md">Browse files</span>
-                        </label>
-                        {formData.beforeProjectImage && <span className="mt-2 text-xs text-green-600">{formData.beforeProjectImage.name}</span>}
+                  <div className="grid grid-cols-1 gap-4">
+                    <ImageUpload
+                      id="beforeImg"
+                      label="รูปก่อนจัดทำโครงการ"
+                      onImageSelect={(file, base64) => handleImageSelect('before', file, base64)}
+                      currentImage={formData.beforeProjectImage}
+                      acceptedFormats="image/jpeg,image/png,image/webp"
+                      maxSizeMB={5}
+                    />
+                    {/* <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                      <div className="flex">
+                        <svg className="w-5 h-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        <div>
+                          <h3 className="text-sm font-medium text-yellow-800">หมายเหตุ</h3>
+                          <p className="text-sm text-yellow-700 mt-1">
+                            ฟอร์มข้อเสนอแนะจำเป็นต้องแนบเฉพาะรูปก่อนจัดทำโครงการเท่านั้น
+                          </p>
+                        </div>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </>

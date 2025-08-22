@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { employeeData } from '../data/employeeData';
+import sessionManager from '../utils/sessionManager';
+import SessionWarningModal from './SessionWarningModal';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -12,27 +14,81 @@ const Header = () => {
   const [userRole, setUserRole] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isKaizenTeam, setIsKaizenTeam] = useState(false);
+  const [showSessionWarning, setShowSessionWarning] = useState(false);
+  const [warningTime, setWarningTime] = useState(0);
+  const [sessionInfo, setSessionInfo] = useState(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   // ฟังก์ชันเช็ค active
   const isActive = (path) => location.pathname === path;
 
-  // ตรวจสอบสิทธิ์ผู้ใช้จาก localStorage
+  // ตรวจสอบสิทธิ์ผู้ใช้และตั้งค่า session monitoring
   useEffect(() => {
-    const userSession = localStorage.getItem('userSession');
-    if (userSession) {
-      const session = JSON.parse(userSession);
-      const employee = employeeData.find(emp => emp.employeeId === session.employeeId);
-      if (employee) {
-        setUserRole(employee.role);
-        setCurrentUser(employee);
-        setIsLoggedIn(true);
+    const checkSession = () => {
+      const session = sessionManager.getCurrentSession();
+      if (session && sessionManager.isSessionValid()) {
+        // Get user data from localStorage (updated from API)
+        const userDataStr = localStorage.getItem('user');
+        if (userDataStr) {
+          try {
+            const userData = JSON.parse(userDataStr);
+            setUserRole(userData.role);
+            setCurrentUser(userData);
+            setIsKaizenTeam(userData.isKaizenTeam || false);
+            setIsLoggedIn(true);
+            setSessionInfo(sessionManager.getSessionInfo());
+          } catch (error) {
+            console.error('Error parsing user data:', error);
+            // Fallback to static data if needed
+            const employee = employeeData.find(emp => emp.employeeId === session.employeeId);
+            if (employee) {
+              setUserRole(employee.role);
+              setCurrentUser(employee);
+              setIsKaizenTeam(false);
+              setIsLoggedIn(true);
+              setSessionInfo(sessionManager.getSessionInfo());
+            }
+          }
+        }
+      } else {
+        setUserRole(null);
+        setCurrentUser(null);
+        setIsKaizenTeam(false);
+        setIsLoggedIn(false);
+        setSessionInfo(null);
       }
-    } else {
-      setUserRole(null);
-      setCurrentUser(null);
-      setIsLoggedIn(false);
-    }
+    };
+
+    // Initial check
+    checkSession();
+
+    // Set up session warning handler (expired handler is set globally in App.js)
+    const currentHandlers = {
+      onExpired: handleSessionExpired,
+      onWarning: (remainingTime) => {
+        setWarningTime(remainingTime);
+        setShowSessionWarning(true);
+      },
+      onExtended: () => {
+        setShowSessionWarning(false);
+        checkSession();
+      }
+    };
+
+    sessionManager.setEventHandlers(currentHandlers);
+
+    // Set up interval to update session info
+    const sessionInfoInterval = setInterval(() => {
+      if (sessionManager.isSessionValid()) {
+        setSessionInfo(sessionManager.getSessionInfo());
+      }
+    }, 10000); // Update every 10 seconds
+
+    return () => {
+      clearInterval(sessionInfoInterval);
+    };
   }, []);
 
   // ปิด dropdowns เมื่อคลิกนอกเมนู
@@ -54,19 +110,28 @@ const Header = () => {
 
   // เมนูสำหรับ Operations ตามสิทธิ์
   const getOperationsMenuItems = () => {
-    if (userRole === 'Supervisor' || userRole === 'Manager') {
-      return [
-        { name: 'Tasklist', href: '/tasklist' }
-      ];
-    } else if (userRole === 'Admin') {
-      return [
-        { name: 'Tasklist', href: '/tasklist' },
-        { name: 'Employees Management', href: '/employees-management' },
-        { name: 'Admin Team Setting', href: '/admin-team-setting' },
-        { name: 'Report Page', href: '/report-page' }
-      ];
+    const menuItems = [];
+    
+    // Tasklist for Supervisor, Manager, Admin
+    if (userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin') {
+      menuItems.push({ name: 'Tasklist', href: '/tasklist' });
     }
-    return [];
+    
+    // Tasklist (Kaizen team) for KaizenTeam members only
+    if (isKaizenTeam) {
+      menuItems.push({ name: 'Tasklist (Kaizen team)', href: '/kaizen-tasklist' });
+    }
+    
+    // Admin pages for Admin role OR Kaizen team members
+    if (userRole === 'Admin' || isKaizenTeam) {
+      menuItems.push(
+        { name: 'Employees Management', href: '/employees-management' },
+        { name: 'Kaizen Team Settings', href: '/admin-team-settings' },
+        { name: 'Report Page', href: '/report' }
+      );
+    }
+    
+    return menuItems;
   };
 
   // เมนูสำหรับ Create Form ตามสิทธิ์
@@ -80,15 +145,43 @@ const Header = () => {
     return [];
   };
 
-  // ฟังก์ชัน logout
-  const handleLogout = () => {
-    localStorage.removeItem('userSession');
+  // ฟังก์ชัน session expired
+  const handleSessionExpired = () => {
+    sessionManager.destroySession();
     setUserRole(null);
     setCurrentUser(null);
+    setIsKaizenTeam(false);
+    setIsLoggedIn(false);
+    setShowSessionWarning(false);
+    setSessionInfo(null);
+    
+    // Redirect to login immediately without alert
+    navigate('/login', { replace: true });
+  };
+
+  // ฟังก์ชัน logout
+  const handleLogout = () => {
+    sessionManager.destroySession();
+    setUserRole(null);
+    setCurrentUser(null);
+    setIsKaizenTeam(false);
     setIsLoggedIn(false);
     setIsUserMenuOpen(false);
+    setShowSessionWarning(false);
+    setSessionInfo(null);
     // กลับเข้าสู่หน้าหลัก home
     window.location.href = '/';
+  };
+
+  // ฟังก์ชัน extend session
+  const handleExtendSession = () => {
+    setShowSessionWarning(false);
+    const success = sessionManager.extendSession();
+    if (success) {
+      setSessionInfo(sessionManager.getSessionInfo());
+    } else {
+      handleSessionExpired();
+    }
   };
 
   return (
@@ -157,8 +250,8 @@ const Header = () => {
               </div>
             )}
 
-            {/* Operations Dropdown - แสดงเฉพาะ Supervisor, Manager และ Admin */}
-            {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin') && (
+            {/* Operations Dropdown - แสดงเฉพาะ Supervisor, Manager, Admin และ KaizenTeam */}
+            {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin' || isKaizenTeam) && (
               <div className="relative">
                 <button
                   onClick={(e) => {
@@ -171,7 +264,7 @@ const Header = () => {
                   className={`font-medium transition-colors pb-1 flex items-center gap-1 text-sm xl:text-base ${
                     location.pathname.includes('/tasklist') || 
                     location.pathname.includes('/employees-management') || 
-                    location.pathname.includes('/admin-team-setting') || 
+                    location.pathname.includes('/admin-team-settings') || 
                     location.pathname.includes('/report-page')
                       ? 'border-b-2 border-blue-600 text-blue-600' 
                       : 'text-gray-600 hover:text-blue-600'
@@ -326,7 +419,7 @@ const Header = () => {
                     </div>
                     
                                          {/* Menu Items for Tablet */}
-                     {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin') && (
+                     {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin' || isKaizenTeam) && (
                       <>
                         <div className="px-4 py-2 border-b border-gray-100">
                           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">CREATE FORM</div>
@@ -415,7 +508,10 @@ const Header = () => {
               {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin') && (
                 <div className="space-y-2">
                   <button
-                    onClick={() => setIsMobileCreateFormOpen(!isMobileCreateFormOpen)}
+                    onClick={() => {
+                      setIsMobileOperationsOpen(false); // ปิด Operations dropdown
+                      setIsMobileCreateFormOpen(!isMobileCreateFormOpen);
+                    }}
                     className="flex items-center justify-between w-full font-medium text-blue-600 text-sm uppercase tracking-wider hover:text-blue-800 transition-colors py-2 px-3 rounded-lg hover:bg-blue-50"
                   >
                     <span>CREATE FORM</span>
@@ -443,11 +539,14 @@ const Header = () => {
                 </div>
               )}
 
-              {/* Operations Section for Mobile - แสดงเฉพาะ Supervisor, Manager และ Admin */}
-              {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin') && (
+              {/* Operations Section for Mobile - แสดงเฉพาะ Supervisor, Manager, Admin และ KaizenTeam */}
+              {(userRole === 'Supervisor' || userRole === 'Manager' || userRole === 'Admin' || isKaizenTeam) && (
                 <div className="space-y-2">
                   <button
-                    onClick={() => setIsMobileOperationsOpen(!isMobileOperationsOpen)}
+                    onClick={() => {
+                      setIsMobileCreateFormOpen(false); // ปิด Create Form dropdown
+                      setIsMobileOperationsOpen(!isMobileOperationsOpen);
+                    }}
                     className="flex items-center justify-between w-full font-medium text-blue-600 text-sm uppercase tracking-wider hover:text-blue-800 transition-colors py-2 px-3 rounded-lg hover:bg-blue-50"
                   >
                     <span>OPERATIONS</span>
@@ -518,6 +617,14 @@ const Header = () => {
           </nav>
         )}
       </div>
+
+      {/* Session Warning Modal */}
+      <SessionWarningModal
+        isOpen={showSessionWarning}
+        onExtend={handleExtendSession}
+        onLogout={handleLogout}
+        remainingTime={warningTime}
+      />
     </header>
   );
 };

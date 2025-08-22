@@ -46,3 +46,10 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# Documentation files to ignore
+**/todo-list.md
+**/todo.md
+**/TODO.md
+technical-requirements.md
+docs/

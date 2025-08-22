@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import apiService from '../services/apiService';
+import apiService, { reportsAPI } from '../services/apiService';
 
 const Home = () => {
   const [apiStatus, setApiStatus] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
-    const currentMonth = new Date().getMonth();
-    return currentMonth === 0 ? 11 : currentMonth - 1; // Previous month, handle January wrap-around
+    return new Date().getMonth(); // Current month
   });
   const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
+  const [departmentData, setDepartmentData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Get current date and format Thai months
   const getCurrentDate = () => {
@@ -41,6 +43,72 @@ const Home = () => {
 
   const currentDate = getCurrentDate();
 
+  // Function to convert full project names to abbreviated display names
+  const getDisplayName = (fullName) => {
+    if (!fullName) return '';
+    
+    // Mapping for common department/project names to abbreviations
+    const nameMapping = {
+      'Human Resources & Administration': 'HR & AD',
+      'Human Resources and Administration': 'HR & AD',
+      'Administration': 'AD',
+      'Accounting & Finance': 'AF',
+      'Accounting and Finance': 'AF',
+      'Production Control': 'PC',
+      'Product Development': 'PD',
+      'Quality Assurance': 'QA',
+      'Software Development': 'SD',
+      'Technology Development': 'TD',
+      'Information Technology & Data Management': 'IT & DM',
+      'Information Technology and Data Management': 'IT & DM',
+      'Information Technology': 'IT',
+      'Data Management': 'DM',
+      'Research & Development': 'R&D',
+      'Research and Development': 'R&D',
+      'Marketing & Sales': 'M&S',
+      'Marketing and Sales': 'M&S',
+      'Customer Service': 'CS',
+      'Supply Chain Management': 'SCM',
+      'Operations': 'OPS',
+      'Logistics': 'LOG',
+      'Procurement': 'PROC',
+      'Maintenance': 'MAINT'
+    };
+
+    // Check if there's a direct mapping
+    if (nameMapping[fullName]) {
+      return nameMapping[fullName];
+    }
+
+    // If no direct mapping, create abbreviation from first letters of words
+    const words = fullName.trim().split(/\s+/);
+    
+    if (words.length === 1) {
+      // Single word - return first 3-4 characters if long, otherwise return as is
+      return fullName.length > 5 ? fullName.substring(0, 4).toUpperCase() : fullName.toUpperCase();
+    }
+    
+    // Multiple words - create abbreviation from first letters
+    let abbreviation = words
+      .filter(word => word.length > 0) // Remove empty strings
+      .map(word => {
+        // Skip common connecting words in abbreviations
+        const skipWords = ['and', 'or', 'the', 'of', 'in', 'at', 'to', 'for', 'with', '&'];
+        if (skipWords.includes(word.toLowerCase())) {
+          return word === '&' ? '&' : ''; // Keep & symbol, skip others
+        }
+        return word.charAt(0).toUpperCase();
+      })
+      .join('');
+
+    // Limit abbreviation length and ensure it's readable
+    if (abbreviation.length > 6) {
+      abbreviation = abbreviation.substring(0, 6);
+    }
+    
+    return abbreviation || fullName.substring(0, 4).toUpperCase();
+  };
+
   useEffect(() => {
     const checkApiHealth = async () => {
       try {
@@ -54,16 +122,79 @@ const Home = () => {
     checkApiHealth();
   }, []);
 
-  const departmentData = [
-    { name: 'HR & AD', employees: 20, submitted: 20, completion: 100 },
-    { name: 'AF', employees: 21, submitted: 21, completion: 100 },
-    { name: 'PC', employees: 19, submitted: 4, completion: 20 },
-    { name: 'PD', employees: 22, submitted: 15, completion: 70 },
-    { name: 'QA', employees: 10, submitted: 10, completion: 100 },
-    { name: 'SD', employees: 16, submitted: 10, completion: 62 },
-    { name: 'TD', employees: 15, submitted: 14, completion: 93 },
-    { name: 'IT & DM', employees: 8, submitted: 8, completion: 100 }
-  ];
+  // Function to fetch department data
+  const fetchDepartmentData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const currentYear = new Date().getFullYear();
+        
+        const response = await reportsAPI.getMonthlyReports({ 
+          year: currentYear,
+          month: (selectedMonth + 1).toString().padStart(2, '0')
+        });
+        
+        if (response.data && response.data.data) {
+          const monthData = response.data.data;
+          const formattedData = monthData.departments.map(dept => ({
+            name: dept.name || dept.code,
+            displayName: getDisplayName(dept.name) || dept.code || getDisplayName(dept.code),
+            code: dept.code,
+            employees: dept.employees,
+            submitted: dept.submitted,
+            completion: Math.round(dept.rate || ((dept.submitted / dept.employees) * 100))
+          }));
+          setDepartmentData(formattedData);
+        } else {
+          // Fallback data if API doesn't return expected format
+          const fallbackData = [
+            { name: 'Human Resources & Administration', code: 'HR&AD', employees: 20, submitted: 20, completion: 100 },
+            { name: 'Accounting & Finance', code: 'AF', employees: 21, submitted: 21, completion: 100 },
+            { name: 'Production Control', code: 'PC', employees: 19, submitted: 4, completion: 21 },
+            { name: 'Product Development', code: 'PD', employees: 22, submitted: 15, completion: 68 },
+            { name: 'Quality Assurance', code: 'QA', employees: 10, submitted: 10, completion: 100 },
+            { name: 'Software Development', code: 'SD', employees: 16, submitted: 10, completion: 63 },
+            { name: 'Technology Development', code: 'TD', employees: 15, submitted: 14, completion: 93 },
+            { name: 'Information Technology & Data Management', code: 'IT&DM', employees: 8, submitted: 8, completion: 100 }
+          ].map(dept => ({
+            ...dept,
+            displayName: getDisplayName(dept.name) || dept.code
+          }));
+          setDepartmentData(fallbackData);
+        }
+      } catch (err) {
+        console.error('Error fetching department data:', err);
+        setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+        // Fallback data on error
+        const errorFallbackData = [
+          { name: 'Human Resources & Administration', code: 'HR&AD', employees: 20, submitted: 20, completion: 100 },
+          { name: 'Accounting & Finance', code: 'AF', employees: 21, submitted: 21, completion: 100 },
+          { name: 'Production Control', code: 'PC', employees: 19, submitted: 4, completion: 21 },
+          { name: 'Product Development', code: 'PD', employees: 22, submitted: 15, completion: 68 },
+          { name: 'Quality Assurance', code: 'QA', employees: 10, submitted: 10, completion: 100 },
+          { name: 'Software Development', code: 'SD', employees: 16, submitted: 10, completion: 63 },
+          { name: 'Technical', code: 'TD', employees: 15, submitted: 14, completion: 93 },
+          { name: 'Information Technology & Data Management', code: 'IT&DM', employees: 8, submitted: 8, completion: 100 }
+        ].map(dept => ({
+          ...dept,
+          displayName: getDisplayName(dept.name) || dept.code
+        }));
+        setDepartmentData(errorFallbackData);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  // Fetch department data when month changes
+  useEffect(() => {
+    fetchDepartmentData();
+  }, [selectedMonth]);
+
+  // Refresh function
+  const handleRefresh = () => {
+    fetchDepartmentData();
+  };
 
 
   return (
@@ -79,7 +210,7 @@ const Home = () => {
               กำหนดการส่งเอกสารประจำเดือน {currentDate.nextThaiMonth}
             </p>
             <p className="text-base sm:text-lg mb-8 sm:mb-12">
-              วันที่ 31 กรกฎาคม 2568
+              วันที่ 29 กันยายน 2568
             </p>
             <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-8 sm:mb-16">
               <Link 
@@ -113,13 +244,17 @@ const Home = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-blue-600 mb-2">
-                จำนวนการส่ง KAIZEN
+                จำนวนการส่ง KAIZEN ประจำเดือน{currentDate.thaiMonths[selectedMonth]}
               </h2>
               <p className="text-sm sm:text-base text-gray-600">SORT BY DEPARTMENT</p>
             </div>
             <div className="flex items-center space-x-2">
-              <button className="flex items-center space-x-2 hover:bg-blue-200 px-3 sm:px-4 py-2 rounded text-sm sm:text-base transition-colors">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button 
+                onClick={handleRefresh}
+                disabled={loading}
+                className="flex items-center space-x-2 hover:bg-blue-200 px-3 sm:px-4 py-2 rounded text-sm sm:text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 <span className="hidden sm:inline">Refresh</span>
@@ -162,6 +297,14 @@ const Home = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Table */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              {loading ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+              ) : error ? (
+                <div className="p-4 text-red-600 text-center">{error}</div>
+              ) : (
+                <>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[600px]">
                   <thead className="bg-blue-600 text-white">
@@ -210,6 +353,8 @@ const Home = () => {
                   📊 ตารางแสดงสถิติการส่ง KAIZEN ประจำเดือน{currentDate.thaiMonths[selectedMonth]}ของแต่ละหน่วยงาน
                 </p>
               </div>
+              </>
+              )}
             </div>
 
             {/* Chart */}
@@ -219,6 +364,14 @@ const Home = () => {
                 <p className="text-sm text-gray-600">เปอร์เซ็นต์การส่ง KAIZEN ประจำเดือน{currentDate.thaiMonths[selectedMonth]} {currentDate.thaiYear}</p>
               </div>
               
+              {loading ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+              ) : error ? (
+                <div className="p-4 text-red-600 text-center">{error}</div>
+              ) : (
+              <>
               <div className="relative">
                 {/* Chart container */}
                 <div className="h-full min-h-[320px] relative bg-gray-50 rounded-lg">
@@ -310,7 +463,7 @@ const Home = () => {
                     {departmentData.map((dept, index) => (
                       <div key={index} className="text-xs text-gray-700 font-medium text-center flex-1">
                         <div className="transform -rotate-45 origin-top whitespace-nowrap">
-                          {dept.name}
+                          {dept.code}
                         </div>
                       </div>
                     ))}
@@ -334,7 +487,7 @@ const Home = () => {
                     return (
                       <div key={index} className="flex items-center space-x-2">
                         <div className={`w-3 h-3 rounded-full ${colors[index]}`}></div>
-                        <span className="text-xs text-gray-600">{dept.name}</span>
+                        <span className="text-xs text-gray-600">{dept.code}</span>
                       </div>
                     );
                   })}
@@ -346,6 +499,8 @@ const Home = () => {
                   📊 แผนภูมิแสดงเปอร์เซ็นต์การส่ง KAIZEN ประจำเดือน{currentDate.thaiMonths[selectedMonth]}ของแต่ละหน่วยงาน
                 </p>
               </div>
+              </>
+              )}
             </div>
           </div>
         </div>

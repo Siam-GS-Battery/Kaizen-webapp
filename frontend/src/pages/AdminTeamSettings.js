@@ -1,0 +1,1177 @@
+import React, { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
+import { employeeAPI } from '../services/apiService';
+import SkeletonLoader from '../components/SkeletonLoader';
+
+// Force hot-reload cache clear
+
+const AdminTeamSettings = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('ALL');
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [isManageDropdownOpen, setIsManageDropdownOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
+  const [availableEmployees, setAvailableEmployees] = useState([]);
+  const [selectedEmployeesForAdd, setSelectedEmployeesForAdd] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [admins, setAdmins] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+
+
+  // Form data for adding/editing admin team members
+  const [formData, setFormData] = useState({
+    employeeId: '',
+    firstName: '',
+    lastName: '',
+    department: '',
+    fiveSArea: '',
+    role: 'Admin',
+    subordinate: '',
+    commander: ''
+  });
+
+
+
+  // Department options
+  const departments = ['IT & DM', 'HR & AD', 'AF', 'PC', 'PD', 'QA', 'SD', 'TD', 'Admin'];
+  const roles = ['Admin', 'Manager', 'Supervisor'];
+  const fiveSAreas = ['5ส ณ บางปูใหม่', '5ส ณ โรงงาน A', '5ส ณ โรงงาน B', '5ส ณ คลังสินค้า', 'กลุ่มวางแผนการผลิต'];
+
+  // Fetch admin team members from API on component mount
+  useEffect(() => {
+    fetchAdmins();
+  }, []);
+
+  const fetchAdmins = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await employeeAPI.getKaizenTeam();
+      if (response.data.success) {
+        setAdmins(response.data.data);
+      } else {
+        throw new Error('Failed to fetch Kaizen team members');
+      }
+    } catch (error) {
+      console.error('Error fetching Kaizen team members:', error);
+      setError('Failed to load Kaizen team members. Please try again.');
+      await Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: 'ไม่สามารถโหลดข้อมูลทีม Kaizen ได้ กรุณาลองใหม่อีกครั้ง',
+        confirmButtonColor: '#3b82f6'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  // Filter and search data
+  useEffect(() => {
+    let filtered = admins;
+
+    // Filter by department
+    if (selectedDepartment !== 'ALL') {
+      filtered = filtered.filter(emp => emp.department === selectedDepartment);
+    }
+
+    // Search by name or employee ID
+    if (searchTerm) {
+      filtered = filtered.filter(emp =>
+        emp.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        emp.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        emp.employeeId.includes(searchTerm)
+      );
+    }
+
+    setFilteredData(filtered);
+    setCurrentPage(1); // Reset to first page when filter changes
+  }, [searchTerm, selectedDepartment, admins]);
+
+  // Get department counts
+  const getDepartmentCounts = () => {
+    const counts = {};
+    admins.forEach(emp => {
+      counts[emp.department] = (counts[emp.department] || 0) + 1;
+    });
+    return counts;
+  };
+
+  const departmentCounts = getDepartmentCounts();
+
+  // Calculate pagination
+  const totalItems = filteredData.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentData = filteredData.slice(startIndex, endIndex);
+
+  // Pagination handlers
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    setSelectedItems([]); // Clear selections when changing pages
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+      setSelectedItems([]);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+      setSelectedItems([]);
+    }
+  };
+
+  // Handle checkbox selection
+  const handleSelectItem = (employeeId) => {
+    setSelectedItems(prev =>
+      prev.includes(employeeId)
+        ? prev.filter(id => id !== employeeId)
+        : [...prev, employeeId]
+    );
+  };
+
+  // Handle select all (only current page)
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedItems(currentData.map(emp => emp.employeeId));
+    } else {
+      setSelectedItems([]);
+    }
+  };
+
+  // Reset form data
+  const resetFormData = () => {
+    setFormData({
+      employeeId: '',
+      firstName: '',
+      lastName: '',
+      department: '',
+      fiveSArea: '',
+      role: 'Admin',
+      subordinate: '',
+      commander: ''
+    });
+  };
+
+  // Handle form submission by reading form data directly
+  const getFormData = (formElement) => {
+    const formData = new FormData(formElement);
+    return {
+      employeeId: formData.get('employeeId'),
+      firstName: formData.get('firstName'),
+      lastName: formData.get('lastName'),
+      department: formData.get('department'),
+      fiveSArea: formData.get('fiveSArea'),
+      role: formData.get('role'),
+      subordinate: formData.get('subordinate'),
+      commander: formData.get('commander')
+    };
+  };
+
+
+
+  // Handle add admin team member
+  const handleAddAdmin = async (formElement) => {
+    const data = getFormData(formElement);
+    
+    if (!data.employeeId || !data.firstName || !data.lastName || !data.department || !data.fiveSArea) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'ข้อมูลไม่ครบถ้วน',
+        text: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน',
+        confirmButtonColor: '#3b82f6'
+      });
+      return;
+    }
+
+    try {
+      const newAdminData = {
+        employeeId: data.employeeId,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        department: data.department,
+        fiveSArea: data.fiveSArea,
+        projectArea: data.department, // Using department as project area for simplicity
+        role: data.role
+      };
+
+      const response = await employeeAPI.create(newAdminData);
+      
+      if (response.data.success) {
+        // Refresh the admin team list
+        await fetchAdmins();
+        setIsAddModalOpen(false);
+        resetFormData();
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'เพิ่มผู้จัดการทีมสำเร็จ',
+          text: 'เพิ่มข้อมูลผู้จัดการทีมเรียบร้อยแล้ว',
+          confirmButtonColor: '#3b82f6'
+        });
+      }
+    } catch (error) {
+      console.error('Error adding admin team member:', error);
+      let errorMessage = 'เกิดข้อผิดพลาดในการเพิ่มผู้จัดการทีม';
+      
+      if (error.response?.status === 409) {
+        errorMessage = 'รหัสพนักงานนี้มีอยู่ในระบบแล้ว';
+      } else if (error.response?.data?.error?.message) {
+        errorMessage = error.response.data.error.message;
+      }
+      
+      await Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: errorMessage,
+        confirmButtonColor: '#3b82f6'
+      });
+    }
+  };
+
+
+  // Handle remove individual member from Kaizen team
+  const handleDeleteAdmin = async (admin) => {
+    const result = await Swal.fire({
+      title: 'นำออกจากทีม Kaizen',
+      text: `คุณต้องการนำ ${admin.firstName} ${admin.lastName} ออกจากทีม Kaizen ใช่หรือไม่? \n(ผู้ใช้จะกลับไปมีสิทธิ์ตามเดิมโดยไม่ลบข้อมูลออกจากระบบ)`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'นำออกจากทีม',
+      cancelButtonText: 'ยกเลิก'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response = await employeeAPI.removeFromKaizenTeam(admin.employeeId);
+        
+        if (response.data.success) {
+          // Refresh the Kaizen team list
+          await fetchAdmins();
+          await Swal.fire({
+            title: 'นำออกเรียบร้อย!',
+            text: 'นำสมาชิกออกจากทีม Kaizen เรียบร้อยแล้ว ผู้ใช้จะกลับไปมีสิทธิ์ตามเดิม',
+            icon: 'success',
+            confirmButtonColor: '#3b82f6'
+          });
+        }
+      } catch (error) {
+        console.error('Error removing member from Kaizen team:', error);
+        let errorMessage = 'เกิดข้อผิดพลาดในการนำสมาชิกออกจากทีม Kaizen';
+        
+        if (error.response?.data?.error?.message) {
+          errorMessage = error.response.data.error.message;
+        }
+        
+        await Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: errorMessage,
+          confirmButtonColor: '#3b82f6'
+        });
+      }
+    }
+  };
+
+  // Handle bulk remove from Kaizen team
+  const handleBulkDelete = async () => {
+    if (selectedItems.length === 0) return;
+
+    const result = await Swal.fire({
+      title: 'นำออกจากทีม Kaizen',
+      text: `คุณต้องการนำสมาชิกทีม Kaizen ${selectedItems.length} คนออกจากทีมใช่หรือไม่? \n(ผู้ใช้จะกลับไปมีสิทธิ์ตามเดิมโดยไม่ลบข้อมูลออกจากระบบ)`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'นำออกจากทีม',
+      cancelButtonText: 'ยกเลิก'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        // Remove members from Kaizen team one by one
+        const removePromises = selectedItems.map(employeeId => 
+          employeeAPI.removeFromKaizenTeam(employeeId)
+        );
+        
+        await Promise.all(removePromises);
+        
+        // Refresh the Kaizen team list
+        await fetchAdmins();
+        setSelectedItems([]);
+        
+        await Swal.fire({
+          title: 'นำออกเรียบร้อย!',
+          text: `นำสมาชิกออกจากทีม Kaizen ${selectedItems.length} คนเรียบร้อยแล้ว ผู้ใช้จะกลับไปมีสิทธิ์ตามเดิม`,
+          icon: 'success',
+          confirmButtonColor: '#3b82f6'
+        });
+      } catch (error) {
+        console.error('Error bulk removing members from Kaizen team:', error);
+        await Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: 'เกิดข้อผิดพลาดในการนำสมาชิกออกจากทีม Kaizen กรุณาลองใหม่อีกครั้ง',
+          confirmButtonColor: '#3b82f6'
+        });
+        // Refresh the list to show current state
+        await fetchAdmins();
+        setSelectedItems([]);
+      }
+    }
+  };
+
+
+  // Modal close handlers 
+  const handleAddModalClose = () => {
+    setIsAddModalOpen(false);
+    resetFormData();
+  };
+
+
+  // Add button handler - show selection modal instead
+  const handleAddButtonClick = async () => {
+    try {
+      const response = await employeeAPI.getNonKaizenTeam();
+      if (response.data.success) {
+        setAvailableEmployees(response.data.data);
+        setSelectedEmployeesForAdd([]);
+        setIsSelectionModalOpen(true);
+      }
+    } catch (error) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: 'ไม่สามารถโหลดรายชื่อพนักงานได้',
+        confirmButtonColor: '#3b82f6'
+      });
+    }
+  };
+
+  // Handle adding selected employees to Kaizen team
+  const handleAddSelectedEmployees = async () => {
+    if (selectedEmployeesForAdd.length === 0) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'กรุณาเลือกพนักงาน',
+        text: 'กรุณาเลือกพนักงานที่ต้องการเพิ่มเข้าทีม Kaizen',
+        confirmButtonColor: '#3b82f6'
+      });
+      return;
+    }
+
+    try {
+      // Add employees to Kaizen team one by one
+      const addPromises = selectedEmployeesForAdd.map(employeeId => 
+        employeeAPI.addToKaizenTeam(employeeId)
+      );
+      
+      await Promise.all(addPromises);
+      
+      // Refresh the Kaizen team list
+      await fetchAdmins();
+      setIsSelectionModalOpen(false);
+      setSelectedEmployeesForAdd([]);
+      
+      await Swal.fire({
+        icon: 'success',
+        title: 'เพิ่มสมาชิกทีม Kaizen สำเร็จ',
+        text: `เพิ่มสมาชิกทีม Kaizen ${selectedEmployeesForAdd.length} คนเรียบร้อยแล้ว`,
+        confirmButtonColor: '#3b82f6'
+      });
+    } catch (error) {
+      console.error('Error adding employees to Kaizen team:', error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: 'เกิดข้อผิดพลาดในการเพิ่มสมาชิกทีม Kaizen กรุณาลองใหม่อีกครั้ง',
+        confirmButtonColor: '#3b82f6'
+      });
+    }
+  };
+
+  // Role badge component with Kaizen Team indicator
+  const RoleBadge = ({ role, isKaizenTeam }) => {
+    const getRoleStyle = () => {
+      switch (role) {
+        case 'Admin':
+          return 'bg-red-100 text-red-800';
+        case 'Manager':
+          return 'bg-purple-100 text-purple-800';
+        case 'Supervisor':
+          return 'bg-orange-100 text-orange-800';
+        default:
+          return 'bg-blue-100 text-blue-800';
+      }
+    };
+
+    return (
+      <div className="flex flex-col gap-1">
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full w-24 justify-center ${getRoleStyle()}`}>
+          {role ? role.toUpperCase() : 'N/A'}
+        </span>
+        {isKaizenTeam && (
+          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full w-24 justify-center bg-green-100 text-green-800">
+            KAIZEN
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  // Action dropdown component for individual actions
+  const ActionDropdown = ({ admin }) => {
+    return (
+      <div className="relative action-dropdown">
+        {/* Remove from Kaizen Team button only */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleDeleteAdmin(admin)}
+            className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 transition-colors p-2 rounded-lg"
+            title="นำออกจากทีม Kaizen"
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+
+  // Uncontrolled Input Component - no re-renders
+  const UncontrolledInput = ({ name, defaultValue, placeholder, disabled, className, type = "text", autoFocus = false }) => {
+    return (
+      <input
+        type={type}
+        name={name}
+        defaultValue={defaultValue || ''}
+        disabled={disabled}
+        className={className}
+        placeholder={placeholder}
+        autoComplete="off"
+        spellCheck="false"
+        autoFocus={autoFocus}
+      />
+    );
+  };
+
+  // Uncontrolled Select Component - no re-renders
+  const UncontrolledSelect = ({ name, defaultValue, className, children }) => {
+    return (
+      <select
+        name={name}
+        defaultValue={defaultValue || ''}
+        className={className}
+      >
+        {children}
+      </select>
+    );
+  };
+
+  // Employee Selection Modal Component
+  const EmployeeSelectionModal = ({ isOpen, onClose, employees, selectedEmployees, onSelectionChange, onConfirm }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedDept, setSelectedDept] = useState('ALL');
+
+    const filteredEmployees = employees.filter(emp => {
+      const matchesSearch = emp.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           emp.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           emp.employeeId.includes(searchTerm);
+      const matchesDept = selectedDept === 'ALL' || emp.department === selectedDept;
+      return matchesSearch && matchesDept;
+    });
+
+    const handleEmployeeSelect = (employeeId) => {
+      if (selectedEmployees.includes(employeeId)) {
+        onSelectionChange(selectedEmployees.filter(id => id !== employeeId));
+      } else {
+        onSelectionChange([...selectedEmployees, employeeId]);
+      }
+    };
+
+    const handleSelectAll = () => {
+      if (selectedEmployees.length === filteredEmployees.length) {
+        onSelectionChange([]);
+      } else {
+        onSelectionChange(filteredEmployees.map(emp => emp.employeeId));
+      }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+          {/* Modal Header */}
+          <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold">เลือกสมาชิกทีม Kaizen</h2>
+                <p className="text-green-100 text-sm mt-1">เลือกพนักงานที่ต้องการเพิ่มเข้าทีม Kaizen</p>
+              </div>
+              <button onClick={onClose} className="text-white hover:text-red-200 transition-colors p-2 rounded-full hover:bg-black hover:bg-opacity-20">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Body */}
+          <div className="p-6">
+            {/* Search and Filter */}
+            <div className="flex gap-4 mb-6">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  placeholder="ค้นหาพนักงาน..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+              <select
+                value={selectedDept}
+                onChange={(e) => setSelectedDept(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              >
+                <option value="ALL">ทุกแผนก</option>
+                {departments.map(dept => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Selection Header */}
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
+                  onChange={handleSelectAll}
+                  className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                />
+                <span className="text-sm font-medium">เลือกทั้งหมด ({filteredEmployees.length} คน)</span>
+              </div>
+              <span className="text-sm text-gray-600">เลือกแล้ว: {selectedEmployees.length} คน</span>
+            </div>
+
+            {/* Employee List */}
+            <div className="max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
+              {filteredEmployees.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <p>ไม่พบพนักงานที่ตรงกับเงื่อนไขการค้นหา</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {filteredEmployees.map((employee) => (
+                    <div
+                      key={employee.employeeId}
+                      className="p-4 hover:bg-gray-50 cursor-pointer"
+                      onClick={() => handleEmployeeSelect(employee.employeeId)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedEmployees.includes(employee.employeeId)}
+                          onChange={() => handleEmployeeSelect(employee.employeeId)}
+                          className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3">
+                            <span className="font-medium text-gray-900">
+                              {employee.firstName} {employee.lastName}
+                            </span>
+                            <span className="text-sm text-gray-500">({employee.employeeId})</span>
+                            <span className={`px-2 py-1 text-xs rounded-full ${{
+                              'Admin': 'bg-red-100 text-red-800',
+                              'Manager': 'bg-purple-100 text-purple-800', 
+                              'Supervisor': 'bg-orange-100 text-orange-800',
+                              'User': 'bg-blue-100 text-blue-800'
+                            }[employee.role] || 'bg-gray-100 text-gray-800'}`}>
+                              {employee.position || employee.role}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-600 mt-1">
+                            {employee.department} • {employee.fiveSArea}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Modal Footer */}
+          <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              ยกเลิก
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={selectedEmployees.length === 0}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              เพิ่มสมาชิก ({selectedEmployees.length})
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Add/Edit Modal Component - Redesigned with better UX
+  const AdminModal = ({ isOpen, onClose, onSave, title, isEdit = false }) => {
+    if (!isOpen) return null;
+
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      onSave(e.target);
+    };
+
+    const handleOverlayClick = (e) => {
+      if (e.target === e.currentTarget) {
+        onClose();
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" onClick={handleOverlayClick}>
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <form onSubmit={handleSubmit}>
+          {/* Modal Header - Improved Design */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold">{title}</h2>
+                <p className="text-blue-100 text-sm mt-1">
+                  {isEdit ? 'แก้ไขข้อมูลผู้จัดการทีม' : 'เพิ่มผู้จัดการทีมใหม่เข้าสู่ระบบ'}
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="text-white hover:text-red-200 transition-colors p-2 rounded-full hover:bg-black hover:bg-opacity-20"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Body - Improved Layout */}
+          <div className="p-6 space-y-6">
+            {/* Basic Information Section */}
+            <div className="border-b border-gray-200 pb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                </svg>
+                ข้อมูลพื้นฐาน
+              </h3>
+              
+              {/* Employee ID */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  รหัสพนักงาน <span className="text-red-500">*</span>
+                </label>
+                <UncontrolledInput
+                  name="employeeId"
+                  defaultValue={formData.employeeId}
+                  disabled={isEdit}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors"
+                  placeholder="กรุณากรอกรหัสพนักงาน เช่น EMP001"
+                  autoFocus={!isEdit}
+                />
+              </div>
+
+              {/* First Name and Last Name */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ชื่อ <span className="text-red-500">*</span>
+                  </label>
+                  <UncontrolledInput
+                    name="firstName"
+                    defaultValue={formData.firstName}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="กรุณากรอกชื่อ"
+                    autoFocus={isEdit}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    นามสกุล <span className="text-red-500">*</span>
+                  </label>
+                  <UncontrolledInput
+                    name="lastName"
+                    defaultValue={formData.lastName}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="กรุณากรอกนามสกุล"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Work Information Section */}
+            <div className="border-b border-gray-200 pb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clipRule="evenodd" />
+                  <path d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15c-2.796 0-5.487-.46-8-1.308z" />
+                </svg>
+                ข้อมูลการทำงาน
+              </h3>
+
+              {/* Department and Role */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    แผนก <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <UncontrolledSelect
+                      name="department"
+                      defaultValue={formData.department}
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
+                    >
+                      <option value="">-- เลือกแผนก --</option>
+                      {departments.map(dept => (
+                        <option key={dept} value={dept}>{dept}</option>
+                      ))}
+                    </UncontrolledSelect>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ตำแหน่งงาน <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <UncontrolledSelect
+                      name="role"
+                      defaultValue={formData.role}
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
+                    >
+                      {roles.map(role => (
+                        <option key={role} value={role}>{role}</option>
+                      ))}
+                    </UncontrolledSelect>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 5S Area */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ชื่อกลุ่ม 5ส <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <UncontrolledSelect
+                    name="fiveSArea"
+                    defaultValue={formData.fiveSArea}
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
+                  >
+                    <option value="">-- เลือกกลุ่ม 5ส --</option>
+                    {fiveSAreas.map(area => (
+                      <option key={area} value={area}>{area}</option>
+                    ))}
+                  </UncontrolledSelect>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Optional Information Section */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                ข้อมูลเสริม <span className="text-sm text-gray-500 font-normal">(ไม่บังคับ)</span>
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Subordinate
+                  </label>
+                  <div className="relative">
+                    <UncontrolledSelect
+                      name="subordinate"
+                      defaultValue={formData.subordinate}
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
+                    >
+                      <option value="">-- เลือก Subordinate --</option>
+                      {/* Add subordinate options as needed */}
+                    </UncontrolledSelect>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Commander
+                  </label>
+                  <div className="relative">
+                    <UncontrolledSelect
+                      name="commander"
+                      defaultValue={formData.commander}
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors appearance-none"
+                    >
+                      <option value="">-- เลือก Commander --</option>
+                      {/* Add commander options as needed */}
+                    </UncontrolledSelect>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Modal Footer - Improved Design */}
+          <div className="bg-gray-50 px-6 py-4 rounded-b-xl flex flex-col sm:flex-row justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-3 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors font-medium"
+            >
+              ยกเลิก
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
+            >
+              {isEdit ? 'บันทึกการแก้ไข' : 'เพิ่มผู้จัดการทีม'}
+            </button>
+          </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-blue-600 mb-8">ADMIN TEAM SETTINGS</h1>
+        <SkeletonLoader rows={10} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <h1 className="text-3xl font-bold text-blue-600 mb-8">KAIZEN TEAM SETTINGS</h1>
+
+      {/* Search Bar and Add Button */}
+      <div className="flex gap-2 mb-6">
+        <div className="relative flex-1 max-w-md">
+          <input
+            type="text"
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+        <button
+          onClick={handleAddButtonClick}
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Filter Tabs and Sort */}
+      <div className="flex flex-wrap items-center gap-4 mb-6 border-b border-gray-200 pb-4">
+        <button
+          onClick={() => setSelectedDepartment('ALL')}
+          className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
+            selectedDepartment === 'ALL'
+              ? 'border-blue-500 text-blue-600 bg-blue-50'
+              : 'border-transparent text-gray-600 hover:text-gray-800'
+          }`}
+        >
+          ALL
+          <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">{totalItems}</span>
+        </button>
+
+        {/* Sort by Department Dropdown */}
+        <div className="relative">
+          <select
+            value={selectedDepartment}
+            onChange={(e) => setSelectedDepartment(e.target.value)}
+            className="appearance-none bg-white border border-gray-300 rounded px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="ALL">Sort by Department</option>
+            {departments.map(dept => (
+              <option key={dept} value={dept}>
+                {dept} ({departmentCounts[dept] || 0})
+              </option>
+            ))}
+          </select>
+          <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      {/* Control Bar */}
+      <div className="flex flex-wrap items-center gap-4 mb-6">
+        {/* Manage dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setIsManageDropdownOpen(!isManageDropdownOpen)}
+            disabled={selectedItems.length === 0}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+              selectedItems.length > 0
+                ? 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            จัดการ
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {isManageDropdownOpen && selectedItems.length > 0 && (
+            <div className="absolute left-0 mt-2 w-32 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+              <div className="py-1">
+                <button
+                  onClick={handleBulkDelete}
+                  className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                >
+                  นำออกจากทีม
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Loading State */}
+      {loading && (
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
+          <p className="text-gray-600">กำลังโหลดข้อมูลผู้จัดการทีม...</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <div className="text-red-500 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={fetchAdmins}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            ลองใหม่อีกครั้ง
+          </button>
+        </div>
+      )}
+
+      {/* Table */}
+      {!loading && !error && (
+        <div className="bg-white rounded-lg shadow overflow-hidden relative">
+        <div className="overflow-x-auto relative">
+          {/* Sticky Column Shadow Overlay */}
+          <div className="absolute top-0 left-[192px] bottom-0 w-4 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.1), rgba(0,0,0,0))' }}></div>
+          
+          <table className="w-full min-w-[1000px] text-sm relative">
+            <thead className="bg-blue-600 text-white">
+              <tr>
+                <th className="sticky left-0 z-20 bg-blue-600 px-4 py-3 text-left text-sm whitespace-nowrap">
+                  <div className="flex items-center h-full pl-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedItems.length === currentData.length && currentData.length > 0}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </div>
+                </th>
+                <th className="sticky left-[56px] z-20 bg-blue-600 px-4 py-3 text-left font-semibold text-sm whitespace-nowrap min-w-[136px]">รหัสพนักงาน</th>
+                <th className="px-4 py-3 text-left font-semibold text-sm min-w-[180px]">ชื่อ-นามสกุล</th>
+                <th className="px-4 py-3 text-left font-semibold text-sm min-w-[120px]">ตำแหน่งงาน</th>
+                <th className="px-4 py-3 text-left font-semibold text-sm min-w-[100px]">แผนก</th>
+                <th className="px-4 py-3 text-left font-semibold text-sm min-w-[150px]">ชื่อกลุ่ม 5ส</th>
+                <th className="px-4 py-3 text-left font-semibold text-sm min-w-[140px]">สิทธิ์การเข้าถึง</th>
+                <th className="px-4 py-3 text-center font-semibold text-sm min-w-[100px]">การจัดการ</th>
+              </tr>
+            </thead>
+            <tbody className="relative">
+              {currentData.map((admin, index) => (
+                <tr key={admin.employeeId} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                  <td className="sticky left-0 z-20 px-4 py-3 whitespace-nowrap" style={{ backgroundColor: index % 2 === 0 ? '#f9fafb' : '#ffffff' }}>
+                    <div className="flex items-center h-full pl-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.includes(admin.employeeId)}
+                        onChange={() => handleSelectItem(admin.employeeId)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </div>
+                  </td>
+                  <td className="sticky left-[56px] z-20 px-4 py-3 text-sm font-medium whitespace-nowrap min-w-[136px]" style={{ backgroundColor: index % 2 === 0 ? '#f9fafb' : '#ffffff' }}>
+                    {admin.employeeId}
+                  </td>
+                  <td className="px-4 py-3 text-sm min-w-[180px]">{admin.firstName} {admin.lastName}</td>
+                  <td className="px-4 py-3 text-sm min-w-[120px]">{admin.position || admin.role}</td>
+                  <td className="px-4 py-3 text-sm min-w-[100px]">{admin.department}</td>
+                  <td className="px-4 py-3 text-sm min-w-[150px]">{admin.fiveSArea}</td>
+                  <td className="px-4 py-3 min-w-[140px]">
+                    <RoleBadge role={admin.role} isKaizenTeam={admin.isKaizenTeam} />
+                  </td>
+                  <td className="px-4 py-3 text-center min-w-[100px]">
+                    <ActionDropdown admin={admin} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="px-4 py-3 bg-white border-t border-gray-200 flex items-center justify-between">
+          <div className="text-sm text-gray-500">
+            แสดง {startIndex + 1} ถึง {Math.min(endIndex, totalItems)} จาก {totalItems} รายการ
+          </div>
+          <div className="flex items-center space-x-2">
+            <button 
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              className="px-3 py-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            
+            {/* Page numbers */}
+            {(() => {
+              const pageNumbers = [];
+              const maxVisiblePages = 5;
+              let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+              let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+              
+              // Adjust start page if we're near the end
+              if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+              }
+              
+              for (let i = startPage; i <= endPage; i++) {
+                pageNumbers.push(
+                  <button
+                    key={i}
+                    onClick={() => handlePageChange(i)}
+                    className={`px-3 py-1 rounded ${
+                      i === currentPage
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {i}
+                  </button>
+                );
+              }
+              return pageNumbers;
+            })()}
+            
+            <button 
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        </div>
+      )}
+
+      {/* Add Admin Modal */}
+      <AdminModal
+        isOpen={isAddModalOpen}
+        onClose={handleAddModalClose}
+        onSave={handleAddAdmin}
+        title="ADD ADMIN TEAM MEMBER"
+      />
+
+
+      {/* Employee Selection Modal */}
+      <EmployeeSelectionModal
+        isOpen={isSelectionModalOpen}
+        onClose={() => setIsSelectionModalOpen(false)}
+        employees={availableEmployees}
+        selectedEmployees={selectedEmployeesForAdd}
+        onSelectionChange={setSelectedEmployeesForAdd}
+        onConfirm={handleAddSelectedEmployees}
+      />
+    </div>
+  );
+};
+
+export default AdminTeamSettings;
