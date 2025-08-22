@@ -106,6 +106,11 @@ const Report = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   
+  // Pagination states for each table
+  const [genbaPagination, setGenbaPagination] = useState({ currentPage: 1, itemsPerPage: 10 });
+  const [suggestionPagination, setSuggestionPagination] = useState({ currentPage: 1, itemsPerPage: 10 });
+  const [bestKaizenPagination, setBestKaizenPagination] = useState({ currentPage: 1, itemsPerPage: 10 });
+  
   // Load data from API on component mount
   useEffect(() => {
     const fetchReportsData = async () => {
@@ -160,6 +165,11 @@ const Report = () => {
         
         const projectResponse = await reportsAPI.getProjectData(params);
         setProjectData(projectResponse.data.data);
+        
+        // Reset pagination when data changes
+        setGenbaPagination({ currentPage: 1, itemsPerPage: 10 });
+        setSuggestionPagination({ currentPage: 1, itemsPerPage: 10 });
+        setBestKaizenPagination({ currentPage: 1, itemsPerPage: 10 });
       } catch (projectErr) {
         console.warn('Could not fetch project data for month:', selectedMonth, projectErr);
         // Set empty fallback project data on error
@@ -277,6 +287,148 @@ const Report = () => {
     if (!text) return '';
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
+  };
+
+  // Pagination helper functions
+  const getPaginatedData = (data, currentPage, itemsPerPage) => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return data.slice(startIndex, endIndex);
+  };
+
+  const getTotalPages = (totalItems, itemsPerPage) => {
+    return Math.ceil(totalItems / itemsPerPage);
+  };
+
+  // Pagination component
+  const PaginationControls = ({ currentPage, totalPages, onPageChange, itemsPerPage, onItemsPerPageChange, totalItems }) => {
+    const pageNumbers = [];
+    const maxPageNumbers = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxPageNumbers / 2));
+    let endPage = Math.min(totalPages, startPage + maxPageNumbers - 1);
+    
+    if (endPage - startPage + 1 < maxPageNumbers) {
+      startPage = Math.max(1, endPage - maxPageNumbers + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+    
+    const startItem = (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+    
+    return (
+      <div className="flex flex-col sm:flex-row justify-between items-center mt-4 px-4 py-3 bg-gray-50 border-t border-gray-200">
+        <div className="flex items-center gap-2 mb-2 sm:mb-0">
+          <span className="text-sm text-gray-700">แสดง</span>
+          <select
+            value={itemsPerPage}
+            onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
+            className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+          </select>
+          <span className="text-sm text-gray-700">รายการต่อหน้า</span>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-700 mr-2">
+            แสดง {startItem}-{endItem} จาก {totalItems} รายการ
+          </span>
+          
+          <button
+            onClick={() => onPageChange(1)}
+            disabled={currentPage === 1}
+            className={`px-2 py-1 text-sm rounded ${
+              currentPage === 1
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+            }`}
+          >
+            «
+          </button>
+          
+          <button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`px-2 py-1 text-sm rounded ${
+              currentPage === 1
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+            }`}
+          >
+            ‹
+          </button>
+          
+          {startPage > 1 && (
+            <>
+              <button
+                onClick={() => onPageChange(1)}
+                className="px-3 py-1 text-sm bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 rounded"
+              >
+                1
+              </button>
+              {startPage > 2 && <span className="px-1 text-gray-500">...</span>}
+            </>
+          )}
+          
+          {pageNumbers.map(number => (
+            <button
+              key={number}
+              onClick={() => onPageChange(number)}
+              className={`px-3 py-1 text-sm rounded ${
+                currentPage === number
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+              }`}
+            >
+              {number}
+            </button>
+          ))}
+          
+          {endPage < totalPages && (
+            <>
+              {endPage < totalPages - 1 && <span className="px-1 text-gray-500">...</span>}
+              <button
+                onClick={() => onPageChange(totalPages)}
+                className="px-3 py-1 text-sm bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 rounded"
+              >
+                {totalPages}
+              </button>
+            </>
+          )}
+          
+          <button
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={`px-2 py-1 text-sm rounded ${
+              currentPage === totalPages
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+            }`}
+          >
+            ›
+          </button>
+          
+          <button
+            onClick={() => onPageChange(totalPages)}
+            disabled={currentPage === totalPages}
+            className={`px-2 py-1 text-sm rounded ${
+              currentPage === totalPages
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+            }`}
+          >
+            »
+          </button>
+        </div>
+      </div>
+    );
   };
 
   // Helper functions for modal
@@ -707,7 +859,7 @@ const Report = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {projectData.genbaProjects.map((project, index) => (
+                  {getPaginatedData(projectData.genbaProjects, genbaPagination.currentPage, genbaPagination.itemsPerPage).map((project, index) => (
                     <tr key={project.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                       <td className="px-4 py-3" title={project.projectName}>{truncateText(project.projectName, 20)}</td>
                       <td className="px-4 py-3">{project.employeeId}</td>
@@ -747,6 +899,16 @@ const Report = () => {
                 </tbody>
               </table>
             </div>
+            {projectData.genbaProjects.length > 0 && (
+              <PaginationControls
+                currentPage={genbaPagination.currentPage}
+                totalPages={getTotalPages(projectData.genbaProjects.length, genbaPagination.itemsPerPage)}
+                onPageChange={(page) => setGenbaPagination(prev => ({ ...prev, currentPage: page }))}
+                itemsPerPage={genbaPagination.itemsPerPage}
+                onItemsPerPageChange={(items) => setGenbaPagination({ currentPage: 1, itemsPerPage: items })}
+                totalItems={projectData.genbaProjects.length}
+              />
+            )}
           </div>
 
           {/* Suggestion Projects Table */}
@@ -770,7 +932,7 @@ const Report = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {projectData.suggestionProjects.map((project, index) => (
+                  {getPaginatedData(projectData.suggestionProjects, suggestionPagination.currentPage, suggestionPagination.itemsPerPage).map((project, index) => (
                     <tr key={project.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                       <td className="px-4 py-3" title={project.projectName}>{truncateText(project.projectName, 20)}</td>
                       <td className="px-4 py-3">{project.employeeId}</td>
@@ -810,6 +972,16 @@ const Report = () => {
                 </tbody>
               </table>
             </div>
+            {projectData.suggestionProjects.length > 0 && (
+              <PaginationControls
+                currentPage={suggestionPagination.currentPage}
+                totalPages={getTotalPages(projectData.suggestionProjects.length, suggestionPagination.itemsPerPage)}
+                onPageChange={(page) => setSuggestionPagination(prev => ({ ...prev, currentPage: page }))}
+                itemsPerPage={suggestionPagination.itemsPerPage}
+                onItemsPerPageChange={(items) => setSuggestionPagination({ currentPage: 1, itemsPerPage: items })}
+                totalItems={projectData.suggestionProjects.length}
+              />
+            )}
           </div>
 
           {/* Best Kaizen Projects Table */}
@@ -833,7 +1005,7 @@ const Report = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {projectData.bestKaizenProjects.map((project, index) => (
+                  {getPaginatedData(projectData.bestKaizenProjects, bestKaizenPagination.currentPage, bestKaizenPagination.itemsPerPage).map((project, index) => (
                     <tr key={project.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                       <td className="px-4 py-3 font-medium" title={project.projectName}>{truncateText(project.projectName, 20)}</td>
                       <td className="px-4 py-3">{project.employeeId}</td>
@@ -873,6 +1045,16 @@ const Report = () => {
                 </tbody>
               </table>
             </div>
+            {projectData.bestKaizenProjects.length > 0 && (
+              <PaginationControls
+                currentPage={bestKaizenPagination.currentPage}
+                totalPages={getTotalPages(projectData.bestKaizenProjects.length, bestKaizenPagination.itemsPerPage)}
+                onPageChange={(page) => setBestKaizenPagination(prev => ({ ...prev, currentPage: page }))}
+                itemsPerPage={bestKaizenPagination.itemsPerPage}
+                onItemsPerPageChange={(items) => setBestKaizenPagination({ currentPage: 1, itemsPerPage: items })}
+                totalItems={projectData.bestKaizenProjects.length}
+              />
+            )}
           </div>
         </div>
 
