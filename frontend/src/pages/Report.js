@@ -14,6 +14,7 @@ import {
 import { Pie, Bar, Line } from 'react-chartjs-2';
 import { reportsAPI, tasklistAPI } from '../services/apiService';
 import ProjectImage from '../components/ProjectImage';
+import ReportSkeletonLoader from '../components/ReportSkeletonLoader';
 import Swal from 'sweetalert2';
 
 ChartJS.register(
@@ -29,6 +30,62 @@ ChartJS.register(
 );
 
 const Report = () => {
+  // Project Tables Skeleton Component
+  const ProjectTablesSkeleton = () => (
+    <div className="mt-8 space-y-6">
+      {/* Project header skeleton */}
+      <div className="flex justify-between items-center">
+        <div className="h-7 bg-gray-300 rounded animate-pulse w-64"></div>
+        <div className="h-10 bg-gray-300 rounded animate-pulse w-32"></div>
+      </div>
+      
+      {/* Project tables skeleton */}
+      {[1, 2, 3].map((table) => (
+        <div key={table} className="bg-white rounded-lg p-6 shadow">
+          <div className="h-6 bg-gray-300 rounded animate-pulse w-80 mb-4"></div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1000px] text-sm">
+              <thead className="bg-blue-600">
+                <tr>
+                  {Array.from({ length: 11 }).map((_, col) => (
+                    <th key={col} className="px-4 py-3">
+                      <div className="h-4 bg-white bg-opacity-20 rounded animate-pulse w-16"></div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 5 }).map((_, row) => (
+                  <tr key={row} className={row % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                    {Array.from({ length: 11 }).map((_, col) => (
+                      <td key={col} className="px-4 py-3">
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Pagination skeleton */}
+          <div className="flex flex-col sm:flex-row justify-between items-center mt-4 px-4 py-3 bg-gray-50 border-t border-gray-200">
+            <div className="flex items-center gap-2 mb-2 sm:mb-0">
+              <div className="h-4 bg-gray-300 rounded animate-pulse w-8"></div>
+              <div className="h-8 bg-gray-300 rounded animate-pulse w-16"></div>
+              <div className="h-4 bg-gray-300 rounded animate-pulse w-20"></div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-4 bg-gray-300 rounded animate-pulse w-32"></div>
+              {Array.from({ length: 5 }).map((_, btn) => (
+                <div key={btn} className="w-8 h-8 bg-gray-300 rounded animate-pulse"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   // Status badge component (matching Tasklist styling)
   const StatusBadge = ({ status }) => {
     const getStatusStyle = () => {
@@ -99,6 +156,7 @@ const Report = () => {
     bestKaizenProjects: []
   });
   const [loading, setLoading] = useState(true);
+  const [projectLoading, setProjectLoading] = useState(false);
   const [error, setError] = useState(null);
   
   // Modal states
@@ -154,6 +212,7 @@ const Report = () => {
   useEffect(() => {
     const fetchProjectData = async () => {
       try {
+        setProjectLoading(true);
         const currentYear = new Date().getFullYear();
         const params = { 
           year: currentYear,
@@ -178,6 +237,8 @@ const Report = () => {
           suggestionProjects: [],
           bestKaizenProjects: []
         });
+      } finally {
+        setProjectLoading(false);
       }
     };
 
@@ -653,15 +714,7 @@ const Report = () => {
 
   // Loading state
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-          </div>
-        </div>
-      </div>
-    );
+    return <ReportSkeletonLoader />;
   }
 
   // Error state
@@ -822,21 +875,24 @@ const Report = () => {
         </div>
 
         {/* Project Tables Section */}
-        <div className="mt-8 space-y-6">
-          {/* Project Department Filter */}
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-gray-800">รายการโครงการประจำเดือน{getMonthNameThai(selectedMonth)}</h2>
-            <select 
-              value={selectedProjectDepartment} 
-              onChange={(e) => setSelectedProjectDepartment(e.target.value)}
-              className="px-4 py-2 pr-8 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20d%3D%22M7%207l3-3%203%203m0%206l-3%203-3-3%22%20stroke%3D%22%236b7280%22%20fill%3D%22none%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-no-repeat bg-[right_8px_center]"
-            >
-              <option value="ALL">แผนกทั้งหมด</option>
-              {getProjectDepartments().map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
-          </div>
+        {projectLoading ? (
+          <ProjectTablesSkeleton />
+        ) : (
+          <div className="mt-8 space-y-6">
+            {/* Project Department Filter */}
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800">รายการโครงการประจำเดือน{getMonthNameThai(selectedMonth)}</h2>
+              <select 
+                value={selectedProjectDepartment} 
+                onChange={(e) => setSelectedProjectDepartment(e.target.value)}
+                className="px-4 py-2 pr-8 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20d%3D%22M7%207l3-3%203%203m0%206l-3%203-3-3%22%20stroke%3D%22%236b7280%22%20fill%3D%22none%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-no-repeat bg-[right_8px_center]"
+              >
+                <option value="ALL">แผนกทั้งหมด</option>
+                {getProjectDepartments().map(dept => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
+            </div>
           
           {/* Genba Projects Table */}
           <div className="bg-white rounded-lg p-6 shadow">
@@ -1057,6 +1113,7 @@ const Report = () => {
             )}
           </div>
         </div>
+        )}
 
         {/* Project Detail Modal */}
         {showDetailModal && selectedProject && (

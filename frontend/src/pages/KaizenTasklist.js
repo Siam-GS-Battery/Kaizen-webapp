@@ -26,6 +26,10 @@ const KaizenTasklist = () => {
   // Date filter states
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Get current user data
   const getCurrentUser = () => {
@@ -165,6 +169,7 @@ const KaizenTasklist = () => {
     }
 
     setFilteredData(filtered);
+    setCurrentPage(1); // Reset to first page when filter changes
   }, [searchTerm, activeFilter, allTasks, selectedDepartment, selectedMonth]);
 
   // Get filter counts - KaizenTeam sees APPROVED projects for genba/suggestion, and BEST_KAIZEN projects
@@ -219,6 +224,33 @@ const KaizenTasklist = () => {
   const departmentCounts = getDepartmentCounts();
   const uniqueDepartments = Object.keys(departmentCounts).sort();
 
+  // Calculate pagination
+  const totalItems = filteredData.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentData = filteredData.slice(startIndex, endIndex);
+
+  // Pagination handlers
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    setSelectedItems([]); // Clear selections when changing pages
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+      setSelectedItems([]);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+      setSelectedItems([]);
+    }
+  };
+
   // Handle checkbox selection
   const handleSelectItem = (id) => {
     setSelectedItems(prev =>
@@ -228,10 +260,10 @@ const KaizenTasklist = () => {
     );
   };
 
-  // Handle select all
+  // Handle select all (only current page)
   const handleSelectAll = (checked) => {
     if (checked) {
-      setSelectedItems(filteredData.map(item => item.id));
+      setSelectedItems(currentData.map(item => item.id));
     } else {
       setSelectedItems([]);
     }
@@ -241,7 +273,142 @@ const KaizenTasklist = () => {
   const handleBulkApprove = async () => {
     if (selectedItems.length === 0) return;
 
-    // First, ask if they want to approve the projects
+    // Separate APPROVED and non-APPROVED projects
+    const alreadyApprovedItems = [];
+    const notApprovedItems = [];
+    
+    selectedItems.forEach(id => {
+      const item = allTasks.find(task => task.id === id);
+      if (item?.status === 'APPROVED') {
+        alreadyApprovedItems.push(id);
+      } else {
+        notApprovedItems.push(id);
+      }
+    });
+
+    // Handle case where all selected items are already APPROVED
+    if (alreadyApprovedItems.length === selectedItems.length) {
+      const bestKaizenResult = await Swal.fire({
+        title: 'The Best Kaizen',
+        text: `โครงการที่เลือกทั้งหมด ${selectedItems.length} รายการได้รับการอนุมัติแล้ว ต้องการให้เป็น The Best Kaizen ทันทีหรือไม่?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#f59e0b',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'ใช่, เป็น The Best Kaizen',
+        cancelButtonText: 'ยกเลิก'
+      });
+
+      if (bestKaizenResult.isConfirmed) {
+        try {
+          await Promise.all(
+            alreadyApprovedItems.map(id => tasklistAPI.update(id, { status: 'BEST_KAIZEN' }))
+          );
+          await Swal.fire({
+            title: 'เปลี่ยนสถานะเรียบร้อย!',
+            text: `โครงการ ${selectedItems.length} รายการได้รับสถานะ The Best Kaizen เรียบร้อยแล้ว`,
+            icon: 'success',
+            confirmButtonColor: '#3b82f6'
+          });
+          setSelectedItems([]);
+          await fetchTasks(); // Refresh data
+        } catch (error) {
+          await Swal.fire({
+            title: 'เกิดข้อผิดพลาด',
+            text: 'ไม่สามารถเปลี่ยนสถานะโครงการได้ กรุณาลองใหม่อีกครั้ง',
+            icon: 'error',
+            confirmButtonColor: '#3b82f6'
+          });
+        }
+      }
+      return;
+    }
+
+    // Handle mixed case (some APPROVED, some not)
+    if (alreadyApprovedItems.length > 0 && notApprovedItems.length > 0) {
+      const mixedResult = await Swal.fire({
+        title: 'โครงการมีสถานะแตกต่างกัน',
+        html: `
+          <p>โครงการที่เลือกมี:</p>
+          <p>• ${alreadyApprovedItems.length} รายการที่อนุมัติแล้ว</p>
+          <p>• ${notApprovedItems.length} รายการที่ยังไม่อนุมัติ</p>
+          <br/>
+          <p>ต้องการดำเนินการอย่างไร?</p>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: 'อนุมัติทั้งหมดและถาม Best Kaizen',
+        denyButtonText: 'เปลี่ยนที่อนุมัติแล้วเป็น Best Kaizen',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#22c55e',
+        denyButtonColor: '#f59e0b',
+        cancelButtonColor: '#6b7280'
+      });
+
+      if (mixedResult.isConfirmed) {
+        // Process all items normally (ask for Best Kaizen)
+        const bestKaizenResult = await Swal.fire({
+          title: 'The Best Kaizen',
+          text: `ต้องการให้โครงการทั้งหมด ${selectedItems.length} รายการ เป็น The Best Kaizen หรือไม่?`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#f59e0b',
+          cancelButtonColor: '#6b7280',
+          confirmButtonText: 'ใช่, เป็น The Best Kaizen',
+          cancelButtonText: 'ไม่, อนุมัติปกติ'
+        });
+
+        const status = bestKaizenResult.isConfirmed ? 'BEST_KAIZEN' : 'APPROVED';
+        const statusText = bestKaizenResult.isConfirmed ? 'The Best Kaizen' : 'อนุมัติ';
+
+        try {
+          await Promise.all(
+            selectedItems.map(id => tasklistAPI.update(id, { status: status }))
+          );
+          await Swal.fire({
+            title: `${statusText}เรียบร้อย!`,
+            text: `โครงการ ${selectedItems.length} รายการได้รับสถานะ ${statusText} เรียบร้อยแล้ว`,
+            icon: 'success',
+            confirmButtonColor: '#3b82f6'
+          });
+          setSelectedItems([]);
+          await fetchTasks(); // Refresh data
+        } catch (error) {
+          await Swal.fire({
+            title: 'เกิดข้อผิดพลาด',
+            text: 'ไม่สามารถอนุมัติโครงการได้ กรุณาลองใหม่อีกครั้ง',
+            icon: 'error',
+            confirmButtonColor: '#3b82f6'
+          });
+        }
+      } else if (mixedResult.isDenied) {
+        // Only convert already approved items to Best Kaizen
+        try {
+          await Promise.all(
+            alreadyApprovedItems.map(id => tasklistAPI.update(id, { status: 'BEST_KAIZEN' }))
+          );
+          await Swal.fire({
+            title: 'เปลี่ยนสถานะเรียบร้อย!',
+            text: `โครงการที่อนุมัติแล้ว ${alreadyApprovedItems.length} รายการได้รับสถานะ The Best Kaizen เรียบร้อยแล้ว`,
+            icon: 'success',
+            confirmButtonColor: '#3b82f6'
+          });
+          setSelectedItems([]);
+          await fetchTasks(); // Refresh data
+        } catch (error) {
+          await Swal.fire({
+            title: 'เกิดข้อผิดพลาด',
+            text: 'ไม่สามารถเปลี่ยนสถานะโครงการได้ กรุณาลองใหม่อีกครั้ง',
+            icon: 'error',
+            confirmButtonColor: '#3b82f6'
+          });
+        }
+      }
+      return;
+    }
+
+    // Normal flow for non-APPROVED projects only
     const approvalResult = await Swal.fire({
       title: 'อนุมัติโครงการ',
       text: `คุณต้องการอนุมัติโครงการ ${selectedItems.length} รายการใช่หรือไม่?`,
@@ -387,50 +554,86 @@ const KaizenTasklist = () => {
   // Handle individual actions
   const handleIndividualAction = async (action, item) => {
     if (action === 'approve') {
-      // First, ask if they want to approve the project
-      const approvalResult = await Swal.fire({
-        title: 'อนุมัติโครงการ',
-        text: `คุณต้องการอนุมัติโครงการ "${item.projectName}" ใช่หรือไม่?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#22c55e',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'อนุมัติ',
-        cancelButtonText: 'ยกเลิก'
-      });
-
-      if (approvalResult.isConfirmed) {
-        // Then ask if this should be "The Best Kaizen"
+      // Check if the project is already APPROVED
+      if (item.status === 'APPROVED') {
+        // If already approved, directly ask if they want to make it Best Kaizen
         const bestKaizenResult = await Swal.fire({
           title: 'The Best Kaizen',
-          text: `ต้องการให้โครงการ "${item.projectName}" เป็น The Best Kaizen หรือไม่?`,
+          text: `โครงการ "${item.projectName}" ได้รับการอนุมัติแล้ว ต้องการให้เป็น The Best Kaizen ทันทีหรือไม่?`,
           icon: 'question',
           showCancelButton: true,
           confirmButtonColor: '#f59e0b',
           cancelButtonColor: '#6b7280',
           confirmButtonText: 'ใช่, เป็น The Best Kaizen',
-          cancelButtonText: 'ไม่, อนุมัติปกติ'
+          cancelButtonText: 'ยกเลิก'
         });
 
-        const status = bestKaizenResult.isConfirmed ? 'BEST_KAIZEN' : 'APPROVED';
-        const statusText = bestKaizenResult.isConfirmed ? 'The Best Kaizen' : 'อนุมัติ';
+        if (bestKaizenResult.isConfirmed) {
+          try {
+            await tasklistAPI.update(item.id, { status: 'BEST_KAIZEN' });
+            await Swal.fire({
+              title: 'เปลี่ยนสถานะเรียบร้อย!',
+              text: 'โครงการได้รับสถานะ The Best Kaizen เรียบร้อยแล้ว',
+              icon: 'success',
+              confirmButtonColor: '#3b82f6'
+            });
+            await fetchTasks(); // Refresh data
+          } catch (error) {
+            await Swal.fire({
+              title: 'เกิดข้อผิดพลาด',
+              text: 'ไม่สามารถเปลี่ยนสถานะโครงการได้ กรุณาลองใหม่อีกครั้ง',
+              icon: 'error',
+              confirmButtonColor: '#3b82f6'
+            });
+          }
+        }
+      } else {
+        // Normal approval flow for non-APPROVED projects
+        // First, ask if they want to approve the project
+        const approvalResult = await Swal.fire({
+          title: 'อนุมัติโครงการ',
+          text: `คุณต้องการอนุมัติโครงการ "${item.projectName}" ใช่หรือไม่?`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#22c55e',
+          cancelButtonColor: '#6b7280',
+          confirmButtonText: 'อนุมัติ',
+          cancelButtonText: 'ยกเลิก'
+        });
 
-        try {
-          await tasklistAPI.update(item.id, { status: status });
-          await Swal.fire({
-            title: `${statusText}เรียบร้อย!`,
-            text: `โครงการได้รับสถานะ ${statusText} เรียบร้อยแล้ว`,
-            icon: 'success',
-            confirmButtonColor: '#3b82f6'
+        if (approvalResult.isConfirmed) {
+          // Then ask if this should be "The Best Kaizen"
+          const bestKaizenResult = await Swal.fire({
+            title: 'The Best Kaizen',
+            text: `ต้องการให้โครงการ "${item.projectName}" เป็น The Best Kaizen หรือไม่?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#f59e0b',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'ใช่, เป็น The Best Kaizen',
+            cancelButtonText: 'ไม่, อนุมัติปกติ'
           });
-          await fetchTasks(); // Refresh data
-        } catch (error) {
-          await Swal.fire({
-            title: 'เกิดข้อผิดพลาด',
-            text: 'ไม่สามารถอนุมัติโครงการได้ กรุณาลองใหม่อีกครั้ง',
-            icon: 'error',
-            confirmButtonColor: '#3b82f6'
-          });
+
+          const status = bestKaizenResult.isConfirmed ? 'BEST_KAIZEN' : 'APPROVED';
+          const statusText = bestKaizenResult.isConfirmed ? 'The Best Kaizen' : 'อนุมัติ';
+
+          try {
+            await tasklistAPI.update(item.id, { status: status });
+            await Swal.fire({
+              title: `${statusText}เรียบร้อย!`,
+              text: `โครงการได้รับสถานะ ${statusText} เรียบร้อยแล้ว`,
+              icon: 'success',
+              confirmButtonColor: '#3b82f6'
+            });
+            await fetchTasks(); // Refresh data
+          } catch (error) {
+            await Swal.fire({
+              title: 'เกิดข้อผิดพลาด',
+              text: 'ไม่สามารถอนุมัติโครงการได้ กรุณาลองใหม่อีกครั้ง',
+              icon: 'error',
+              confirmButtonColor: '#3b82f6'
+            });
+          }
         }
       }
     } else if (action === 'edit') {
@@ -1412,7 +1615,7 @@ const KaizenTasklist = () => {
                 <th className="px-4 py-3 text-left text-sm">
                   <input
                     type="checkbox"
-                    checked={selectedItems.length === filteredData.length && filteredData.length > 0}
+                    checked={selectedItems.length === currentData.length && currentData.length > 0}
                     onChange={(e) => handleSelectAll(e.target.checked)}
                     className="rounded"
                   />
@@ -1431,7 +1634,7 @@ const KaizenTasklist = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredData.map((item, index) => (
+              {currentData.map((item, index) => (
                 <tr key={item.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                   <td className="px-4 py-3">
                     <input
@@ -1458,7 +1661,7 @@ const KaizenTasklist = () => {
                     <StatusBadge status={item.status} />
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <ActionDropdown item={item} index={index} totalItems={filteredData.length} />
+                    <ActionDropdown item={item} index={index} totalItems={currentData.length} />
                   </td>
                 </tr>
               ))}
@@ -1466,7 +1669,7 @@ const KaizenTasklist = () => {
           </table>
 
           {/* Empty State */}
-          {filteredData.length === 0 && (
+          {currentData.length === 0 && totalItems === 0 && (
             <div className="text-center py-12">
               <svg className="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -1480,16 +1683,54 @@ const KaizenTasklist = () => {
         {/* Pagination */}
         <div className="px-4 py-3 bg-white border-t border-gray-200 flex items-center justify-between">
           <div className="text-sm text-gray-500">
-            แสดงหน้า 1 to 1 of {filteredData.length} รายการ
+            แสดง {startIndex + 1} ถึง {Math.min(endIndex, totalItems)} จาก {totalItems} รายการ
           </div>
           <div className="flex items-center space-x-2">
-            <button className="px-3 py-1 text-gray-500 hover:text-gray-700 disabled:opacity-50" disabled>
+            <button 
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              className="px-3 py-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <button className="px-3 py-1 bg-blue-600 text-white rounded">1</button>
-            <button className="px-3 py-1 text-gray-500 hover:text-gray-700 disabled:opacity-50" disabled>
+            
+            {/* Page numbers */}
+            {(() => {
+              const pageNumbers = [];
+              const maxVisiblePages = 5;
+              let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+              let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+              
+              // Adjust start page if we're near the end
+              if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+              }
+              
+              for (let i = startPage; i <= endPage; i++) {
+                pageNumbers.push(
+                  <button
+                    key={i}
+                    onClick={() => handlePageChange(i)}
+                    className={`px-3 py-1 rounded ${
+                      i === currentPage
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {i}
+                  </button>
+                );
+              }
+              return pageNumbers;
+            })()}
+            
+            <button 
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>

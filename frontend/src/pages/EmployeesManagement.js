@@ -18,6 +18,10 @@ const EmployeesManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userOptions, setUserOptions] = useState([]); // For dropdown options
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
 
   // Form data for adding/editing employees
@@ -102,6 +106,7 @@ const EmployeesManagement = () => {
     }
 
     setFilteredData(filtered);
+    setCurrentPage(1); // Reset to first page when filter changes
   }, [searchTerm, selectedDepartment, employees]);
 
   // Get department counts
@@ -115,6 +120,33 @@ const EmployeesManagement = () => {
 
   const departmentCounts = getDepartmentCounts();
 
+  // Calculate pagination
+  const totalItems = filteredData.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentData = filteredData.slice(startIndex, endIndex);
+
+  // Pagination handlers
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    setSelectedItems([]); // Clear selections when changing pages
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+      setSelectedItems([]);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+      setSelectedItems([]);
+    }
+  };
+
   // Handle checkbox selection
   const handleSelectItem = (employeeId) => {
     setSelectedItems(prev =>
@@ -124,10 +156,10 @@ const EmployeesManagement = () => {
     );
   };
 
-  // Handle select all
+  // Handle select all (only current page)
   const handleSelectAll = (checked) => {
     if (checked) {
-      setSelectedItems(filteredData.map(emp => emp.employeeId));
+      setSelectedItems(currentData.map(emp => emp.employeeId));
     } else {
       setSelectedItems([]);
     }
@@ -977,7 +1009,7 @@ const EmployeesManagement = () => {
           }`}
         >
           ALL
-          <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">{filteredData.length}</span>
+          <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">{totalItems}</span>
         </button>
 
         {/* Sort by Department Dropdown */}
@@ -1076,7 +1108,7 @@ const EmployeesManagement = () => {
                   <div className="flex items-center h-full pl-2">
                     <input
                       type="checkbox"
-                      checked={selectedItems.length === filteredData.length && filteredData.length > 0}
+                      checked={selectedItems.length === currentData.length && currentData.length > 0}
                       onChange={(e) => handleSelectAll(e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
@@ -1092,7 +1124,7 @@ const EmployeesManagement = () => {
               </tr>
             </thead>
             <tbody className="relative">
-              {filteredData.map((employee, index) => (
+              {currentData.map((employee, index) => (
                 <tr key={employee.employeeId} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                   <td className="sticky left-0 z-20 px-4 py-3 whitespace-nowrap" style={{ backgroundColor: index % 2 === 0 ? '#f9fafb' : '#ffffff' }}>
                     <div className="flex items-center h-full pl-2">
@@ -1115,7 +1147,7 @@ const EmployeesManagement = () => {
                     <RoleBadge role={employee.role} />
                   </td>
                   <td className="px-4 py-3 text-center min-w-[100px]">
-                    <ActionDropdown employee={employee} index={index} totalItems={filteredData.length} />
+                    <ActionDropdown employee={employee} index={index} totalItems={currentData.length} />
                   </td>
                 </tr>
               ))}
@@ -1126,16 +1158,54 @@ const EmployeesManagement = () => {
         {/* Pagination */}
         <div className="px-4 py-3 bg-white border-t border-gray-200 flex items-center justify-between">
           <div className="text-sm text-gray-500">
-            แสดงหน้า 1 to 1 of {filteredData.length} รายการ
+            แสดง {startIndex + 1} ถึง {Math.min(endIndex, totalItems)} จาก {totalItems} รายการ
           </div>
           <div className="flex items-center space-x-2">
-            <button className="px-3 py-1 text-gray-500 hover:text-gray-700 disabled:opacity-50" disabled>
+            <button 
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              className="px-3 py-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <button className="px-3 py-1 bg-blue-600 text-white rounded">1</button>
-            <button className="px-3 py-1 text-gray-500 hover:text-gray-700 disabled:opacity-50" disabled>
+            
+            {/* Page numbers */}
+            {(() => {
+              const pageNumbers = [];
+              const maxVisiblePages = 5;
+              let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+              let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+              
+              // Adjust start page if we're near the end
+              if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+              }
+              
+              for (let i = startPage; i <= endPage; i++) {
+                pageNumbers.push(
+                  <button
+                    key={i}
+                    onClick={() => handlePageChange(i)}
+                    className={`px-3 py-1 rounded ${
+                      i === currentPage
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {i}
+                  </button>
+                );
+              }
+              return pageNumbers;
+            })()}
+            
+            <button 
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
