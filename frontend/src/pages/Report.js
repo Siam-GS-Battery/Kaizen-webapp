@@ -969,10 +969,10 @@ const Report = () => {
 
           {/* Suggestion Projects Table */}
           <div className="bg-white rounded-lg p-6 shadow">
-            <h3 className="text-lg font-semibold mb-4 text-green-600">โครงการ Suggestion ประจำเดือน{getMonthNameThai(selectedMonth)} ({projectData.suggestionProjects.length} รายการ)</h3>
+            <h3 className="text-lg font-semibold mb-4 text-purple-600">โครงการ Suggestion ประจำเดือน{getMonthNameThai(selectedMonth)} ({projectData.suggestionProjects.length} รายการ)</h3>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1000px] text-sm">
-                <thead className="bg-green-600 text-white">
+                <thead className="bg-purple-600 text-white">
                   <tr>
                     <th className="px-4 py-3 text-left font-semibold text-sm">ชื่อโครงการ</th>
                     <th className="px-4 py-3 text-left font-semibold text-sm">รหัสพนักงาน</th>
@@ -1007,7 +1007,7 @@ const Report = () => {
                       <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => handleViewDetails(project)}
-                          className="inline-flex items-center justify-center w-8 h-8 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors"
+                          className="inline-flex items-center justify-center w-8 h-8 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
                           title="ดูรายละเอียด"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1042,10 +1042,10 @@ const Report = () => {
 
           {/* Best Kaizen Projects Table */}
           <div className="bg-white rounded-lg p-6 shadow">
-            <h3 className="text-lg font-semibold mb-4 text-purple-600">โครงการ Best Kaizen ประจำเดือน{getMonthNameThai(selectedMonth)} ({projectData.bestKaizenProjects.length} รายการ)</h3>
+            <h3 className="text-lg font-semibold mb-4 text-yellow-600">โครงการ Best Kaizen ประจำเดือน{getMonthNameThai(selectedMonth)} ({projectData.bestKaizenProjects.length} รายการ)</h3>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1000px] text-sm">
-                <thead className="bg-purple-600 text-white">
+                <thead className="bg-yellow-600 text-white">
                   <tr>
                     <th className="px-4 py-3 text-left font-semibold text-sm">ชื่อโครงการ</th>
                     <th className="px-4 py-3 text-left font-semibold text-sm">รหัสพนักงาน</th>
@@ -1080,7 +1080,7 @@ const Report = () => {
                       <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => handleViewDetails(project)}
-                          className="inline-flex items-center justify-center w-8 h-8 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
+                          className="inline-flex items-center justify-center w-8 h-8 bg-yellow-600 text-white rounded-full hover:bg-yellow-700 transition-colors"
                           title="ดูรายละเอียด"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
