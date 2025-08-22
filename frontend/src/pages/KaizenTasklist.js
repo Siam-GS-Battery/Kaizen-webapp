@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Swal from 'sweetalert2';
 import { tasklistAPI } from '../services/apiService';
 import ProjectImage from '../components/ProjectImage';
@@ -99,11 +99,10 @@ const KaizenTasklist = () => {
   }, [isDepartmentDropdownOpen, isMonthPickerOpen]);
 
   // Helper function to check if date is within selected month or 30 days from creation
-  const isWithinDateRange = (item) => {
+  const isWithinDateRange = useCallback((item) => {
     if (!item.createdDate) return false;
     
     const createdDate = new Date(item.createdDate);
-    const now = new Date();
     const selectedYear = selectedMonth.getFullYear();
     const selectedMonthNum = selectedMonth.getMonth();
     
@@ -122,7 +121,7 @@ const KaizenTasklist = () => {
     
     // Check if the 30-day period overlaps with selected month
     return thirtyDaysAfterCreation >= monthStart && createdDate <= monthEnd;
-  };
+  }, [selectedMonth]);
 
   // Filter และ search ข้อมูล - KaizenTeam filtering (like Admin)
   useEffect(() => {
@@ -170,18 +169,21 @@ const KaizenTasklist = () => {
 
     setFilteredData(filtered);
     setCurrentPage(1); // Reset to first page when filter changes
-  }, [searchTerm, activeFilter, allTasks, selectedDepartment, selectedMonth]);
+  }, [searchTerm, activeFilter, allTasks, selectedDepartment, selectedMonth, isWithinDateRange]);
 
   // Get filter counts - KaizenTeam sees APPROVED projects for genba/suggestion, and BEST_KAIZEN projects
   const getFilterCounts = () => {
+    // Filter tasks by selected month first
+    const dateFilteredTasks = allTasks.filter(item => isWithinDateRange(item));
+    
     return {
-      genba: allTasks.filter(item => 
+      genba: dateFilteredTasks.filter(item => 
         item.formType === 'genba' && item.status === 'APPROVED'
       ).length,
-      suggestion: allTasks.filter(item => 
+      suggestion: dateFilteredTasks.filter(item => 
         item.formType === 'suggestion' && item.status === 'APPROVED'
       ).length,
-      best_kaizen: allTasks.filter(item => 
+      best_kaizen: dateFilteredTasks.filter(item => 
         item.status === 'BEST_KAIZEN'
       ).length,
       approved: 0, // Remove approved filter for KaizenTeam

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Swal from 'sweetalert2';
 import { tasklistAPI } from '../services/apiService';
 import ProjectImage from '../components/ProjectImage';
@@ -119,10 +119,28 @@ const Tasklist = () => {
     return null;
   };
 
+  // Helper function to check if date is within selected month
+  const isWithinDateRange = useCallback((item) => {
+    if (!item.createdDate) return false;
+    
+    const createdDate = new Date(item.createdDate);
+    const selectedYear = selectedMonth.getFullYear();
+    const selectedMonthNum = selectedMonth.getMonth();
+    
+    // Check if project is within selected month
+    const itemYear = createdDate.getFullYear();
+    const itemMonth = createdDate.getMonth();
+    
+    return itemYear === selectedYear && itemMonth === selectedMonthNum;
+  }, [selectedMonth]);
+
   // Filter และ search ข้อมูล
   useEffect(() => {
     let filtered = allTasks;
     const userRole = getUserRole();
+
+    // Apply date filter first
+    filtered = filtered.filter(item => isWithinDateRange(item));
 
     // Admin role filtering
     if (userRole === 'Admin') {
@@ -189,22 +207,24 @@ const Tasklist = () => {
 
     setFilteredData(filtered);
     setCurrentPage(1); // Reset to first page when filter changes
-  }, [searchTerm, activeFilter, allTasks, selectedDepartment, selectedMonth]);
+  }, [searchTerm, activeFilter, allTasks, selectedDepartment, selectedMonth, isWithinDateRange]);
 
   // Get filter counts based on status requirements
   const getFilterCounts = () => {
     const userRole = getUserRole();
+    // Filter tasks by selected month first
+    const dateFilteredTasks = allTasks.filter(item => isWithinDateRange(item));
     
     if (userRole === 'Admin') {
       // Admin sees APPROVED projects for genba/suggestion, and BEST_KAIZEN projects
       return {
-        genba: allTasks.filter(item => 
+        genba: dateFilteredTasks.filter(item => 
           item.formType === 'genba' && item.status === 'APPROVED'
         ).length,
-        suggestion: allTasks.filter(item => 
+        suggestion: dateFilteredTasks.filter(item => 
           item.formType === 'suggestion' && item.status === 'APPROVED'
         ).length,
-        best_kaizen: allTasks.filter(item => 
+        best_kaizen: dateFilteredTasks.filter(item => 
           item.status === 'BEST_KAIZEN'
         ).length,
         approved: 0, // Remove approved filter for Admin
@@ -212,18 +232,18 @@ const Tasklist = () => {
     } else {
       // Non-admin users see all filter counts
       return {
-        genba: allTasks.filter(item => 
+        genba: dateFilteredTasks.filter(item => 
           item.formType === 'genba' && 
           (item.status === 'WAITING' || item.status === 'EDIT')
         ).length,
-        suggestion: allTasks.filter(item => 
+        suggestion: dateFilteredTasks.filter(item => 
           item.formType === 'suggestion' && 
           (item.status === 'WAITING' || item.status === 'EDIT')
         ).length,
-        best_kaizen: allTasks.filter(item => 
+        best_kaizen: dateFilteredTasks.filter(item => 
           item.status === 'BEST_KAIZEN'
         ).length,
-        approved: allTasks.filter(item => 
+        approved: dateFilteredTasks.filter(item => 
           item.status === 'APPROVED'
         ).length,
       };
