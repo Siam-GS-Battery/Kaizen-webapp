@@ -341,6 +341,7 @@ const GenbaForm = () => {
         SGS_Smart: 'S : Smart',
         SGS_Green: 'G : Green',
         SGS_Strong: 'S : Strong',
+        afterProjectImage: 'รูปหลังจัดทำโครงการ',
       };
 
       const missingFields = Object.entries(requiredFields)
@@ -670,7 +671,7 @@ const GenbaForm = () => {
                     />
                     <ImageUpload
                       id="afterImg"
-                      label="รูปหลังจัดทำโครงการ"
+                      label="รูปหลังจัดทำโครงการ (จำเป็น)"
                       onImageSelect={(file, base64) => handleImageSelect('after', file, base64)}
                       currentImage={formData.afterProjectImage}
                       acceptedFormats="image/jpeg,image/png,image/webp"
